@@ -11,7 +11,7 @@
   ],
   "type": "wp-plugin",
   "config": {
-    "vendor-dir": "wp-content/vendor",
+    "vendor-dir": "src/vendor",
     "platform": {
       "php": "7.4"
     },
@@ -24,7 +24,7 @@
   "minimum-stability": "dev",
   "autoload": {
     "psr-4": {
-      "RingierBusPlugin\\": "src"
+      "RingierBusPlugin\\": "src/Core"
     }
   },
   "require": {
