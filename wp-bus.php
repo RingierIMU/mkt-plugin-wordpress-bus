@@ -53,3 +53,16 @@ define('DS', DIRECTORY_SEPARATOR);
 
 //load our main file now
 require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'src/wp-bus-main.php';
+die(WP_BUS_RINGIER_PLUGIN_DIR . DS . 'src/wp-bus-main.php');
+function ringier_bus_plugin_activation()
+{
+    \RingierBusPlugin\BusPluginClass::plugin_activation();
+}
+
+function ringier_bus_plugin_deactivation()
+{
+    \RingierBusPlugin\BusPluginClass::plugin_deactivation();
+}
+
+register_activation_hook( __FILE__, 'ringier_bus_plugin_activation');
+register_deactivation_hook( __FILE__, 'ringier_bus_plugin_deactivation');
