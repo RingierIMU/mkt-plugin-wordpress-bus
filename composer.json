@@ -29,7 +29,8 @@
     "files": ["src/ringier_bus_plugin_helper.php"]
   },
   "require": {
-    "monolog/monolog": "2.3.4"
+    "monolog/monolog": "2.3.4",
+    "timber/timber": "1.19.0"
   },
   "repositories": [
     {
