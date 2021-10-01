@@ -46,20 +46,59 @@ class BusPluginClass
     public static function admin_init()
     {
         add_action( 'admin_menu', [self::class, 'wp_bus_admin_page']);
+//        add_action( 'admin_enqueue_scripts', [self::class, 'register_wp_bus_plugin_scripts']);
     }
 
     public static function wp_bus_admin_page()
     {
         $hookname = add_menu_page(
-            'WP-Bus Settings',
-            'Bus API Settings',
+            'Ringier Bus API Settings',
+            'Bus API',
             'manage_options',
-            plugin_dir_path(__FILE__) . 'admin/view.php',
-            null,
+            'wp-bus-api',
+            [self::class, 'render_settings_page'],
             'dashicons-rest-api',
             20
         );
 
-        add_action('load-' . $hookname, 'wp_bus_admin_page_submit');
+        add_submenu_page(
+            'wp-bus-api',
+            'Bus API Message Log',
+            'Message Log',
+            'manage_options',
+            'wp-bus-log',
+            [self::class, 'render_log_page']
+        );
+
+//        add_action('load-' . $hookname, 'wp_bus_admin_page_submit');
+    }
+
+    public static function register_wp_bus_plugin_scripts()
+    {
+        // Load styles
+        // WordPress has many defaults here: https://developer.wordpress.org/themes/basics/including-css-javascript/#default-scripts-included-and-registered-by-wordpress
+    }
+
+    public static function render_settings_page()
+    {
+        global $title;
+
+        print '<div class="wrap">';
+        print "<h1>$title</h1>";
+
+        submit_button( 'Click me!' );
+
+        print '</div>';
+    }
+    public static function render_log_page()
+    {
+        global $title;
+
+        print '<div class="wrap">';
+        print "<h1>$title</h1>";
+
+        submit_button( 'Click me!' );
+
+        print '</div>';
     }
 }
