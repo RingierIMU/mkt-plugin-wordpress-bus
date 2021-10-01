@@ -52,17 +52,11 @@ define( 'WP_BUS_RINGIER_BASENAME', plugin_basename( WP_BUS_RINGIER_PLUGIN_DIR ) 
 define('DS', DIRECTORY_SEPARATOR);
 
 //load our main file now
-require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'src/wp-bus-main.php';
-die(WP_BUS_RINGIER_PLUGIN_DIR . DS . 'src/wp-bus-main.php');
-function ringier_bus_plugin_activation()
-{
-    \RingierBusPlugin\BusPluginClass::plugin_activation();
-}
+require_once WP_BUS_RINGIER_PLUGIN_DIR . 'src/wp-bus-main.php';
 
-function ringier_bus_plugin_deactivation()
-{
-    \RingierBusPlugin\BusPluginClass::plugin_deactivation();
-}
+register_activation_hook( __FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_activation']);
+register_deactivation_hook( __FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_deactivation']);
 
-register_activation_hook( __FILE__, 'ringier_bus_plugin_activation');
-register_deactivation_hook( __FILE__, 'ringier_bus_plugin_deactivation');
+if (is_admin()) {
+    add_action( 'init', ['RingierBusPlugin\\BusPluginClass', 'admin_init']);
+}
