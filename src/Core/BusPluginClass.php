@@ -42,4 +42,24 @@ class BusPluginClass
 //            }
 //        }
     }
+
+    public static function admin_init()
+    {
+        add_action( 'admin_menu', [self::class, 'wp_bus_admin_page']);
+    }
+
+    public static function wp_bus_admin_page()
+    {
+        $hookname = add_menu_page(
+            'WP-Bus Settings',
+            'Bus API Settings',
+            'manage_options',
+            plugin_dir_path(__FILE__) . 'admin/view.php',
+            null,
+            'dashicons-rest-api',
+            20
+        );
+
+        add_action('load-' . $hookname, 'wp_bus_admin_page_submit');
+    }
 }
