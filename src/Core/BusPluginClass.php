@@ -7,6 +7,7 @@
  */
 namespace RingierBusPlugin;
 
+use Timber\FunctionWrapper;
 use Timber\Timber;
 
 class BusPluginClass
@@ -61,35 +62,35 @@ class BusPluginClass
         self::add_admin_pages();
 
         // Register a new setting for our page.
-        register_setting( 'wp_bus_settingspage_group', 'wp_bus_settingspage_options' );
+        register_setting( Enum::SETTINGS_PAGE_OPTION_GROUP, Enum::SETTINGS_PAGE_OPTION_NAME );
 
         // Register a new section in our page.
         add_settings_section(
             Enum::ADMIN_SETTINGS_SECTION_1,
-            __( 'Please fill in the below', Enum::PLUGIN_KEY), [self::class, 'settings_section_callback'],
+            'Please fill in the below',
+            [self::class, 'settings_section_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG
         );
 
         // Register a new field in the "wporg_section_developers" section, inside the "wporg" page.
         add_settings_field(
-            'wp_bus_field_pill',
+            'wp_bus_field_01',
             // Use $args' label_for to populate the id inside the callback.
-            __( 'Pill', 'wporg' ),
+            'Field 01',
             [self::class, 'field_dropdown_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
             array(
-                'label_for'         => 'wporg_field_pill',
-                'class'             => 'wporg_row',
+                'label_for'         => 'field_01',
+                'class'             => 'wo-bus-row',
                 'field_custom_data' => 'custom',
             )
         );
     }
 
-    public static function settings_section_callback( $args ) {
-        ?>
-        <p id="<?php echo esc_attr( $args['id'] ); ?>"><?php esc_html_e( 'Follow the white rabbit.', 'wporg' ); ?></p>
-        <?php
+    public static function settings_section_callback( $args )
+    {
+        //silence for now
     }
 
     /**
@@ -104,14 +105,16 @@ class BusPluginClass
      */
     public static function field_dropdown_callback( $args ) {
         // Get the value of the setting we've registered with register_setting()
-        $options = get_option( 'wporg_options' );
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
         $timber = new Timber();
-        $field_dropdown_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'fields_settings_dropdown.twig';
-
+        $field_dropdown_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'field_settings_dropdown.twig';
+        d($args);
+        d($options);
         if (file_exists($field_dropdown_tpl)) {
-            $context['label_for'] = esc_attr( $args['label_for'] );;
-            $context['field_custom_data'] = esc_attr( $args['wporg_custom_data'] );;
+            $context['field01_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr( $args['label_for'] );
+            $context['field_custom_data'] = esc_attr( $args['field_custom_data'] );
 
             $timber::render($field_dropdown_tpl, $context);
         }
@@ -158,7 +161,10 @@ class BusPluginClass
         $settings_page_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'page_settings.twig';
 
         if (file_exists($settings_page_tpl)) {
-            $context[] = '';
+            $context['admin_page_title'] = $title;
+            $context['settings_fields'] = new FunctionWrapper('settings_fields', [Enum::SETTINGS_PAGE_OPTION_GROUP]);
+            $context['do_settings_sections'] = new FunctionWrapper('do_settings_sections', [Enum::ADMIN_SETTINGS_MENU_SLUG]);
+            $context['submit_button'] = new FunctionWrapper('submit_button', ['Save Settings']);
 
             $timber::render($settings_page_tpl, $context);
         }
