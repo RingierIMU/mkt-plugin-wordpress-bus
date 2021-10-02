@@ -1,0 +1,8 @@
+<div class="wrap">
+    <h1>{{ admin_page_title }}</h1>
+    <form action="options.php" method="post">
+        {% do settings_fields('wp_bus_settingspage_group') %}
+        {% do do_settings_sections('wp-bus-api') %}
+        {% do submit_button('Save Settings') %}
+    </form>
+</div>
