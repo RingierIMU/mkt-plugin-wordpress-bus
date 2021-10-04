@@ -79,23 +79,34 @@ class AdminSettingsPage
         unset($timber);
     }
 
+    public function add_fields_via_settingsAPI()
+    {
+        $this->add_field_bus_status();
+        $this->add_field_venture_config();
+        $this->add_field_api_username();
+        $this->add_field_api_password();
+        $this->add_field_api_endpoint();
+        $this->add_field_slack_hoook_url();
+        $this->add_field_slack_channel_name();
+        $this->add_field_slack_bot_name();
+    }
+
     /* ******************************************** */
     //FIELD - bus_status
     /* ******************************************** */
-    public function add_fields_via_settingsAPI()
+    public function add_field_bus_status()
     {
-        // field BUS STATUS - Register new field for BUS ON/OFF
         add_settings_field(
-            'wp_bus_field_bus_status',
+            'wp_bus_' . Enum::FIELD_BUS_STATUS,
             // Use $args' label_for to populate the id inside the callback.
             'Enable Bus API',
             [self::class, 'field_bus_status_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
             array(
-                'label_for'         => 'field_bus_status',
+                'label_for'         => Enum::FIELD_BUS_STATUS,
                 'class'             => 'wp-bus-row',
-                'field_custom_data' => 'custom',
+                'field_custom_data' => Enum::FIELD_BUS_STATUS,
             )
         );
     }
@@ -123,17 +134,13 @@ class AdminSettingsPage
             $bus_status_selected_on = selected( $options[ $args['label_for'] ], 'on', false);
             $bus_status_selected_off = selected( $options[ $args['label_for'] ], 'off', false);
         }
-        d($bus_status_selected_on);
-        d($bus_status_selected_off);
-        d(get_option('field_bus_status'));
-        d(get_option('wp_bus_settingspage_options'));
 
         if (file_exists($field_bus_status_tpl)) {
             $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
             $context['label_for'] = esc_attr($args['label_for']);
             $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_custom_data_selected_on'] = $bus_status_selected_on;
-            $context['field_custom_data_selected_off'] = $bus_status_selected_off;
+            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
+            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
 
             $timber::render($field_bus_status_tpl, $context);
         }
@@ -141,6 +148,210 @@ class AdminSettingsPage
     }
 
     /* ******************************************** */
-    //FIELD -
+    //FIELD - VENTURE CONFIG
     /* ******************************************** */
+    public function add_field_venture_config()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_VENTURE_CONFIG,
+            // Use $args' label_for to populate the id inside the callback.
+            'Venture Config',
+            [self::class, 'field_venture_config_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_VENTURE_CONFIG,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_VENTURE_CONFIG,
+            )
+        );
+    }
+
+    /**
+     * field venture_config callback function.
+     *
+     * @param array $args
+     */
+    public static function field_venture_config_callback($args)
+    {
+        self::render_field_tpl($args, 'field_venture_config.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - API USERNAME
+    /* ******************************************** */
+    public function add_field_api_username()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_API_USERNAME,
+            // Use $args' label_for to populate the id inside the callback.
+            'API Username',
+            [self::class, 'field_api_username_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_API_USERNAME,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_API_USERNAME,
+            )
+        );
+    }
+
+    public static function field_api_username_callback($args)
+    {
+        self::render_field_tpl($args, 'field_api_username.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - API PASSWORD
+    /* ******************************************** */
+    public function add_field_api_password()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_API_PASSWORD,
+            // Use $args' label_for to populate the id inside the callback.
+            'API Password',
+            [self::class, 'field_api_password_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_API_PASSWORD,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_API_PASSWORD,
+            )
+        );
+    }
+
+    public static function field_api_password_callback($args)
+    {
+        self::render_field_tpl($args, 'field_api_password.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - API Endpoint
+    /* ******************************************** */
+    public function add_field_api_endpoint()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_API_ENDPOINT,
+            // Use $args' label_for to populate the id inside the callback.
+            'API Endpoint (URL)',
+            [self::class, 'field_api_endpoint_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_API_ENDPOINT,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_API_ENDPOINT,
+            )
+        );
+    }
+
+    public static function field_api_endpoint_callback($args)
+    {
+        self::render_field_tpl($args, 'field_api_endpoint.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - Slack Hook URL
+    /* ******************************************** */
+    public function add_field_slack_hoook_url()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_SLACK_HOOK_URL,
+            // Use $args' label_for to populate the id inside the callback.
+            'Slack Hook URL',
+            [self::class, 'field_slack_hook_url_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_SLACK_HOOK_URL,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_SLACK_HOOK_URL,
+            )
+        );
+    }
+
+    public static function field_slack_hook_url_callback($args)
+    {
+        self::render_field_tpl($args, 'field_slack_hook_url.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - Slack Channel Name
+    /* ******************************************** */
+    public function add_field_slack_channel_name()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_SLACK_CHANNEL_NAME,
+            // Use $args' label_for to populate the id inside the callback.
+            'Slack Channel Name',
+            [self::class, 'field_slack_channel_name_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_SLACK_CHANNEL_NAME,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_SLACK_CHANNEL_NAME,
+            )
+        );
+    }
+
+    public static function field_slack_channel_name_callback($args)
+    {
+        self::render_field_tpl($args, 'field_slack_channel_name.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - Slack Bot Name
+    /* ******************************************** */
+    public function add_field_slack_bot_name()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_SLACK_BOT_NAME,
+            // Use $args' label_for to populate the id inside the callback.
+            'Slack Bot Name',
+            [self::class, 'field_slack_bot_name_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_SLACK_BOT_NAME,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_SLACK_BOT_NAME,
+            )
+        );
+    }
+
+    public static function field_slack_bot_name_callback($args)
+    {
+        self::render_field_tpl($args, 'field_slack_bot_name.twig');
+    }
+
+    /**
+     * @param $args
+     * @param $tpl_name
+     */
+    private static function render_field_tpl($args, $tpl_name): void
+    {
+        // Get the value of the setting we've registered with register_setting()
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $timber = new Timber();
+        $field_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . $tpl_name;
+
+        $field_value = '';
+        if (isset($options[$args['label_for']])) {
+            $field_value = $options[$args['label_for']];
+        }
+
+        if (file_exists($field_tpl)) {
+            $context['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr($args['label_for']);
+            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
+            $context['field_value'] = esc_attr($field_value);
+
+            $timber::render($field_tpl, $context);
+        }
+        unset($timber);
+    }
 }
