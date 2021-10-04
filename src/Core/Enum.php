@@ -4,7 +4,7 @@ namespace RingierBusPlugin;
 
 class Enum
 {
-    const PLUGIN_KEY = 'wp-bus';
+    const PLUGIN_KEY = 'WP_BUS';
     const SETTINGS_PAGE_OPTION_GROUP = 'wp_bus_settingspage_group';
     const SETTINGS_PAGE_OPTION_NAME = 'wp_bus_settingspage_options';
     //ADMIN SETTINGS PAGE
