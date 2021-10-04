@@ -89,6 +89,7 @@ class AdminSettingsPage
         $this->add_field_slack_hoook_url();
         $this->add_field_slack_channel_name();
         $this->add_field_slack_bot_name();
+        $this->add_field_backoff_duration();
     }
 
     /* ******************************************** */
@@ -327,6 +328,34 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_bot_name.twig');
     }
 
+    /* ******************************************** */
+    //FIELD - Backoff Strategy (in Minutes)
+    /* ******************************************** */
+    public function add_field_backoff_duration()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_BACKOFF_DURATION,
+            // Use $args' label_for to populate the id inside the callback.
+            'Backoff Duration',
+            [self::class, 'field_backoff_duration_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_BACKOFF_DURATION,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_BACKOFF_DURATION,
+            )
+        );
+    }
+
+    public static function field_backoff_duration_callback($args)
+    {
+        self::render_field_tpl($args, 'field_backoff_duration.twig');
+    }
+
+    /* ******************************************** */
+    //REFACTORED METHODS
+    /* ******************************************** */
     /**
      * @param $args
      * @param $tpl_name

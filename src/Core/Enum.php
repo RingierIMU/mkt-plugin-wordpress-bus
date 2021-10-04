@@ -18,6 +18,7 @@ class Enum
     const FIELD_API_USERNAME = 'field_bus_api_username';
     const FIELD_API_PASSWORD = 'field_bus_api_password';
     const FIELD_API_ENDPOINT = 'field_bus_api_endpoint';
+    const FIELD_BACKOFF_DURATION = 'field_bus_backoff_duration';
     const FIELD_SLACK_HOOK_URL = 'field_bus_slack_hook_url';
     const FIELD_SLACK_CHANNEL_NAME = 'field_bus_slack_channel_name';
     const FIELD_SLACK_BOT_NAME = 'field_bus_slack_bot_name';
