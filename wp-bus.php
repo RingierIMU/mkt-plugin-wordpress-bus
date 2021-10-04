@@ -42,8 +42,8 @@
  * Make sure we don't expose any info if called directly
  */
 if (!function_exists('add_action')) {
-    header( 'Status: 403 Forbidden' );
-    header( 'HTTP/1.1 403 Forbidden' );
+    header('Status: 403 Forbidden');
+    header('HTTP/1.1 403 Forbidden');
     exit;
 }
 
@@ -54,7 +54,7 @@ define('DS', DIRECTORY_SEPARATOR);
 define('WP_BUS_RINGIER_VERSION', '1.0.0');
 define('WP_BUS_RINGIER_MINIMUM_WP_VERSION', '4.0');
 define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
-define( 'WP_BUS_RINGIER_BASENAME', plugin_basename( WP_BUS_RINGIER_PLUGIN_DIR ) );
+define('WP_BUS_RINGIER_BASENAME', plugin_basename(WP_BUS_RINGIER_PLUGIN_DIR));
 define('WP_BUS_RINGIER_PLUGIN_VIEWS', WP_BUS_RINGIER_PLUGIN_DIR . 'views' . DS);
 
 /**
@@ -65,12 +65,12 @@ require_once WP_BUS_RINGIER_PLUGIN_DIR . 'src/wp-bus-main.php';
 /**
  * Register main Hooks
  */
-register_activation_hook( __FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_activation']);
-register_deactivation_hook( __FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_deactivation']);
+register_activation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_activation']);
+register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_deactivation']);
 
 /**
  * Load the admin page interface
  */
 if (is_admin()) {
-    add_action( 'init', ['RingierBusPlugin\\BusPluginClass', 'admin_init']);
+    add_action('init', ['RingierBusPlugin\\BusPluginClass', 'admin_init']);
 }
