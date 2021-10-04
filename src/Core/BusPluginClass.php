@@ -18,6 +18,7 @@ class BusPluginClass
      */
     public static function plugin_activation()
     {
+        add_option( Enum::PLUGIN_KEY, true );
         //nothing for now
         logthis('bus_plugin_activated');
     }
@@ -47,144 +48,35 @@ class BusPluginClass
     }
 
     /**
+     * triggered when a user has deactivated the plugin
+     */
+    public static function plugin_uninstall()
+    {
+        logthis('plugin_uninstall hook called');
+        delete_option( Enum::SETTINGS_PAGE_OPTION_NAME );
+        delete_option( Enum::PLUGIN_KEY );
+    }
+
+    /**
      * Render the admin pages
      */
     public static function admin_init()
     {
-        add_action( 'admin_menu', [self::class, 'handle_admin_ui']);
+        //if on plugin activation
+        if ( get_option( Enum::PLUGIN_KEY ) ) {
+            delete_option( Enum::PLUGIN_KEY );
+
+            //initially turn the BUS_API OFF
+            add_option(Enum::SETTINGS_PAGE_OPTION_NAME, ['field_bus_status' => 'off']);
+        }
+        //Now do normal stuff
+        add_action('admin_menu', [self::class, 'handle_admin_ui']);
     }
 
-    /**
-     * Main method for handling the admin pages
-     */
     public static function handle_admin_ui()
     {
-        self::add_admin_pages();
-
-        // Register a new setting for our page.
-        register_setting( Enum::SETTINGS_PAGE_OPTION_GROUP, Enum::SETTINGS_PAGE_OPTION_NAME );
-
-        // Register a new section in our page.
-        add_settings_section(
-            Enum::ADMIN_SETTINGS_SECTION_1,
-            'Please fill in the below',
-            [self::class, 'settings_section_callback'],
-            Enum::ADMIN_SETTINGS_MENU_SLUG
-        );
-
-        // Register a new field in the "wporg_section_developers" section, inside the "wporg" page.
-        add_settings_field(
-            'wp_bus_field_01',
-            // Use $args' label_for to populate the id inside the callback.
-            'Field 01',
-            [self::class, 'field_dropdown_callback'],
-            Enum::ADMIN_SETTINGS_MENU_SLUG,
-            Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => 'field_01',
-                'class'             => 'wo-bus-row',
-                'field_custom_data' => 'custom',
-            )
-        );
-    }
-
-    public static function settings_section_callback( $args )
-    {
-        //silence for now
-    }
-
-    /**
-     * Pill field callbakc function.
-     *
-     * WordPress has magic interaction with the following keys: label_for, class.
-     * - the "label_for" key value is used for the "for" attribute of the <label>.
-     * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
-     * Note: you can add custom key value pairs to be used inside your callbacks.
-     *
-     * @param array $args
-     */
-    public static function field_dropdown_callback( $args ) {
-        // Get the value of the setting we've registered with register_setting()
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-
-        $timber = new Timber();
-        $field_dropdown_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'field_settings_dropdown.twig';
-        d($args);
-        d($options);
-        if (file_exists($field_dropdown_tpl)) {
-            $context['field01_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr( $args['label_for'] );
-            $context['field_custom_data'] = esc_attr( $args['field_custom_data'] );
-
-            $timber::render($field_dropdown_tpl, $context);
-        }
-        unset($timber);
-    }
-
-    /**
-     * Register the Admin pages for our plugin
-     */
-    public static function add_admin_pages()
-    {
-        add_menu_page(
-            Enum::ADMIN_SETTINGS_PAGE_TITLE,
-            Enum::ADMIN_SETTINGS_MENU_TITLE,
-            'manage_options',
-            Enum::ADMIN_SETTINGS_MENU_SLUG,
-            [self::class, 'render_settings_page'],
-            'dashicons-rest-api',
-            20
-        );
-
-        add_submenu_page(
-            Enum::ADMIN_SETTINGS_MENU_SLUG,
-            Enum::ADMIN_LOG_PAGE_TITLE,
-            Enum::ADMIN_LOG_MENU_TITLE,
-            'manage_options',
-            Enum::ADMIN_LOG_MENU_SLUG,
-            [self::class, 'render_log_page']
-        );
-    }
-
-    /**
-     * Handle & Render our Admin Settings Page
-     */
-    public static function render_settings_page()
-    {
-        global $title;
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
-        }
-
-        $timber = new Timber();
-        $settings_page_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'page_settings.twig';
-
-        if (file_exists($settings_page_tpl)) {
-            $context['admin_page_title'] = $title;
-            $context['settings_fields'] = new FunctionWrapper('settings_fields', [Enum::SETTINGS_PAGE_OPTION_GROUP]);
-            $context['do_settings_sections'] = new FunctionWrapper('do_settings_sections', [Enum::ADMIN_SETTINGS_MENU_SLUG]);
-            $context['submit_button'] = new FunctionWrapper('submit_button', ['Save Settings']);
-
-            $timber::render($settings_page_tpl, $context);
-        }
-        unset($timber);
-    }
-
-    public static function render_log_page()
-    {
-        global $title;
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
-        }
-
-        print '<div class="wrap">';
-        print "<h1>$title</h1>";
-
-        submit_button( 'Click me!' );
-
-        print '</div>';
+        $adminSettingsPage = new AdminSettingsPage();
+        $adminSettingsPage->handle_admin_ui();
     }
 
     public static function register_wp_bus_plugin_scripts()
