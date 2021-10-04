@@ -19,6 +19,7 @@ class BusPluginClass
     public static function plugin_activation()
     {
         add_option( Enum::PLUGIN_KEY, true );
+        logthis('Activation: set plugin_key to true');
         //nothing for now
         logthis('bus_plugin_activated');
     }
@@ -64,10 +65,11 @@ class BusPluginClass
     {
         //if on plugin activation
         if ( get_option( Enum::PLUGIN_KEY ) ) {
+            logthis('POST Activation: delete plugin_key now');
             delete_option( Enum::PLUGIN_KEY );
 
             //initially turn the BUS_API OFF
-            add_option(Enum::SETTINGS_PAGE_OPTION_NAME, ['field_bus_status' => 'off']);
+            update_option(Enum::SETTINGS_PAGE_OPTION_NAME, [Enum::FIELD_BUS_STATUS => 'off']);
         }
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handle_admin_ui']);
