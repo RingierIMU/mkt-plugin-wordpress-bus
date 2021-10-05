@@ -53,7 +53,7 @@ if (!function_exists('add_action')) {
 define('DS', DIRECTORY_SEPARATOR);
 define('WP_BUS_RINGIER_VERSION', '1.0.0');
 define('WP_BUS_RINGIER_MINIMUM_WP_VERSION', '4.0');
-define('WP_BUS_RINGIER_PLUGIN_DIR_URL', plugin_dir_url( __FILE__ )); //has trailing slash at end
+define('WP_BUS_RINGIER_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailing slash at end
 define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
 define('WP_BUS_RINGIER_BASENAME', plugin_basename(WP_BUS_RINGIER_PLUGIN_DIR));
 define('WP_BUS_RINGIER_PLUGIN_VIEWS', WP_BUS_RINGIER_PLUGIN_DIR . 'views' . DS);

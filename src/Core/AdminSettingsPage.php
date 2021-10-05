@@ -132,8 +132,8 @@ class AdminSettingsPage
 
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected( $options[ $args['label_for'] ], 'on', false);
-            $bus_status_selected_off = selected( $options[ $args['label_for'] ], 'off', false);
+            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
+            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
         }
 
         if (file_exists($field_bus_status_tpl)) {
