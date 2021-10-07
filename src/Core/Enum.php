@@ -17,6 +17,7 @@ class Enum
 
     //FIELDS
     const FIELD_BUS_STATUS = 'field_bus_status';
+    const FIELD_APP_LOCALE = 'field_bus_app_locale';
     const FIELD_VENTURE_CONFIG = 'field_venture_config';
     const FIELD_API_USERNAME = 'field_bus_api_username';
     const FIELD_API_PASSWORD = 'field_bus_api_password';
