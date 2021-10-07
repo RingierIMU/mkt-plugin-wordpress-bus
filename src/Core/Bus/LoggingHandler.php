@@ -12,7 +12,7 @@ namespace RingierBusPlugin\Bus;
 
 use Monolog\Handler\SlackWebhookHandler;
 use Monolog\Logger;
-use RingierBlog\Enum;
+use RingierBusPlugin\Enum;
 
 class LoggingHandler
 {
@@ -46,13 +46,13 @@ class LoggingHandler
 
             //create handler(s)
             $slackHandler = new SlackWebhookHandler(
-                $_ENV['SLACK_HOOK_URL'],
-                $_ENV['SLACK_CHANNEL_NAME'],
-                $_ENV['SLACK_BOT_NAME']
+                $_ENV[Enum::ENV_SLACK_HOOK_URL],
+                $_ENV[Enum::ENV_SLACK_CHANNEL_NAME],
+                $_ENV[Enum::ENV_SLACK_BOT_NAME]
             );
 
             //build our logger
-            self::$_instance = new Logger(Enum::LOGGER_CHANNEL_NAME);
+            self::$_instance = new Logger(Enum::ENV_SLACK_CHANNEL_NAME);
 
             //push handler into logger's stack
             self::$_instance->pushHandler($slackHandler);

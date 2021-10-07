@@ -165,7 +165,7 @@ class BusHelper
     {
         try {
             $authClient = new Auth();
-            $authClient->setParameters($_ENV['BUS_ENDPOINT'], $_ENV['VENTURE_CONFIG'], $_ENV['BUS_API_USERNAME'], $_ENV['BUS_API_PASSWORD']);
+            $authClient->setParameters($_ENV[Enum::ENV_BUS_ENDPOINT], $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
 
             $result = $authClient->acquireToken();
             if ($result === true) {
@@ -197,7 +197,7 @@ class BusHelper
     public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, $run_after_minutes = false)
     {
         if ($run_after_minutes === false) {
-            $minutesToRun = getenv('BACKOFF_FOR_MINUTES') ?: '30';
+            $minutesToRun = getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30;
         }
         $minutesToRun = (int) $run_after_minutes;
         $timestampNow = date_timestamp_get(date_create()); //get a UNIX Timestamp for NOW
