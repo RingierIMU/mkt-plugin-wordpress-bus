@@ -72,23 +72,13 @@ class BusPluginClass
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
         //Register Bus API Mechanism
-        self::registerBusApiActions();
+
     }
 
     public static function handleAdminUI()
     {
         $adminSettingsPage = new AdminSettingsPage();
         $adminSettingsPage->handleAdminUI();
-    }
-
-    /**
-     * Registers the BUS API action within WordPress
-     */
-    public static function registerBusApiActions(): void
-    {
-        add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
-//        add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
-//        add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
     }
 
     public static function register_wp_bus_plugin_scripts()

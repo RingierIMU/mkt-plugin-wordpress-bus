@@ -1,6 +1,10 @@
 <?php
-namespace RingierBusPlugin;
-
+/**
+ * A some handy functions to use directly without namespace
+ *
+ * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ * @github wkhayrattee
+ */
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 
