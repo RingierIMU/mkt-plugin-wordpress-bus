@@ -159,7 +159,18 @@ class Utils
      */
     public static function l($message, $logLevel = 'alert', array $context = [])
     {
-        LoggingHandler::getInstance()->log($logLevel, $message, $context);
+        //Enable logging to Slack ONLY IF it was enabled
+        if ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON') {
+            LoggingHandler::getInstance()->log($logLevel, $message, $context);
+
+            infologthis('--- --- ---');
+            infologthis('[slack] a message was sent to slack');
+            infologthis('--- --- ---');
+        } else {
+            errorlogthis('--- --- ---');
+            errorlogthis('[slack] ERROR - could not sent to Slack, it is probably OFF');
+            errorlogthis('--- --- ---');
+        }
     }
 
     /**
