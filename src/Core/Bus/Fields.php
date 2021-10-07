@@ -137,17 +137,13 @@ class Fields
         $this->field_bus_slack_bot_name = '';
 
         $this->is_slack_enabled = true;
-        if ($this->field_bus_status === true) {
+        if ($this->is_bus_enabled === true) {
             $this->field_bus_slack_hook_url = $optionList['field_bus_slack_hook_url'];
             $this->field_bus_slack_channel_name = $optionList['field_bus_slack_channel_name'];
             $this->field_bus_slack_bot_name = $optionList['field_bus_slack_bot_name'];
         }
 
         $error = '';
-        errorlogthis('---- field_bus_slack_hook_url:');
-        errorlogthis($this->field_bus_slack_hook_url);
-        errorlogthis('---- field_bus_slack_channel_name:');
-        errorlogthis($this->field_bus_slack_channel_name);
         if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
             $error .= 'field_bus_slack_hook_url|';
             infologthis('[fields] Slack hook url is empty');
