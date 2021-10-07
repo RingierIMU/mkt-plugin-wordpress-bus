@@ -44,9 +44,13 @@ class BusHelper
      */
     public static function registerBusApiActions(): void
     {
-        add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
-        add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
-        add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
+        $fieldsObject = new Fields();
+        //Register Bus Events ONLY IF it is enabled
+        if ($fieldsObject->is_bus_enabled === true) {
+            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+            add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
+            add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
+        }
     }
 
     /**
