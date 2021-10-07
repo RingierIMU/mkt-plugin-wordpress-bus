@@ -82,6 +82,7 @@ class AdminSettingsPage
     public function addFieldsViaSettingsAPI()
     {
         $this->add_field_bus_status();
+        $this->add_field_app_locale();
         $this->add_field_venture_config();
         $this->add_field_api_username();
         $this->add_field_api_password();
@@ -176,6 +177,31 @@ class AdminSettingsPage
     public static function field_venture_config_callback($args)
     {
         self::render_field_tpl($args, 'field_venture_config.twig');
+    }
+
+    /* ******************************************** */
+    //FIELD - API Locale
+    /* ******************************************** */
+    public function add_field_app_locale()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_APP_LOCALE,
+            // Use $args' label_for to populate the id inside the callback.
+            'APP Locale',
+            [self::class, 'field_app_locale_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            array(
+                'label_for'         => Enum::FIELD_APP_LOCALE,
+                'class'             => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_APP_LOCALE,
+            )
+        );
+    }
+
+    public static function field_app_locale_callback($args)
+    {
+        self::render_field_tpl($args, 'field_app_locale.twig');
     }
 
     /* ******************************************** */
