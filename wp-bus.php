@@ -83,3 +83,8 @@ register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugi
 if (is_admin()) {
     add_action('init', ['RingierBusPlugin\\BusPluginClass', 'adminInit']);
 }
+
+/**
+ * Register our BUS API Mechanism
+ */
+\RingierBusPlugin\Bus\BusHelper::registerBusApiActions();
