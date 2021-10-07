@@ -9,11 +9,6 @@
 Thumbs.db
 debug.log
 
-# NOTE: custom to usringier
-# BUT these need to be commented when GITPUSH on env branches
-/composer.lock
-
-
 # wpengine specific
 .smushit-status
 .gitattributes
