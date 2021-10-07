@@ -9,6 +9,16 @@ class Enum
     const SETTINGS_PAGE_OPTION_GROUP = 'wp_bus_settingspage_group';
     const SETTINGS_PAGE_OPTION_NAME = 'wp_bus_settingspage_options';
 
+    //Global ENV - use RBP to prevent name class, RBA as in Ringier Bus Plugin
+    const ENV_BACKOFF_FOR_MINUTES = 'RBP_BACKOFF_FOR_MINUTES';
+    const ENV_VENTURE_CONFIG = 'RBP_VENTURE_CONFIG';
+    const ENV_BUS_ENDPOINT = 'RBP_BUS_ENDPOINT';
+    const ENV_BUS_API_USERNAME = 'RBP_BUS_API_USERNAME';
+    const ENV_BUS_API_PASSWORD = 'RBP_BUS_API_PASSWORD';
+    const ENV_SLACK_HOOK_URL = 'RBP_SLACK_HOOK_URL';
+    const ENV_SLACK_CHANNEL_NAME = 'RBP_SLACK_CHANNEL_NAME';
+    const ENV_SLACK_BOT_NAME = 'RBP_SLACK_BOT_NAME';
+
     //ADMIN SETTINGS PAGE
     const ADMIN_SETTINGS_PAGE_TITLE = 'Ringier Bus API Settings';
     const ADMIN_SETTINGS_MENU_TITLE = 'Bus API';
