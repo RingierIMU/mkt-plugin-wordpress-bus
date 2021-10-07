@@ -58,7 +58,7 @@ class BusPluginClass
     /**
      * Render the admin pages
      */
-    public static function admin_init()
+    public static function adminInit()
     {
         //if on plugin activation
         if (get_option(Enum::PLUGIN_KEY)) {
@@ -69,13 +69,26 @@ class BusPluginClass
             update_option(Enum::SETTINGS_PAGE_OPTION_NAME, [Enum::FIELD_BUS_STATUS => 'off']);
         }
         //Now do normal stuff
-        add_action('admin_menu', [self::class, 'handle_admin_ui']);
+        add_action('admin_menu', [self::class, 'handleAdminUI']);
+
+        //Register Bus API Mechanism
+        self::registerBusApiActions();
     }
 
-    public static function handle_admin_ui()
+    public static function handleAdminUI()
     {
         $adminSettingsPage = new AdminSettingsPage();
-        $adminSettingsPage->handle_admin_ui();
+        $adminSettingsPage->handleAdminUI();
+    }
+
+    /**
+     * Registers the BUS API action within WordPress
+     */
+    public static function registerBusApiActions(): void
+    {
+        add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+//        add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
+//        add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
     }
 
     public static function register_wp_bus_plugin_scripts()
@@ -91,7 +104,7 @@ class BusPluginClass
      * We want to offload responsibility of managing custom fields to ACF
      * Simply because it does it so nicely and with powerful flexibility
      */
-    public static function inject_acf()
+    public static function injectACF()
     {
         // Define path and URL to the ACF plugin.
         define('MY_ACF_PATH', WP_BUS_RINGIER_PLUGIN_DIR . 'includes/acf/');
@@ -157,6 +170,7 @@ class BusPluginClass
 
     /**
      * register the is_post_new custom field
+     * definition of our custom field here
      */
     public static function register_acf_custom_fields()
     {

@@ -19,9 +19,9 @@ class AdminSettingsPage
     /**
      * Main method for handling the admin pages
      */
-    public function handle_admin_ui()
+    public function handleAdminUI()
     {
-        $this->add_admin_pages();
+        $this->addAdminPages();
 
         // Register a new setting for our page.
         register_setting(Enum::SETTINGS_PAGE_OPTION_GROUP, Enum::SETTINGS_PAGE_OPTION_NAME);
@@ -30,34 +30,34 @@ class AdminSettingsPage
         add_settings_section(
             Enum::ADMIN_SETTINGS_SECTION_1,
             'Please fill in the below',
-            [self::class, 'settings_section_callback'],
+            [self::class, 'settingsSectionCallback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG
         );
     }
 
-    public static function settings_section_callback($args)
+    public static function settingsSectionCallback($args)
     {
         //silence for now
     }
 
-    public function add_admin_pages()
+    public function addAdminPages()
     {
         add_menu_page(
             Enum::ADMIN_SETTINGS_PAGE_TITLE,
             Enum::ADMIN_SETTINGS_MENU_TITLE,
             'manage_options',
             Enum::ADMIN_SETTINGS_MENU_SLUG,
-            [self::class, 'render_settings_page'],
+            [self::class, 'renderSettingsPage'],
             'dashicons-rest-api',
             20
         );
-        $this->add_fields_via_settingsAPI();
+        $this->addFieldsViaSettingsAPI();
     }
 
     /**
      * Handle & Render our Admin Settings Page
      */
-    public static function render_settings_page()
+    public static function renderSettingsPage()
     {
         global $title;
 
@@ -79,7 +79,7 @@ class AdminSettingsPage
         unset($timber);
     }
 
-    public function add_fields_via_settingsAPI()
+    public function addFieldsViaSettingsAPI()
     {
         $this->add_field_bus_status();
         $this->add_field_venture_config();

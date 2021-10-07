@@ -74,11 +74,11 @@ register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugi
 /**
  * Leverage the ACF plugin superpowers
  */
-\RingierBusPlugin\BusPluginClass::inject_acf();
+\RingierBusPlugin\BusPluginClass::injectACF();
 
 /**
  * Load the admin page interface
  */
 if (is_admin()) {
-    add_action('init', ['RingierBusPlugin\\BusPluginClass', 'admin_init']);
+    add_action('init', ['RingierBusPlugin\\BusPluginClass', 'adminInit']);
 }
