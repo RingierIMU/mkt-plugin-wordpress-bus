@@ -26,8 +26,8 @@ namespace RingierBusPlugin\Bus;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use RingierBlog\Enum;
-use RingierBlog\Utils;
+use RingierBusPlugin\Enum;
+use RingierBusPlugin\Utils;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 
@@ -48,7 +48,7 @@ class Auth implements AuthenticationInterface
     public function __construct()
     {
         $this->authToken = null;
-        $this->cache = new FilesystemAdapter(Enum::CACHE_NAMESPACE, 0, Enum::CACHE_DIR);
+        $this->cache = new FilesystemAdapter(Enum::CACHE_NAMESPACE, 0, WP_BUS_RINGIER_PLUGIN_CACHE_DIR);
     }
 
     public function setParameters($endpointUrl, $ventureConfig, $username, $password)
@@ -72,10 +72,10 @@ class Auth implements AuthenticationInterface
 
     public function flushToken()
     {
-        Utils::logme('Clearing Token: ' . $this->authToken);
+        infologthis('[auth_api] Clearing Token: ' . $this->authToken);
         $this->authToken = null;
         $this->cache->delete(Enum::CACHE_KEY);
-        Utils::logme('token cleared done!');
+        infologthis('[auth_api] token cleared done!');
     }
 
     /**
@@ -117,6 +117,18 @@ class Auth implements AuthenticationInterface
                 return null;
             } catch (RequestException $exception) {
                 $this->flushToken();
+
+                infologthis('--- --- ---');
+                infologthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
+                infologthis('--- --- ---');
+
+                errorlogthis('--- --- ---');
+                errorlogthis('--- --- ---');
+                errorlogthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
+                errorlogthis('[auth_api] error thrown below:');
+                errorlogthis($exception->getMessage());
+                errorlogthis('--- --- ---');
+                errorlogthis('--- --- ---');
 
                 throw $exception; //will be catched by our outer call to re-schedule this action
             }

@@ -57,6 +57,7 @@ define('WP_BUS_RINGIER_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailin
 define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
 define('WP_BUS_RINGIER_BASENAME', plugin_basename(WP_BUS_RINGIER_PLUGIN_DIR));
 define('WP_BUS_RINGIER_PLUGIN_VIEWS', WP_BUS_RINGIER_PLUGIN_DIR . 'views' . DS);
+define('WP_BUS_RINGIER_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . DS . 'cache' . DS);
 
 /**
  * load our main file now with composer autoloading

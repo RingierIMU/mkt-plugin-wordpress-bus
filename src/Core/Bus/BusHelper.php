@@ -3,11 +3,10 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
-
 namespace RingierBusPlugin\Bus;
 
-use RingierBlog\Enum;
-use RingierBlog\Utils;
+use RingierBusPlugin\Enum;
+use RingierBusPlugin\Utils;
 
 class BusHelper
 {
@@ -47,7 +46,7 @@ class BusHelper
     {
         add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
         add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
-        add_action(self::scheduledHookName(), [self::class, 'cronSendToBusScheduled'], 10, 3);
+        add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
     }
 
     /**
@@ -70,7 +69,7 @@ class BusHelper
      */
     public static function triggerArticleEvent(\WP_Post $post)
     {
-        Utils::logme('triggerArticleEvent called');
+        infologthis('triggerArticleEvent called');
         $post_ID = $post->ID;
 
         $post_ID = Utils::getParentPostId($post_ID);
@@ -87,7 +86,7 @@ class BusHelper
             } else {
                 $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
             }
-            Utils::logme('$articleTriggerMode is: ' . $articleTriggerMode);
+            infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
         }
         /*
          * we will now schedule the event after 1min instead of instantly executing it, because:
@@ -118,9 +117,9 @@ class BusHelper
      */
     public static function triggerArticleDeletedEvent(\WP_Post $post)
     {
-        Utils::logme('publish_to_trash called');
+        infologthis('publish_to_trash called');
         $post_ID = Utils::getParentPostId($post->ID);
-        self::sendToBus('ArticleDeleted', $post_ID, $post);
+        self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
     }
 
     /**
@@ -138,10 +137,10 @@ class BusHelper
     {
         $blogKey = $_ENV['BLOG_KEY'];
         $message = <<<EOF
-            $blogKey: Scheduled CRON attempting to execute Queued "Push-to-BUS" for article (ID: $post_ID)..
+            $blogKey: Now attempting to execute Queued "Push-to-BUS" for article (ID: $post_ID)..
                     
             NOTE: 
-                If no error follows this one, means CRON was successful
+                If no error follows, means push-to-BUS was successful
                 (else task will be re-queued)
         EOF;
 
@@ -174,9 +173,12 @@ class BusHelper
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
+                infologthis('[error] A problem with Auth Token');
+                errorlogthis('[error] A problem with Auth Token');
                 throw new \Exception('A problem with Auth Token');
             }
         } catch (\Exception $exception) {
+            infologthis('[warning] failed to call BUS, rescheduling');
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
@@ -226,7 +228,7 @@ class BusHelper
 
         $blogKey = $_ENV['BLOG_KEY'];
         $message = <<<EOF
-            $blogKey: Push-to-BUS for article (ID: $post_ID) has just been Queued.
+            $blogKey: [Queuing] Push-to-BUS for article (ID: $post_ID) has just been queued.
             And will run in the next ($minutesToRun)mins..
             
             Args:
@@ -241,6 +243,6 @@ class BusHelper
      */
     public static function scheduledHookName()
     {
-        return 'hookSendToBusScheduled';
+        return Enum::HOOK_NAME_SCHEDULED_EVENTS;
     }
 }

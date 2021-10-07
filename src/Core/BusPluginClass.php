@@ -16,9 +16,9 @@ class BusPluginClass
     public static function plugin_activation()
     {
         add_option(Enum::PLUGIN_KEY, true);
-        logthis('Activation: set plugin_key to true');
+        infologthis('Activation: set plugin_key to true');
         //nothing for now
-        logthis('bus_plugin_activated');
+        infologthis('bus_plugin_activated');
     }
 
     /**
@@ -28,7 +28,7 @@ class BusPluginClass
      */
     public static function plugin_deactivation()
     {
-        logthis('bus_plugin_deactivated');
+        infologthis('bus_plugin_deactivated');
 
         // TODO: Remove any scheduled cron jobs.
 //        $akismet_cron_events = array(
@@ -50,7 +50,7 @@ class BusPluginClass
      */
     public static function plugin_uninstall()
     {
-        logthis('plugin_uninstall hook called');
+        infologthis('plugin_uninstall hook called');
         delete_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         delete_option(Enum::PLUGIN_KEY);
     }
@@ -62,7 +62,7 @@ class BusPluginClass
     {
         //if on plugin activation
         if (get_option(Enum::PLUGIN_KEY)) {
-            logthis('POST Activation: delete plugin_key now');
+            infologthis('POST Activation: delete plugin_key now');
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF

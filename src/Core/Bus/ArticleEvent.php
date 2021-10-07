@@ -24,12 +24,10 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
-
 namespace RingierBusPlugin\Bus;
 
-use function RingierApp\getLocale;
-use RingierBlog\Enum;
-use RingierBlog\Utils;
+use RingierBusPlugin\Enum;
+use RingierBusPlugin\Utils;
 
 class ArticleEvent
 {
@@ -76,10 +74,9 @@ class ArticleEvent
     /**
      * Will reuse $authClient object to send the Article Payload
      *
-     * param \WP_Post $post
-     *
      * @param int $post_ID
      * @param \WP_Post $post
+     * @throws \Exception
      */
     public function sendToBus(int $post_ID, \WP_Post $post)
     {
@@ -103,23 +100,43 @@ class ArticleEvent
                     $this->buildMainRequestBody($post_ID, $post),
                 ],
             ];
-//            Utils::logme(json_encode($this->buildMainRequestBody($post_ID, $post)));
+//            errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
             $response = $this->authClient->getHttpClient()->request(
                 'POST',
                 'events',
                 $requestBody
             );
+            infologthis('[api] attempting to push to bus');
             $bodyArray = json_decode((string) $response->getBody(), true);
-//            Utils::logme($bodyArray);
+            infologthis('[api] the push have probably succeeded at this point');
+//            errorlogthis($bodyArray);
         } catch (\Exception $exception) {
+            infologthis('[api] --- --- ---');
+            infologthis('[api] ERROR - could not push to BUS');
+            infologthis('[api] see below error message');
+            infologthis('[api] --- --- ---');
+
             $blogKey = $_ENV['BLOG_KEY'];
             $message = <<<EOF
-                            $blogKey: Please be informed: error occurred for article (ID: $post_ID)
+                            $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
                             [This job should be (re)queued in the next few seconds..]
                             
                             Error message below:
                             
                         EOF;
+
+            //log error to our custom log file - viewable via Admin UI
+            errorlogthis('[api] --- --- ---');
+            errorlogthis('[api] --- --- ---');
+            errorlogthis('[api] ERROR occurred, below error thrown:');
+            errorlogthis($message . $exception->getMessage()); //push to SLACK
+            errorlogthis('[api] --- --- ---');
+            errorlogthis('[api] ERROR occurred, below json response');
+            errorlogthis($bodyArray);
+            errorlogthis('[api] --- --- ---');
+            errorlogthis('[api] --- --- ---');
+
+            //send to slack
             Utils::l($message . $exception->getMessage()); //push to SLACK
 
             //clear Auth token on any error
