@@ -27,4 +27,7 @@ class Enum
     const ADMIN_LOG_PAGE_TITLE = 'Bus API Message Log';
     const ADMIN_LOG_MENU_TITLE = 'Message Log';
     const ADMIN_LOG_MENU_SLUG = 'wp-bus-log';
+
+    //Misc
+    const HOOK_NAME_SCHEDULED_EVENTS = 'hookSendToBusScheduled';
 }
