@@ -7,6 +7,8 @@
  */
 namespace RingierBusPlugin;
 
+use RingierBusPlugin\Bus\BusHelper;
+
 class BusPluginClass
 {
     /**
@@ -66,13 +68,20 @@ class BusPluginClass
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF
-            update_option(Enum::SETTINGS_PAGE_OPTION_NAME, [Enum::FIELD_BUS_STATUS => 'off']);
+            update_option(
+                Enum::SETTINGS_PAGE_OPTION_NAME,
+                [
+                    Enum::FIELD_BUS_STATUS => 'off',
+                    Enum::FIELD_APP_LOCALE => 'en_KE',
+                    Enum::FIELD_BACKOFF_DURATION => 30
+                ]
+            );
         }
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
         //Register Bus API Mechanism
-
+//        BusHelper::load_vars_into_env();
     }
 
     public static function handleAdminUI()
