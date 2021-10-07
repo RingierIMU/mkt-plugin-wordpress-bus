@@ -180,6 +180,7 @@ class Fields
         }
 
         if ($this->is_slack_enabled === true) {
+            $_ENV[Enum::ENV_SLACK_ENABLED] = 'ON';
             $_ENV[Enum::ENV_SLACK_HOOK_URL] = $this->field_bus_slack_hook_url;
             $_ENV[Enum::ENV_SLACK_CHANNEL_NAME] = $this->field_bus_slack_channel_name;
             $_ENV[Enum::ENV_SLACK_BOT_NAME] = $this->field_bus_slack_bot_name;
