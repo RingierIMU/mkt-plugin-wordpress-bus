@@ -8,6 +8,7 @@
  */
 namespace RingierBusPlugin\Bus;
 
+use Kint\Kint;
 use RingierBusPlugin\Enum;
 use RingierBusPlugin\Utils;
 
@@ -67,7 +68,7 @@ class Fields
         $this->field_bus_api_username = '';
         $this->field_bus_api_password = '';
         $this->field_bus_api_endpoint = '';
-        $this->field_bus_backoff_duration = '';
+        $this->field_bus_backoff_duration = 0;
 
         if ($this->is_bus_enabled === true) {
             $this->field_venture_config = $optionList['field_venture_config'];
@@ -75,7 +76,7 @@ class Fields
             $this->field_bus_api_password = $optionList['field_bus_api_password'];
             $this->field_bus_api_endpoint = $optionList['field_bus_api_endpoint'];
             $this->field_bus_backoff_duration = $optionList['field_bus_backoff_duration'];
-            $this->field_bus_locale = $optionList['field_bus_locale'];
+            $this->field_bus_locale = $optionList['field_bus_app_locale'];
         }
 
         $error = '';
@@ -96,7 +97,7 @@ class Fields
             infologthis('[fields] API endpoint url is empty');
         }
 
-        if (strlen($error > 0)) {
+        if (strlen($error) > 0) {
             $this->is_bus_enabled = false;
             infologthis('--- --- ---');
             infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
@@ -131,6 +132,10 @@ class Fields
      */
     public function initSlackFields($optionList)
     {
+        $this->field_bus_slack_hook_url = '';
+        $this->field_bus_slack_channel_name = '';
+        $this->field_bus_slack_bot_name = '';
+
         $this->is_slack_enabled = true;
         if ($this->field_bus_status === true) {
             $this->field_bus_slack_hook_url = $optionList['field_bus_slack_hook_url'];
@@ -139,6 +144,10 @@ class Fields
         }
 
         $error = '';
+        errorlogthis('---- field_bus_slack_hook_url:');
+        errorlogthis($this->field_bus_slack_hook_url);
+        errorlogthis('---- field_bus_slack_channel_name:');
+        errorlogthis($this->field_bus_slack_channel_name);
         if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
             $error .= 'field_bus_slack_hook_url|';
             infologthis('[fields] Slack hook url is empty');
@@ -148,10 +157,11 @@ class Fields
             infologthis('[fields] Slack Channel name is empty');
         }
 
-        if (strlen($error > 0)) {
+        if (strlen($error) > 0) {
             $this->is_slack_enabled = false;
             infologthis('--- --- ---');
-            infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
+            infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
+            errorlogthis($error);
             infologthis('--- --- ---');
 
             return false;
