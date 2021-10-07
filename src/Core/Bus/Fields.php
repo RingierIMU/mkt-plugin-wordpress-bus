@@ -49,6 +49,7 @@ class Fields
 
             $this->initBusFields($optionList);
             $this->initSlackFields($optionList);
+            $this->load_vars_into_env();
         }
     }
 
@@ -162,5 +163,26 @@ class Fields
             $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
         }
         return true;
+    }
+
+    /**
+     * Load all fields onto the global $_ENV
+     * Will only load if bus is enabled..etc
+     */
+    public function load_vars_into_env()
+    {
+        if ($this->is_bus_enabled === true) {
+            $_ENV[Enum::ENV_BUS_ENDPOINT] = $this->field_bus_api_endpoint;
+            $_ENV[Enum::ENV_BACKOFF_FOR_MINUTES] = $this->field_bus_backoff_duration;
+            $_ENV[Enum::ENV_VENTURE_CONFIG] = $this->field_venture_config;
+            $_ENV[Enum::ENV_BUS_API_USERNAME] = $this->field_bus_api_username;
+            $_ENV[Enum::ENV_BUS_API_PASSWORD] = $this->field_bus_api_password;
+        }
+
+        if ($this->is_slack_enabled === true) {
+            $_ENV[Enum::ENV_SLACK_HOOK_URL] = $this->field_bus_slack_hook_url;
+            $_ENV[Enum::ENV_SLACK_CHANNEL_NAME] = $this->field_bus_slack_channel_name;
+            $_ENV[Enum::ENV_SLACK_BOT_NAME] = $this->field_bus_slack_bot_name;
+        }
     }
 }
