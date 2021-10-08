@@ -251,7 +251,7 @@ class ArticleEvent
                 'culture' => getLocale(),
                 'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
             ],
-            'url' => [
+            'slug' => [
                 'culture' => getLocale(),
                 'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
             ],
