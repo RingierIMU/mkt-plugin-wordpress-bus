@@ -14,10 +14,10 @@ use RingierBusPlugin\Enum;
  * @param $message
  * @throws \Exception
  */
-function infologthis($message)
+function ringier_infologthis($message)
 {
     $log = new Logger('ringier_bus_plugin_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . DS . 'bus_plugin.log', Logger::INFO);
+    $stream = new StreamHandler(WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_MESSAGE, Logger::INFO);
     $log->pushHandler($stream);
     $log->info($message);
     unset($log);
@@ -29,10 +29,10 @@ function infologthis($message)
  * @param $message
  * @throws \Exception
  */
-function errorlogthis($message)
+function ringier_errorlogthis($message)
 {
     $log = new Logger('ringier_bus_plugin_error_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . DS . 'bus_plugin_error.log', Logger::ERROR);
+    $stream = new StreamHandler(WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_ERROR, Logger::ERROR);
     $log->pushHandler($stream);
     $log->error($message);
     unset($log);
@@ -45,7 +45,7 @@ function errorlogthis($message)
  *
  * @return mixed|string
  */
-function getLocale()
+function ringier_getLocale()
 {
     if (isset($_ENV[Enum::ENV_BUS_API_LOCALE])) {
         return $_ENV[Enum::ENV_BUS_API_LOCALE];
