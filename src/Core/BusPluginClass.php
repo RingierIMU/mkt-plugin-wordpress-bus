@@ -33,16 +33,16 @@ class BusPluginClass
         infologthis('bus_plugin_deactivated');
 
         // TODO: Remove any scheduled cron jobs.
-//        $akismet_cron_events = array(
-//            'akismet_schedule_cron_recheck',
-//            'akismet_scheduled_delete',
+//        $my_cron_events = array(
+//            'my_schedule_cron_recheck', //todo: use our Enum for this (wasseem)
+//            'my_scheduled_delete',
 //        );
 //
-//        foreach ( $akismet_cron_events as $akismet_cron_event ) {
-//            $timestamp = wp_next_scheduled( $akismet_cron_event );
+//        foreach ( $my_cron_events as $current_cron_event ) {
+//            $timestamp = wp_next_scheduled( $current_cron_event );
 //
 //            if ( $timestamp ) {
-//                wp_unschedule_event( $timestamp, $akismet_cron_event );
+//                wp_unschedule_event( $timestamp, $current_cron_event );
 //            }
 //        }
     }
@@ -86,8 +86,13 @@ class BusPluginClass
 
     public static function handleAdminUI()
     {
+        //The "Ringier Bus API Settings" main-PAGE
         $adminSettingsPage = new AdminSettingsPage();
         $adminSettingsPage->handleAdminUI();
+
+        //The "Log" sub-PAGE
+        $adminLogPage = new AdminLogPage();
+        $adminLogPage->handleAdminUI();
     }
 
     public static function register_wp_bus_plugin_scripts()
