@@ -117,18 +117,9 @@ class Auth implements AuthenticationInterface
                 return null;
             } catch (RequestException $exception) {
                 $this->flushToken();
-
-                ringier_infologthis('--- --- ---');
-                ringier_infologthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
-                ringier_infologthis('--- --- ---');
-
-                ringier_errorlogthis('--- --- ---');
-                ringier_errorlogthis('--- --- ---');
                 ringier_errorlogthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
                 ringier_errorlogthis('[auth_api] error thrown below:');
                 ringier_errorlogthis($exception->getMessage());
-                ringier_errorlogthis('--- --- ---');
-                ringier_errorlogthis('--- --- ---');
 
                 throw $exception; //will be catched by our outer call to re-schedule this action
             }

@@ -163,13 +163,9 @@ class Utils
         if ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON') {
             LoggingHandler::getInstance()->log($logLevel, $message, $context);
 
-            ringier_infologthis('--- --- ---');
             ringier_infologthis('[slack] a message was sent to slack');
-            ringier_infologthis('--- --- ---');
         } else {
-            ringier_errorlogthis('--- --- ---');
             ringier_errorlogthis('[slack] ERROR - could not sent to Slack, it is probably OFF');
-            ringier_errorlogthis('--- --- ---');
         }
     }
 

@@ -42,10 +42,7 @@ class Fields
         }
 
         if ($this->field_bus_status === 'on') {
-            ringier_infologthis('--- --- ---');
-            ringier_infologthis('--- --- ---');
             ringier_infologthis('[field] bus is ON - set by user');
-            ringier_infologthis('--- --- ---');
             $this->is_bus_enabled = true;
 
             $this->initBusFields($optionList);
@@ -99,9 +96,7 @@ class Fields
 
         if (strlen($error) > 0) {
             $this->is_bus_enabled = false;
-            ringier_infologthis('--- --- ---');
             ringier_infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
-            ringier_infologthis('--- --- ---');
 
             return false;
         }
@@ -155,10 +150,8 @@ class Fields
 
         if (strlen($error) > 0) {
             $this->is_slack_enabled = false;
-            ringier_infologthis('--- --- ---');
             ringier_infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
             ringier_errorlogthis($error);
-            ringier_infologthis('--- --- ---');
 
             return false;
         }

@@ -111,10 +111,7 @@ class ArticleEvent
             ringier_infologthis('[api] the push have probably succeeded at this point');
 //            errorlogthis($bodyArray);
         } catch (\Exception $exception) {
-            ringier_infologthis('[api] --- --- ---');
             ringier_infologthis('[api] ERROR - could not push to BUS');
-            ringier_infologthis('[api] see below error message');
-            ringier_infologthis('[api] --- --- ---');
 
             $blogKey = $_ENV['BLOG_KEY'];
             $message = <<<EOF
@@ -126,15 +123,10 @@ class ArticleEvent
                         EOF;
 
             //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[api] --- --- ---');
-            ringier_errorlogthis('[api] --- --- ---');
             ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
             ringier_errorlogthis($message . $exception->getMessage()); //push to SLACK
-            ringier_errorlogthis('[api] --- --- ---');
-            ringier_errorlogthis('[api] ERROR occurred, below json response');
-            ringier_errorlogthis($bodyArray);
-            ringier_errorlogthis('[api] --- --- ---');
-            ringier_errorlogthis('[api] --- --- ---');
+//            ringier_errorlogthis('[api] ERROR occurred, below json response');
+//            ringier_errorlogthis($bodyArray);
 
             //send to slack
             Utils::l($message . $exception->getMessage()); //push to SLACK
