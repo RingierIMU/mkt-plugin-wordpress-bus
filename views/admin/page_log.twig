@@ -1,7 +1,48 @@
 <div class="wrap">
     <h1>{{ admin_page_title }}</h1>
-    <h3>Use the Log below to spot any error during the API calls</h3>
-    <form action="options.php" method="post">
-
+    <h3>Use the Error Log below to spot any error during the API calls</h3>
+    <form name="log_page_form" action="" method="post">
+        <table class="form-table">
+            <tr>
+                <td>(Only the latest 10 entries will be displayed - pay attention to the DATE!)</td>
+            </tr>
+            <tr>
+                <td>{{ error_msg }}</td>
+            </tr>
+            <tr>
+                <td width="100%">
+				<textarea name="txtlog" class="large-text code" style="height:450px;" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">{{ txtlog_value }}</textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input type="submit" class="button-primary" value="Clear Error Log" name="clearlog_btn" />
+                </td>
+            </tr>
+        </table>
     </form>
 </div>
+
+{#<div class="wrap">#}
+{#    <h3>Use the Message Log below to get a hint of what's happening during the API calls</h3>#}
+{#    <form name="log_page_form" action="" method="post">#}
+{#        <table class="form-table">#}
+{#            <tr>#}
+{#                <td>(Only the latest 10 entries will be displayed - pay attention to the DATE!)</td>#}
+{#            </tr>#}
+{#            <tr>#}
+{#                <td>{{ error_msg_2 }}</td>#}
+{#            </tr>#}
+{#            <tr>#}
+{#                <td width="100%">#}
+{#                    <textarea name="messagelog" class="large-text code" style="height:450px;" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">{{ messagelog_value }}</textarea>#}
+{#                </td>#}
+{#            </tr>#}
+{#            <tr>#}
+{#                <td>#}
+{#                    <input type="submit" class="button-primary" value="Clear Error Log" name="clearmessage_log_btn" />#}
+{#                </td>#}
+{#            </tr>#}
+{#        </table>#}
+{#    </form>#}
+{#</div>#}
