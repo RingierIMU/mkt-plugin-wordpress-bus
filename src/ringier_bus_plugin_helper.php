@@ -7,6 +7,7 @@
  */
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use RingierBusPlugin\Enum;
 
 /**
  * Wrapper to log Messages in a custom log file
@@ -46,8 +47,8 @@ function errorlogthis($message)
  */
 function getLocale()
 {
-    if (isset($_ENV['APP_LOCALE'])) {
-        return $_ENV['APP_LOCALE'];
+    if (isset($_ENV[Enum::ENV_BUS_API_LOCALE])) {
+        return $_ENV[Enum::ENV_BUS_API_LOCALE];
     }
 
     return 'en_KE';

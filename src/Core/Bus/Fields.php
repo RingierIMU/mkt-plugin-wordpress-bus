@@ -183,6 +183,7 @@ class Fields
             $_ENV[Enum::ENV_VENTURE_CONFIG] = $this->field_venture_config;
             $_ENV[Enum::ENV_BUS_API_USERNAME] = $this->field_bus_api_username;
             $_ENV[Enum::ENV_BUS_API_PASSWORD] = $this->field_bus_api_password;
+            $_ENV[Enum::ENV_BUS_API_LOCALE] = $this->field_bus_locale;
         }
 
         if ($this->is_slack_enabled === true) {
