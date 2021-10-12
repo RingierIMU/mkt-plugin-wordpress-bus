@@ -8,6 +8,8 @@ class Enum
     const PLUGIN_KEY = 'WP_BUS';
     const SETTINGS_PAGE_OPTION_GROUP = 'wp_bus_settingspage_group';
     const SETTINGS_PAGE_OPTION_NAME = 'wp_bus_settingspage_options';
+    const RINGIER_LOG_FILE_MESSAGE = 'ringier_bus_plugin.log';
+    const RINGIER_LOG_FILE_ERROR = 'ringier_bus_plugin_error.log';
 
     //Global ENV - use RBP to prevent name class, RBA as in Ringier Bus Plugin
     const ENV_BACKOFF_FOR_MINUTES = 'RBP_BACKOFF_FOR_MINUTES';
