@@ -124,7 +124,7 @@ class ArticleEvent
 
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
-            ringier_errorlogthis($message . $exception->getMessage()); //push to SLACK
+            ringier_errorlogthis($exception->getMessage()); //push to SLACK
 //            ringier_errorlogthis('[api] ERROR occurred, below json response');
 //            ringier_errorlogthis($bodyArray);
 
