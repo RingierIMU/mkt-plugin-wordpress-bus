@@ -42,6 +42,7 @@ class AdminSettingsPage
 
     public function addAdminPages()
     {
+        //The "Ringier Bus API Settings" main-PAGE
         add_menu_page(
             Enum::ADMIN_SETTINGS_PAGE_TITLE,
             Enum::ADMIN_SETTINGS_MENU_TITLE,
@@ -51,6 +52,8 @@ class AdminSettingsPage
             'dashicons-rest-api',
             20
         );
+
+        //Fields for the "Ringier Bus API Settings" main-PAGE
         $this->addFieldsViaSettingsAPI();
     }
 
