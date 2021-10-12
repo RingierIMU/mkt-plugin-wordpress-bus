@@ -106,15 +106,15 @@ class ArticleEvent
                 'events',
                 $requestBody
             );
-            infologthis('[api] attempting to push to bus');
+            ringier_infologthis('[api] attempting to push to bus');
             $bodyArray = json_decode((string) $response->getBody(), true);
-            infologthis('[api] the push have probably succeeded at this point');
+            ringier_infologthis('[api] the push have probably succeeded at this point');
 //            errorlogthis($bodyArray);
         } catch (\Exception $exception) {
-            infologthis('[api] --- --- ---');
-            infologthis('[api] ERROR - could not push to BUS');
-            infologthis('[api] see below error message');
-            infologthis('[api] --- --- ---');
+            ringier_infologthis('[api] --- --- ---');
+            ringier_infologthis('[api] ERROR - could not push to BUS');
+            ringier_infologthis('[api] see below error message');
+            ringier_infologthis('[api] --- --- ---');
 
             $blogKey = $_ENV['BLOG_KEY'];
             $message = <<<EOF
@@ -126,15 +126,15 @@ class ArticleEvent
                         EOF;
 
             //log error to our custom log file - viewable via Admin UI
-            errorlogthis('[api] --- --- ---');
-            errorlogthis('[api] --- --- ---');
-            errorlogthis('[api] ERROR occurred, below error thrown:');
-            errorlogthis($message . $exception->getMessage()); //push to SLACK
-            errorlogthis('[api] --- --- ---');
-            errorlogthis('[api] ERROR occurred, below json response');
-            errorlogthis($bodyArray);
-            errorlogthis('[api] --- --- ---');
-            errorlogthis('[api] --- --- ---');
+            ringier_errorlogthis('[api] --- --- ---');
+            ringier_errorlogthis('[api] --- --- ---');
+            ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
+            ringier_errorlogthis($message . $exception->getMessage()); //push to SLACK
+            ringier_errorlogthis('[api] --- --- ---');
+            ringier_errorlogthis('[api] ERROR occurred, below json response');
+            ringier_errorlogthis($bodyArray);
+            ringier_errorlogthis('[api] --- --- ---');
+            ringier_errorlogthis('[api] --- --- ---');
 
             //send to slack
             Utils::l($message . $exception->getMessage()); //push to SLACK
@@ -164,7 +164,7 @@ class ArticleEvent
             'venture_config_id' => $this->authClient->getVentureId(),
             'venture_reference' => "$post_ID",
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
-            'culture' => getLocale(),
+            'culture' => ringier_getLocale(),
             'action_type' => 'user',
             'action_reference' => Utils::uuid(),
             'version' => Enum::BUS_API_VERSION,
@@ -194,37 +194,37 @@ class ArticleEvent
             'source_type' => 'original',
             'url' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => wp_get_canonical_url($post_ID),
                 ],
             ],
             'title' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => $post->post_title,
                 ],
             ],
             'og_title' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => $this->getOgArticleOgTitle($post_ID, $post),
                 ],
             ],
             'description' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => get_the_excerpt($post_ID),
                 ],
             ],
             'og_description' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => $this->getOgArticleOgDescription($post_ID, $post),
                 ],
             ],
             'body' => [
                 [
-                    'culture' => getLocale(),
+                    'culture' => ringier_getLocale(),
                     'value' => Utils::getRawContent(get_the_content(null, false, get_post($post_ID))),
                 ],
             ],
@@ -248,11 +248,11 @@ class ArticleEvent
         return [
             'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
             'title' => [
-                'culture' => getLocale(),
+                'culture' => ringier_getLocale(),
                 'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
             ],
             'slug' => [
-                'culture' => getLocale(),
+                'culture' => ringier_getLocale(),
                 'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
             ],
         ];

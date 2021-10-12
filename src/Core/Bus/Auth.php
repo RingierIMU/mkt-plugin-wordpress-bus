@@ -72,10 +72,10 @@ class Auth implements AuthenticationInterface
 
     public function flushToken()
     {
-        infologthis('[auth_api] Clearing Token: ' . $this->authToken);
+        ringier_infologthis('[auth_api] Clearing Token: ' . $this->authToken);
         $this->authToken = null;
         $this->cache->delete(Enum::CACHE_KEY);
-        infologthis('[auth_api] token cleared done!');
+        ringier_infologthis('[auth_api] token cleared done!');
     }
 
     /**
@@ -118,17 +118,17 @@ class Auth implements AuthenticationInterface
             } catch (RequestException $exception) {
                 $this->flushToken();
 
-                infologthis('--- --- ---');
-                infologthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
-                infologthis('--- --- ---');
+                ringier_infologthis('--- --- ---');
+                ringier_infologthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
+                ringier_infologthis('--- --- ---');
 
-                errorlogthis('--- --- ---');
-                errorlogthis('--- --- ---');
-                errorlogthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
-                errorlogthis('[auth_api] error thrown below:');
-                errorlogthis($exception->getMessage());
-                errorlogthis('--- --- ---');
-                errorlogthis('--- --- ---');
+                ringier_errorlogthis('--- --- ---');
+                ringier_errorlogthis('--- --- ---');
+                ringier_errorlogthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
+                ringier_errorlogthis('[auth_api] error thrown below:');
+                ringier_errorlogthis($exception->getMessage());
+                ringier_errorlogthis('--- --- ---');
+                ringier_errorlogthis('--- --- ---');
 
                 throw $exception; //will be catched by our outer call to re-schedule this action
             }

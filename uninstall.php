@@ -26,5 +26,5 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
-infologthis('uninstall.php called');
+ringier_infologthis('uninstall.php called');
 \RingierBusPlugin\BusPluginClass::plugin_uninstall();

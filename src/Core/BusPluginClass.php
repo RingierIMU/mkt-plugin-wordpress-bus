@@ -18,9 +18,9 @@ class BusPluginClass
     public static function plugin_activation()
     {
         add_option(Enum::PLUGIN_KEY, true);
-        infologthis('Activation: set plugin_key to true');
+        ringier_infologthis('Activation: set plugin_key to true');
         //nothing for now
-        infologthis('bus_plugin_activated');
+        ringier_infologthis('bus_plugin_activated');
     }
 
     /**
@@ -30,7 +30,7 @@ class BusPluginClass
      */
     public static function plugin_deactivation()
     {
-        infologthis('bus_plugin_deactivated');
+        ringier_infologthis('bus_plugin_deactivated');
 
         // TODO: Remove any scheduled cron jobs.
 //        $my_cron_events = array(
@@ -52,7 +52,7 @@ class BusPluginClass
      */
     public static function plugin_uninstall()
     {
-        infologthis('plugin_uninstall hook called');
+        ringier_infologthis('plugin_uninstall hook called');
         delete_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         delete_option(Enum::PLUGIN_KEY);
     }
@@ -64,7 +64,7 @@ class BusPluginClass
     {
         //if on plugin activation
         if (get_option(Enum::PLUGIN_KEY)) {
-            infologthis('POST Activation: delete plugin_key now');
+            ringier_infologthis('POST Activation: delete plugin_key now');
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF

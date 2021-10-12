@@ -73,7 +73,7 @@ class BusHelper
      */
     public static function triggerArticleEvent(\WP_Post $post)
     {
-        infologthis('triggerArticleEvent called');
+        ringier_infologthis('triggerArticleEvent called');
         $post_ID = $post->ID;
 
         $post_ID = Utils::getParentPostId($post_ID);
@@ -90,7 +90,7 @@ class BusHelper
             } else {
                 $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
             }
-            infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
+            ringier_infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
         }
         /*
          * we will now schedule the event after 1min instead of instantly executing it, because:
@@ -121,7 +121,7 @@ class BusHelper
      */
     public static function triggerArticleDeletedEvent(\WP_Post $post)
     {
-        infologthis('publish_to_trash called');
+        ringier_infologthis('publish_to_trash called');
         $post_ID = Utils::getParentPostId($post->ID);
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
     }
@@ -177,12 +177,12 @@ class BusHelper
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
-                infologthis('[error] A problem with Auth Token');
-                errorlogthis('[error] A problem with Auth Token');
+                ringier_infologthis('[error] A problem with Auth Token');
+                ringier_errorlogthis('[error] A problem with Auth Token');
                 throw new \Exception('A problem with Auth Token');
             }
         } catch (\Exception $exception) {
-            infologthis('[warning] failed to call BUS, rescheduling');
+            ringier_infologthis('[warning] failed to call BUS, rescheduling');
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
