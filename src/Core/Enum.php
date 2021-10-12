@@ -39,9 +39,10 @@ class Enum
     const FIELD_SLACK_BOT_NAME = 'field_bus_slack_bot_name';
 
     //ADMIN LOG PAGE
-    const ADMIN_LOG_PAGE_TITLE = 'Bus API Message Log';
-    const ADMIN_LOG_MENU_TITLE = 'Message Log';
-    const ADMIN_LOG_MENU_SLUG = 'wp-bus-log';
+    const ADMIN_LOG_PAGE_TITLE = 'Ringier Bus API Log';
+    const ADMIN_LOG_MENU_TITLE = 'Bus API LOG';
+    const ADMIN_LOG_MENU_SLUG = 'wp-bus-api-log';
+    const ADMIN_LOG_SECTION_1 = 'wp-bus-api-log-section01';
 
     //BUS API Related
     const HOOK_NAME_SCHEDULED_EVENTS = 'hookSendToBusScheduled';
