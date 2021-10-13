@@ -26,5 +26,10 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
+/**
+ * load our main file now with composer autoloading
+ */
+require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'includes/vendor/autoload.php';
+
 ringier_infologthis('uninstall.php called');
 \RingierBusPlugin\BusPluginClass::plugin_uninstall();
