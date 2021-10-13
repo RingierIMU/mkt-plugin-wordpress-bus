@@ -26,4 +26,13 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     die;
 }
 
-//we are going to use the register_uninstall_hook() as this seems sufficient for our use-case for now
+/**
+ * load our main file now with composer autoloading
+ */
+define('DS', DIRECTORY_SEPARATOR);
+define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
+require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'includes/vendor/autoload.php';
+
+//Call our uninstall-cleanup process
+ringier_infologthis('uninstall.php called');
+\RingierBusPlugin\BusPluginClass::plugin_uninstall();
