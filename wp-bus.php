@@ -69,8 +69,7 @@ require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'includes/vendor/autoload.php';
  */
 register_activation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_activation']);
 register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_deactivation']);
-//the below will be catched by uninstall.php
-//register_uninstall_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_uninstall']);
+register_uninstall_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_uninstall']);
 
 /**
  * Leverage the ACF plugin superpowers
