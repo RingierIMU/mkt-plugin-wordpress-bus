@@ -9,7 +9,7 @@
       "email": "wasseemk@ringier.co.za"
     }
   ],
-  "type": "wp-plugin",
+  "type": "wordpress-plugin",
   "config": {
     "vendor-dir": "includes/vendor",
     "platform": {
