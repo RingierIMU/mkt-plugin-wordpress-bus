@@ -5,7 +5,7 @@
         'type' => 'wp-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => 'fc672c27668c88ea4f99d18d1b3ab627bee3540f',
+        'reference' => '15db0fa5947cf206387d107c8ebe28cc7b421d0e',
         'name' => 'ringierimu/wp-bus',
         'dev' => false,
     ),
@@ -52,9 +52,9 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../guzzlehttp/promises',
             'aliases' => array(
-                0 => '1.4.x-dev',
+                0 => '1.5.x-dev',
             ),
-            'reference' => '6482c05c394f91793fec16ef6e46eff0e1fd2a0f',
+            'reference' => '136a635e2b4a49b9d79e9c8fee267ffb257fdba0',
             'dev_requirement' => false,
         ),
         'guzzlehttp/psr7' => array(
@@ -69,12 +69,12 @@
             'dev_requirement' => false,
         ),
         'monolog/monolog' => array(
-            'pretty_version' => '2.3.4',
-            'version' => '2.3.4.0',
+            'pretty_version' => '2.3.5',
+            'version' => '2.3.5.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../monolog/monolog',
             'aliases' => array(),
-            'reference' => '437e7a1c50044b92773b361af77620efb76fff59',
+            'reference' => 'fd4380d6fc37626e2f799f29d91195040137eba9',
             'dev_requirement' => false,
         ),
         'psr/cache' => array(
@@ -183,27 +183,27 @@
             'dev_requirement' => false,
         ),
         'ramsey/collection' => array(
-            'pretty_version' => '1.2.1',
-            'version' => '1.2.1.0',
+            'pretty_version' => '1.2.2',
+            'version' => '1.2.2.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../ramsey/collection',
             'aliases' => array(),
-            'reference' => 'eaca1dc1054ddd10cbd83c1461907bee6fb528fa',
+            'reference' => 'cccc74ee5e328031b15640b51056ee8d3bb66c0a',
             'dev_requirement' => false,
         ),
         'ramsey/uuid' => array(
-            'pretty_version' => '4.1.1',
-            'version' => '4.1.1.0',
+            'pretty_version' => '4.2.3',
+            'version' => '4.2.3.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../ramsey/uuid',
             'aliases' => array(),
-            'reference' => 'cd4032040a750077205918c86049aa0f43d22947',
+            'reference' => 'fc9bb7fb5388691fd7373cd44dcb4d63bbcf24df',
             'dev_requirement' => false,
         ),
         'rhumsaa/uuid' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => '4.1.1',
+                0 => '4.2.3',
             ),
         ),
         'ringierimu/wp-bus' => array(
@@ -212,7 +212,7 @@
             'type' => 'wp-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => 'fc672c27668c88ea4f99d18d1b3ab627bee3540f',
+            'reference' => '15db0fa5947cf206387d107c8ebe28cc7b421d0e',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(
@@ -228,12 +228,12 @@
             ),
         ),
         'symfony/cache' => array(
-            'pretty_version' => 'v5.2.6',
-            'version' => '5.2.6.0',
+            'pretty_version' => 'v5.3.8',
+            'version' => '5.3.8.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/cache',
             'aliases' => array(),
-            'reference' => '093d69bb10c959553c8beb828b8d4ea250a247dd',
+            'reference' => '945bcebfef0aeef105de61843dd14105633ae38f',
             'dev_requirement' => false,
         ),
         'symfony/cache-contracts' => array(
@@ -250,6 +250,15 @@
             'provided' => array(
                 0 => '1.0|2.0',
             ),
+        ),
+        'symfony/deprecation-contracts' => array(
+            'pretty_version' => '2.5.x-dev',
+            'version' => '2.5.9999999.9999999-dev',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/deprecation-contracts',
+            'aliases' => array(),
+            'reference' => '6f981ee24cf69ee7ce9736146d1c57c2780598a8',
+            'dev_requirement' => false,
         ),
         'symfony/polyfill-ctype' => array(
             'pretty_version' => 'dev-main',
@@ -271,6 +280,17 @@
                 0 => '1.23.x-dev',
             ),
             'reference' => '344e456152e22a1bce3048c6c311059ea14bde47',
+            'dev_requirement' => false,
+        ),
+        'symfony/polyfill-php73' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../symfony/polyfill-php73',
+            'aliases' => array(
+                0 => '1.23.x-dev',
+            ),
+            'reference' => 'cc5db0e22b3cb4111010e48785a97f670b350ca5',
             'dev_requirement' => false,
         ),
         'symfony/polyfill-php80' => array(

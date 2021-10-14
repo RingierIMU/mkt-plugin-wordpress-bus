@@ -4,15 +4,17 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit652b478de94feab5b59f49396b54f56d
+class ComposerStaticInit9a3d233139acc0f750e63c4665230e26
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
-        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
+        '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/bootstrap.php',
         '23c18046f52bef3eea034657bafda50f' => __DIR__ . '/..' . '/symfony/polyfill-php81/bootstrap.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
         'c964ee0ededf28c96ebd9db5099ef910' => __DIR__ . '/..' . '/guzzlehttp/promises/src/functions_include.php',
+        '0d59ee240a4cd96ddbb4ff164fccea4d' => __DIR__ . '/..' . '/symfony/polyfill-php73/bootstrap.php',
+        '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         'e39a8b23c42d4e1452234d762b03835a' => __DIR__ . '/..' . '/ramsey/uuid/src/functions.php',
         '8a76648ee1b9e00067a1be196203ff73' => __DIR__ . '/../../..' . '/src/ringier_bus_plugin_helper.php',
@@ -29,6 +31,7 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         array (
             'Symfony\\Polyfill\\Php81\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
+            'Symfony\\Polyfill\\Php73\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
             'Symfony\\Contracts\\Service\\' => 26,
@@ -90,6 +93,10 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'Symfony\\Polyfill\\Php80\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
+        ),
+        'Symfony\\Polyfill\\Php73\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/polyfill-php73',
         ),
         'Symfony\\Polyfill\\Mbstring\\' => 
         array (
@@ -397,6 +404,7 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'GuzzleHttp\\RetryMiddleware' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/RetryMiddleware.php',
         'GuzzleHttp\\TransferStats' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/TransferStats.php',
         'GuzzleHttp\\Utils' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/Utils.php',
+        'JsonException' => __DIR__ . '/..' . '/symfony/polyfill-php73/Resources/stubs/JsonException.php',
         'Monolog\\DateTimeImmutable' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/DateTimeImmutable.php',
         'Monolog\\ErrorHandler' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/ErrorHandler.php',
         'Monolog\\Formatter\\ChromePHPFormatter' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/Formatter/ChromePHPFormatter.php',
@@ -608,6 +616,7 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'Ramsey\\Uuid\\Exception\\TimeSourceException' => __DIR__ . '/..' . '/ramsey/uuid/src/Exception/TimeSourceException.php',
         'Ramsey\\Uuid\\Exception\\UnableToBuildUuidException' => __DIR__ . '/..' . '/ramsey/uuid/src/Exception/UnableToBuildUuidException.php',
         'Ramsey\\Uuid\\Exception\\UnsupportedOperationException' => __DIR__ . '/..' . '/ramsey/uuid/src/Exception/UnsupportedOperationException.php',
+        'Ramsey\\Uuid\\Exception\\UuidExceptionInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/Exception/UuidExceptionInterface.php',
         'Ramsey\\Uuid\\FeatureSet' => __DIR__ . '/..' . '/ramsey/uuid/src/FeatureSet.php',
         'Ramsey\\Uuid\\Fields\\FieldsInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/Fields/FieldsInterface.php',
         'Ramsey\\Uuid\\Fields\\SerializableFieldsTrait' => __DIR__ . '/..' . '/ramsey/uuid/src/Fields/SerializableFieldsTrait.php',
@@ -676,13 +685,17 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'Ramsey\\Uuid\\Validator\\GenericValidator' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/GenericValidator.php',
         'Ramsey\\Uuid\\Validator\\ValidatorInterface' => __DIR__ . '/..' . '/ramsey/uuid/src/Validator/ValidatorInterface.php',
         'ReturnTypeWillChange' => __DIR__ . '/..' . '/symfony/polyfill-php81/Resources/stubs/ReturnTypeWillChange.php',
+        'RingierBusPlugin\\AdminLogPage' => __DIR__ . '/../../..' . '/src/Core/AdminLogPage.php',
         'RingierBusPlugin\\AdminSettingsPage' => __DIR__ . '/../../..' . '/src/Core/AdminSettingsPage.php',
+        'RingierBusPlugin\\BusPluginClass' => __DIR__ . '/../../..' . '/src/Core/BusPluginClass.php',
         'RingierBusPlugin\\Bus\\ArticleEvent' => __DIR__ . '/../../..' . '/src/Core/Bus/ArticleEvent.php',
         'RingierBusPlugin\\Bus\\Auth' => __DIR__ . '/../../..' . '/src/Core/Bus/Auth.php',
         'RingierBusPlugin\\Bus\\AuthenticationInterface' => __DIR__ . '/../../..' . '/src/Core/Bus/AuthenticationInterface.php',
         'RingierBusPlugin\\Bus\\BusHelper' => __DIR__ . '/../../..' . '/src/Core/Bus/BusHelper.php',
+        'RingierBusPlugin\\Bus\\Fields' => __DIR__ . '/../../..' . '/src/Core/Bus/Fields.php',
         'RingierBusPlugin\\Bus\\LoggingHandler' => __DIR__ . '/../../..' . '/src/Core/Bus/LoggingHandler.php',
         'RingierBusPlugin\\Enum' => __DIR__ . '/../../..' . '/src/Core/Enum.php',
+        'RingierBusPlugin\\Utils' => __DIR__ . '/../../..' . '/src/Core/Utils.php',
         'Routes' => __DIR__ . '/..' . '/upstatement/routes/Routes.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'Symfony\\Component\\Cache\\Adapter\\AbstractAdapter' => __DIR__ . '/..' . '/symfony/cache/Adapter/AbstractAdapter.php',
@@ -735,8 +748,8 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'Symfony\\Component\\Cache\\Traits\\ContractsTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/ContractsTrait.php',
         'Symfony\\Component\\Cache\\Traits\\FilesystemCommonTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/FilesystemCommonTrait.php',
         'Symfony\\Component\\Cache\\Traits\\FilesystemTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/FilesystemTrait.php',
-        'Symfony\\Component\\Cache\\Traits\\MemcachedTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/MemcachedTrait.php',
         'Symfony\\Component\\Cache\\Traits\\ProxyTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/ProxyTrait.php',
+        'Symfony\\Component\\Cache\\Traits\\RedisClusterNodeProxy' => __DIR__ . '/..' . '/symfony/cache/Traits/RedisClusterNodeProxy.php',
         'Symfony\\Component\\Cache\\Traits\\RedisClusterProxy' => __DIR__ . '/..' . '/symfony/cache/Traits/RedisClusterProxy.php',
         'Symfony\\Component\\Cache\\Traits\\RedisProxy' => __DIR__ . '/..' . '/symfony/cache/Traits/RedisProxy.php',
         'Symfony\\Component\\Cache\\Traits\\RedisTrait' => __DIR__ . '/..' . '/symfony/cache/Traits/RedisTrait.php',
@@ -764,6 +777,7 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
         'Symfony\\Contracts\\Service\\Test\\ServiceLocatorTest' => __DIR__ . '/..' . '/symfony/service-contracts/Test/ServiceLocatorTest.php',
         'Symfony\\Polyfill\\Ctype\\Ctype' => __DIR__ . '/..' . '/symfony/polyfill-ctype/Ctype.php',
         'Symfony\\Polyfill\\Mbstring\\Mbstring' => __DIR__ . '/..' . '/symfony/polyfill-mbstring/Mbstring.php',
+        'Symfony\\Polyfill\\Php73\\Php73' => __DIR__ . '/..' . '/symfony/polyfill-php73/Php73.php',
         'Symfony\\Polyfill\\Php80\\Php80' => __DIR__ . '/..' . '/symfony/polyfill-php80/Php80.php',
         'Symfony\\Polyfill\\Php81\\Php81' => __DIR__ . '/..' . '/symfony/polyfill-php81/Php81.php',
         'Timber\\Admin' => __DIR__ . '/..' . '/timber/timber/lib/Admin.php',
@@ -1199,10 +1213,10 @@ class ComposerStaticInit652b478de94feab5b59f49396b54f56d
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit652b478de94feab5b59f49396b54f56d::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit652b478de94feab5b59f49396b54f56d::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit652b478de94feab5b59f49396b54f56d::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit652b478de94feab5b59f49396b54f56d::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit9a3d233139acc0f750e63c4665230e26::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit9a3d233139acc0f750e63c4665230e26::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit9a3d233139acc0f750e63c4665230e26::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit9a3d233139acc0f750e63c4665230e26::$classMap;
 
         }, null, ClassLoader::class);
     }
