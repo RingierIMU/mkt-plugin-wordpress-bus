@@ -153,6 +153,39 @@ class Utils
     }
 
     /**
+     * Article_Lifetime is a custom field attached to each article
+     *
+     * @param $post_ID
+     *
+     * @throws \Exception
+     *
+     * @return bool
+     */
+    public static function getArticleLifetime($post_ID)
+    {
+        global $wpdb;
+        try {
+            $sql = $wpdb->prepare(
+                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
+            WHERE pm.post_id = %s AND pm.meta_key = %s",
+                $post_ID,
+                Enum::ACF_ARTICLE_LIFETIME_KEY
+            );
+            $results = $wpdb->get_row($sql);
+
+            if (is_object($results)) {
+                if (isset($results->meta_value)) {
+                    return $results->meta_value;
+                }
+            }
+
+            return 'none';
+        } catch (\Exception $exception) {
+            ringier_errorlogthis($exception->errorMessage());
+        }
+    }
+
+    /**
      * Send the log to Slack via Slack webhook
      *
      * @param $message

@@ -102,7 +102,7 @@ class ArticleEvent
                     $this->buildMainRequestBody($post_ID, $post),
                 ],
             ];
-//            errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
+//            ringier_infologthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
             $response = $this->authClient->getHttpClient()->request(
                 'POST',
                 'events',
@@ -233,7 +233,7 @@ class ArticleEvent
             'sailthru_tags' => [
 
             ],
-            'lifetime' => 'evergreen',
+            'lifetime' => Utils::getArticleLifetime($post_ID),
         ];
     }
 

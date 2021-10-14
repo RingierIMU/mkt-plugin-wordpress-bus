@@ -61,6 +61,7 @@ class Enum
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
 
     // ACF Fields
+    public const ACF_ARTICLE_LIFETIME_KEY = 'article_lifetime';
     public const ACF_IS_POST_NEW_KEY = 'is_post_new';
     public const ACF_IS_POST_NEW_DEFAULT_VALUE = 'not_new';
 }
