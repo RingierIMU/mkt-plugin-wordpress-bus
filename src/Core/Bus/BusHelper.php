@@ -3,6 +3,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin\Bus;
 
 use RingierBusPlugin\Enum;
@@ -179,6 +180,7 @@ class BusHelper
             } else {
                 ringier_infologthis('[error] A problem with Auth Token');
                 ringier_errorlogthis('[error] A problem with Auth Token');
+
                 throw new \Exception('A problem with Auth Token');
             }
         } catch (\Exception $exception) {

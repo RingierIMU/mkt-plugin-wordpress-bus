@@ -11,7 +11,9 @@ use RingierBusPlugin\Enum;
 
 /**
  * Wrapper to log Messages in a custom log file
+ *
  * @param $message
+ *
  * @throws \Exception
  */
 function ringier_infologthis($message)
@@ -26,7 +28,9 @@ function ringier_infologthis($message)
 
 /**
  * Wrapper to log Error Messages in a custom log file
+ *
  * @param $message
+ *
  * @throws \Exception
  */
 function ringier_errorlogthis($message)

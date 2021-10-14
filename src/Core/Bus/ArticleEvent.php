@@ -24,6 +24,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin\Bus;
 
 use RingierBusPlugin\Enum;
@@ -76,6 +77,7 @@ class ArticleEvent
      *
      * @param int $post_ID
      * @param \WP_Post $post
+     *
      * @throws \Exception
      */
     public function sendToBus(int $post_ID, \WP_Post $post)

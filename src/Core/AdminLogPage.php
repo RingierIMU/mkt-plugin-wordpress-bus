@@ -5,6 +5,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin;
 
 use Timber\Timber;
@@ -53,7 +54,7 @@ class AdminLogPage
         $message_log_file = WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_MESSAGE;
         $txtlog_value = $error_msg = $error_msg2 = $messagelog_value = '';
 
-        if (! current_user_can('manage_options')) {
+        if (!current_user_can('manage_options')) {
             return;
         }
 
@@ -88,6 +89,7 @@ class AdminLogPage
      * Method Will always return a message, an error message in case of any failure
      *
      * @param $log_file_path
+     *
      * @return string
      */
     public static function fetchLogData($log_file_path)
@@ -98,11 +100,11 @@ class AdminLogPage
         $log_data = '';
         $log_data_array = [];
 
-        if (! file_exists($log_file)) {
+        if (!file_exists($log_file)) {
             return $log_data = 'The log seems empty!';
         }
 
-        if (! is_writable($log_file)) {
+        if (!is_writable($log_file)) {
             return $log_data = '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
@@ -114,7 +116,7 @@ class AdminLogPage
 
         $lines = count($log_data_array);
         if ($lines == 0) {
-            return $log_data ='The log is empty.';
+            return $log_data = 'The log is empty.';
         }
 
         //We only want to display the latest 10 entries
@@ -126,7 +128,7 @@ class AdminLogPage
 
         //now fetch all lines
         foreach ($log_data_array as $line) {
-            $log_data .= htmlentities($line ."\n");
+            $log_data .= htmlentities($line . "\n");
         }
 
         return $log_data;
@@ -136,6 +138,7 @@ class AdminLogPage
      * Util to help clear the log file
      *
      * @param $log_file_path
+     *
      * @return string|void
      */
     public static function clearErrorLog($log_file_path)
@@ -145,16 +148,17 @@ class AdminLogPage
         $log_data = '';
         $log_data_array = [];
 
-        if (! file_exists($log_file)) {
+        if (!file_exists($log_file)) {
             return $log_data = 'The log seems empty!';
         }
 
-        if (! is_writable($log_file)) {
+        if (!is_writable($log_file)) {
             return $log_data = '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
         if (file_exists($log_file)) {
             unlink($log_file);
+
             return $log_data = '[done] the log was cleared';
         }
     }

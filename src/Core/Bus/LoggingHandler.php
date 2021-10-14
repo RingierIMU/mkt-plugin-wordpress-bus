@@ -37,8 +37,9 @@ class LoggingHandler
     /**
      * The single globally access point to this class
      *
-     * @return Logger|null
      * @throws \Monolog\Handler\MissingExtensionException
+     *
+     * @return Logger|null
      */
     public static function getInstance()
     {

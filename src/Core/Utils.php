@@ -3,6 +3,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin;
 
 use Ramsey\Uuid\Uuid;
@@ -122,8 +123,10 @@ class Utils
      * After an article is saved, the field will exists
      *
      * @param $post_ID
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public static function isPostNew($post_ID)
     {
@@ -155,6 +158,7 @@ class Utils
      * @param $message
      * @param string $logLevel
      * @param array $context
+     *
      * @throws \Monolog\Handler\MissingExtensionException
      */
     public static function l($message, $logLevel = 'alert', array $context = [])
@@ -209,6 +213,7 @@ class Utils
      * Checks whether the value is not empty or not null
      *
      * @param $value
+     *
      * @return bool
      */
     public static function notEmptyOrNull($value)
@@ -223,23 +228,28 @@ class Utils
                 } elseif (isset($value[0]) && self::notEmptyOrNull($value[0])) {
                     return true;
                 }
+
                 return false;
             }
             if (sizeof($value) > 0) {
                 return true;
             }
+
             return true;
         } else {
-            if ((is_string($value) || is_int($value)) && ($value != '') && ($value != 'NULL') && (strlen(trim($value)) > 0)) {
+            if ((is_string($value) || is_int($value)) && ($value != '') && ($value != 'NULL') && (mb_strlen(trim($value)) > 0)) {
                 return true;
             }
+
             return false;
         }
     }
+
     /**
      * To verify if an array is associative
      *
      * @param $thatArray
+     *
      * @return bool
      */
     public static function isAssociative($thatArray)
@@ -249,6 +259,7 @@ class Utils
                 return true;
             }
         }
+
         return false;
     }
 

@@ -5,6 +5,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin;
 
 use RingierBusPlugin\Bus\BusHelper;
@@ -13,6 +14,7 @@ class BusPluginClass
 {
     /**
      * Attached to activate_{ plugin_basename( __FILES__ ) } by register_activation_hook()
+     *
      * @static
      */
     public static function plugin_activation()
@@ -26,6 +28,7 @@ class BusPluginClass
     /**
      * Should remove any scheduled events
      * NOTE: The database data cleaning is handled by uninstall.php
+     *
      * @static
      */
     public static function plugin_deactivation()
@@ -73,7 +76,7 @@ class BusPluginClass
                 [
                     Enum::FIELD_BUS_STATUS => 'off',
                     Enum::FIELD_APP_LOCALE => 'en_KE',
-                    Enum::FIELD_BACKOFF_DURATION => 30
+                    Enum::FIELD_BACKOFF_DURATION => 30,
                 ]
             );
         }
@@ -115,7 +118,7 @@ class BusPluginClass
         define('MY_ACF_URL', WP_BUS_RINGIER_PLUGIN_DIR_URL . 'includes/acf/');
 
         // Include the ACF plugin.
-        include_once(MY_ACF_PATH . 'acf.php');
+        include_once MY_ACF_PATH . 'acf.php';
 
         // Customize the url setting to fix incorrect asset URLs.
         add_filter('acf/settings/url', [self::class, 'acf_settings_url']);
@@ -137,6 +140,7 @@ class BusPluginClass
      * ref: https://www.advancedcustomfields.com/resources/including-acf-within-a-plugin-or-theme/
      *
      * @param $url
+     *
      * @return string
      */
     public static function acf_settings_url($url)
@@ -148,6 +152,7 @@ class BusPluginClass
      * Hide the ACF admin menu item
      *
      * @param $show_admin
+     *
      * @return false
      */
     public static function acf_settings_show_admin($show_admin)
@@ -159,6 +164,8 @@ class BusPluginClass
      * Local JSON saves field group and field settings as .json files
      * Idea is similar to caching & dramatically speeds up ACF + allows for versioning our field settings
      * ref: https://www.advancedcustomfields.com/resources/local-json/
+     *
+     * @param mixed $paths
      *
      * @return string
      */
@@ -178,11 +185,11 @@ class BusPluginClass
      */
     public static function register_acf_custom_fields()
     {
-        acf_add_local_field_group(array(
+        acf_add_local_field_group([
             'key' => 'group_609a881d82e8f',
             'title' => 'hidden_fields',
-            'fields' => array(
-                array(
+            'fields' => [
+                [
                     'key' => 'field_609a883e62def',
                     'label' => 'is_post_new',
                     'name' => 'is_post_new',
@@ -190,33 +197,33 @@ class BusPluginClass
                     'instructions' => 'do not use this, only for internal programmatic usage.',
                     'required' => 0,
                     'conditional_logic' => 0,
-                    'wrapper' => array(
+                    'wrapper' => [
                         'width' => '',
                         'class' => '',
                         'id' => '',
-                    ),
+                    ],
                     'default_value' => 'not_new',
                     'placeholder' => '',
                     'prepend' => '',
                     'append' => '',
                     'maxlength' => '',
-                ),
-            ),
-            'location' => array(
-                array(
-                    array(
+                ],
+            ],
+            'location' => [
+                [
+                    [
                         'param' => 'post_type',
                         'operator' => '==',
                         'value' => 'post',
-                    ),
-                ),
-            ),
+                    ],
+                ],
+            ],
             'menu_order' => 0,
             'position' => 'side',
             'style' => 'seamless',
             'label_placement' => 'top',
             'instruction_placement' => 'label',
-            'hide_on_screen' => array(
+            'hide_on_screen' => [
                 0 => 'permalink',
                 1 => 'the_content',
                 2 => 'excerpt',
@@ -231,9 +238,9 @@ class BusPluginClass
                 11 => 'categories',
                 12 => 'tags',
                 13 => 'send-trackbacks',
-            ),
+            ],
             'active' => true,
             'description' => '',
-        ));
+        ]);
     }
 }

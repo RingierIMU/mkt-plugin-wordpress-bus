@@ -27,7 +27,6 @@ namespace RingierBusPlugin\Bus;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use RingierBusPlugin\Enum;
-use RingierBusPlugin\Utils;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Contracts\Cache\ItemInterface;
 

@@ -5,6 +5,7 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin;
 
 use Timber\FunctionWrapper;
@@ -64,7 +65,7 @@ class AdminSettingsPage
     {
         global $title;
 
-        if (! current_user_can('manage_options')) {
+        if (!current_user_can('manage_options')) {
             return;
         }
 
@@ -96,9 +97,8 @@ class AdminSettingsPage
         $this->add_field_backoff_duration();
     }
 
-    /* ******************************************** */
     //FIELD - bus_status
-    /* ******************************************** */
+
     public function add_field_bus_status()
     {
         add_settings_field(
@@ -108,11 +108,11 @@ class AdminSettingsPage
             [self::class, 'field_bus_status_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_BUS_STATUS,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_BUS_STATUS,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_BUS_STATUS,
-            )
+            ]
         );
     }
 
@@ -152,9 +152,8 @@ class AdminSettingsPage
         unset($timber);
     }
 
-    /* ******************************************** */
     //FIELD - VENTURE CONFIG
-    /* ******************************************** */
+
     public function add_field_venture_config()
     {
         add_settings_field(
@@ -164,11 +163,11 @@ class AdminSettingsPage
             [self::class, 'field_venture_config_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_VENTURE_CONFIG,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_VENTURE_CONFIG,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_VENTURE_CONFIG,
-            )
+            ]
         );
     }
 
@@ -182,9 +181,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_venture_config.twig');
     }
 
-    /* ******************************************** */
     //FIELD - API Locale
-    /* ******************************************** */
+
     public function add_field_app_locale()
     {
         add_settings_field(
@@ -194,11 +192,11 @@ class AdminSettingsPage
             [self::class, 'field_app_locale_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_APP_LOCALE,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_APP_LOCALE,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_APP_LOCALE,
-            )
+            ]
         );
     }
 
@@ -207,9 +205,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_app_locale.twig');
     }
 
-    /* ******************************************** */
     //FIELD - API USERNAME
-    /* ******************************************** */
+
     public function add_field_api_username()
     {
         add_settings_field(
@@ -219,11 +216,11 @@ class AdminSettingsPage
             [self::class, 'field_api_username_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_API_USERNAME,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_API_USERNAME,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_API_USERNAME,
-            )
+            ]
         );
     }
 
@@ -232,9 +229,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_username.twig');
     }
 
-    /* ******************************************** */
     //FIELD - API PASSWORD
-    /* ******************************************** */
+
     public function add_field_api_password()
     {
         add_settings_field(
@@ -244,11 +240,11 @@ class AdminSettingsPage
             [self::class, 'field_api_password_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_API_PASSWORD,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_API_PASSWORD,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_API_PASSWORD,
-            )
+            ]
         );
     }
 
@@ -257,9 +253,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_password.twig');
     }
 
-    /* ******************************************** */
     //FIELD - API Endpoint
-    /* ******************************************** */
+
     public function add_field_api_endpoint()
     {
         add_settings_field(
@@ -269,11 +264,11 @@ class AdminSettingsPage
             [self::class, 'field_api_endpoint_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_API_ENDPOINT,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_API_ENDPOINT,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_API_ENDPOINT,
-            )
+            ]
         );
     }
 
@@ -282,9 +277,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_endpoint.twig');
     }
 
-    /* ******************************************** */
     //FIELD - Slack Hook URL
-    /* ******************************************** */
+
     public function add_field_slack_hoook_url()
     {
         add_settings_field(
@@ -294,11 +288,11 @@ class AdminSettingsPage
             [self::class, 'field_slack_hook_url_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_SLACK_HOOK_URL,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_SLACK_HOOK_URL,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_HOOK_URL,
-            )
+            ]
         );
     }
 
@@ -307,9 +301,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_hook_url.twig');
     }
 
-    /* ******************************************** */
     //FIELD - Slack Channel Name
-    /* ******************************************** */
+
     public function add_field_slack_channel_name()
     {
         add_settings_field(
@@ -319,11 +312,11 @@ class AdminSettingsPage
             [self::class, 'field_slack_channel_name_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_SLACK_CHANNEL_NAME,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_SLACK_CHANNEL_NAME,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_CHANNEL_NAME,
-            )
+            ]
         );
     }
 
@@ -332,9 +325,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_channel_name.twig');
     }
 
-    /* ******************************************** */
     //FIELD - Slack Bot Name
-    /* ******************************************** */
+
     public function add_field_slack_bot_name()
     {
         add_settings_field(
@@ -344,11 +336,11 @@ class AdminSettingsPage
             [self::class, 'field_slack_bot_name_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_SLACK_BOT_NAME,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_SLACK_BOT_NAME,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_BOT_NAME,
-            )
+            ]
         );
     }
 
@@ -357,9 +349,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_bot_name.twig');
     }
 
-    /* ******************************************** */
     //FIELD - Backoff Strategy (in Minutes)
-    /* ******************************************** */
+
     public function add_field_backoff_duration()
     {
         add_settings_field(
@@ -369,11 +360,11 @@ class AdminSettingsPage
             [self::class, 'field_backoff_duration_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
-            array(
-                'label_for'         => Enum::FIELD_BACKOFF_DURATION,
-                'class'             => 'wp-bus-row',
+            [
+                'label_for' => Enum::FIELD_BACKOFF_DURATION,
+                'class' => 'wp-bus-row',
                 'field_custom_data' => Enum::FIELD_BACKOFF_DURATION,
-            )
+            ]
         );
     }
 
@@ -382,9 +373,8 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_backoff_duration.twig');
     }
 
-    /* ******************************************** */
     //REFACTORED METHODS
-    /* ******************************************** */
+
     /**
      * @param $args
      * @param $tpl_name

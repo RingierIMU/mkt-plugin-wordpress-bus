@@ -6,9 +6,9 @@
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
  */
+
 namespace RingierBusPlugin\Bus;
 
-use Kint\Kint;
 use RingierBusPlugin\Enum;
 use RingierBusPlugin\Utils;
 
@@ -56,8 +56,10 @@ class Fields
      * If any of those fields is empty, BUS sync will be turned OFF
      *
      * @param $optionList
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public function initBusFields($optionList)
     {
@@ -94,7 +96,7 @@ class Fields
             ringier_infologthis('[fields] API endpoint url is empty');
         }
 
-        if (strlen($error) > 0) {
+        if (mb_strlen($error) > 0) {
             $this->is_bus_enabled = false;
             ringier_infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
 
@@ -122,8 +124,10 @@ class Fields
      * If any of those fields is empty, Slack sync will be turned OFF
      *
      * @param $optionList
-     * @return bool
+     *
      * @throws \Exception
+     *
+     * @return bool
      */
     public function initSlackFields($optionList)
     {
@@ -148,7 +152,7 @@ class Fields
             ringier_infologthis('[fields] Slack Channel name is empty');
         }
 
-        if (strlen($error) > 0) {
+        if (mb_strlen($error) > 0) {
             $this->is_slack_enabled = false;
             ringier_infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
             ringier_errorlogthis($error);
@@ -161,6 +165,7 @@ class Fields
             ringier_infologthis('[fields] Slack BOT name is empty, naming it DEFAULT_BLOG_BOT');
             $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
         }
+
         return true;
     }
 
