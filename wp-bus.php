@@ -2,7 +2,6 @@
 /**
  * WP-Bus
  *
- * @package RingiermuWPBus
  * @author Wasseem Khayrattee
  * @copyright 2021 Ringier
  * @license GPL-2.0-or-later
@@ -36,7 +35,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
-*/
+ */
 
 /**
  * Make sure we don't expose any info if called directly
