@@ -159,7 +159,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_VENTURE_CONFIG,
             // Use $args' label_for to populate the id inside the callback.
-            'Venture Config',
+            'Event Bus Venture Config ID',
             [self::class, 'field_venture_config_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -188,7 +188,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_APP_LOCALE,
             // Use $args' label_for to populate the id inside the callback.
-            'APP Locale',
+            'Site Locale',
             [self::class, 'field_app_locale_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -212,7 +212,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_USERNAME,
             // Use $args' label_for to populate the id inside the callback.
-            'API Username',
+            'Event Bus API Username',
             [self::class, 'field_api_username_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -236,7 +236,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_PASSWORD,
             // Use $args' label_for to populate the id inside the callback.
-            'API Password',
+            'Event Bus API Password',
             [self::class, 'field_api_password_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -260,7 +260,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_ENDPOINT,
             // Use $args' label_for to populate the id inside the callback.
-            'API Endpoint (URL)',
+            'Event Bus API Endpoint (URL)',
             [self::class, 'field_api_endpoint_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
