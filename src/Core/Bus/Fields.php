@@ -94,46 +94,50 @@ class Fields
             if (isset($optionList[Enum::FIELD_APP_KEY])) {
                 $this->field_app_key = $optionList[Enum::FIELD_APP_KEY];
             }
+
+            $error = '';
+            if (!Utils::notEmptyOrNull($this->field_venture_config)) {
+                $error .= 'Venture ID empty ||';
+                ringier_infologthis('[fields] Venture config is empty');
+            }
+            if (!Utils::notEmptyOrNull($this->field_bus_api_username)) {
+                $error .= 'API Username empty ||';
+                ringier_infologthis('[fields] API username is empty');
+            }
+            if (!Utils::notEmptyOrNull($this->field_bus_api_password)) {
+                $error .= 'API Password empty ||';
+                ringier_infologthis('[fields] API password is empty');
+            }
+            if (!Utils::notEmptyOrNull($this->field_bus_api_endpoint)) {
+                $error .= 'API Endpoint empty ||';
+                ringier_infologthis('[fields] API endpoint url is empty');
+            }
+
+            if (mb_strlen($error) > 0) {
+                $this->is_bus_enabled = false;
+                ringier_infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
+                ringier_errorlogthis('[API] - Turning BUS Process OFF because of the following error:');
+                ringier_errorlogthis($error);
+
+                return false;
+            }
+
+            if (!Utils::notEmptyOrNull($this->field_bus_backoff_duration)) {
+                $error .= 'field_bus_backoff_duration|';
+                ringier_infologthis('[fields] Backoff duration was empty, setting it to default 30mins');
+                $this->field_bus_backoff_duration = 30;
+            }
+
+            if (!Utils::notEmptyOrNull($this->field_bus_locale)) {
+                $error .= 'field_bus_locale|';
+                ringier_infologthis('[fields] Locale was empty, setting it to default en_KE');
+                $this->field_bus_locale = 'en_KE';
+            }
+
+            return true;
         }
 
-        $error = '';
-        if (!Utils::notEmptyOrNull($this->field_venture_config)) {
-            $error .= 'field_venture_config|';
-            ringier_infologthis('[fields] Venture config is empty');
-        }
-        if (!Utils::notEmptyOrNull($this->field_bus_api_username)) {
-            $error .= 'field_bus_api_username|';
-            ringier_infologthis('[fields] API username is empty');
-        }
-        if (!Utils::notEmptyOrNull($this->field_bus_api_password)) {
-            $error .= 'field_bus_api_password|';
-            ringier_infologthis('[fields] API password is empty');
-        }
-        if (!Utils::notEmptyOrNull($this->field_bus_api_endpoint)) {
-            $error .= 'field_bus_api_endpoint|';
-            ringier_infologthis('[fields] API endpoint url is empty');
-        }
-
-        if (mb_strlen($error) > 0) {
-            $this->is_bus_enabled = false;
-            ringier_infologthis('[field] setting BUS to OFF - by rule, as one field is empty');
-
-            return false;
-        }
-
-        if (!Utils::notEmptyOrNull($this->field_bus_backoff_duration)) {
-            $error .= 'field_bus_backoff_duration|';
-            ringier_infologthis('[fields] Backoff duration was empty, setting it to default 30mins');
-            $this->field_bus_backoff_duration = 30;
-        }
-
-        if (!Utils::notEmptyOrNull($this->field_bus_locale)) {
-            $error .= 'field_bus_locale|';
-            ringier_infologthis('[fields] Locale was empty, setting it to default en_KE');
-            $this->field_bus_locale = 'en_KE';
-        }
-
-        return true;
+        return false;
     }
 
     /**
@@ -155,37 +159,39 @@ class Fields
         $this->is_slack_enabled = true;
 
         if ($this->is_bus_enabled === true) {
-            $this->field_bus_slack_hook_url = $optionList['field_bus_slack_hook_url'];
-            $this->field_bus_slack_channel_name = $optionList['field_bus_slack_channel_name'];
-            $this->field_bus_slack_bot_name = $optionList['field_bus_slack_bot_name'];
+            $this->field_bus_slack_hook_url = $optionList[Enum::FIELD_SLACK_HOOK_URL];
+            $this->field_bus_slack_channel_name = $optionList[Enum::FIELD_SLACK_CHANNEL_NAME];
+            $this->field_bus_slack_bot_name = $optionList[Enum::FIELD_SLACK_BOT_NAME];
+
+            $error = '';
+            if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
+                $error .= 'Field Slack Hook URL || ';
+                ringier_infologthis('[fields] Slack hook url is empty');
+            }
+            if (!Utils::notEmptyOrNull($this->field_bus_slack_channel_name)) {
+                $error .= 'Field Slack Channel Name';
+                ringier_infologthis('[fields] Slack Channel name is empty');
+            }
+
+            if (mb_strlen($error) > 0) {
+                $this->is_slack_enabled = false;
+                ringier_infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
+                ringier_errorlogthis('[Slack Fields] - The following appear to be empty:');
+                ringier_errorlogthis($error);
+
+                return false;
+            }
+
+            if (!Utils::notEmptyOrNull($this->field_bus_slack_bot_name)) {
+                $error .= 'field_bus_slack_bot_name|';
+                ringier_infologthis('[fields] Slack BOT name is empty, naming it DEFAULT_BLOG_BOT');
+                $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
+            }
+
+            return true;
         }
 
-        $error = '';
-        if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
-            $error .= 'Field Slack Hook URL || ';
-            ringier_infologthis('[fields] Slack hook url is empty');
-        }
-        if (!Utils::notEmptyOrNull($this->field_bus_slack_channel_name)) {
-            $error .= 'Field Slack Channel Name';
-            ringier_infologthis('[fields] Slack Channel name is empty');
-        }
-
-        if (mb_strlen($error) > 0) {
-            $this->is_slack_enabled = false;
-            ringier_infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
-            ringier_errorlogthis('[Slack Fields] - The following appear to be empty:');
-            ringier_errorlogthis($error);
-
-            return false;
-        }
-
-        if (!Utils::notEmptyOrNull($this->field_bus_slack_bot_name)) {
-            $error .= 'field_bus_slack_bot_name|';
-            ringier_infologthis('[fields] Slack BOT name is empty, naming it DEFAULT_BLOG_BOT');
-            $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
-        }
-
-        return true;
+        return false;
     }
 
     /**
