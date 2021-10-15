@@ -115,7 +115,7 @@ class ArticleEvent
         } catch (\Exception $exception) {
             ringier_infologthis('[api] ERROR - could not push to BUS');
 
-            $blogKey = $_ENV['BLOG_KEY'];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
                             [This job should be (re)queued in the next few seconds..]
