@@ -30,7 +30,7 @@ class AdminSettingsPage
         // Register a new section in our page.
         add_settings_section(
             Enum::ADMIN_SETTINGS_SECTION_1,
-            'Please fill in the below',
+            'Please fill in the below, mandatory are marked by an asterisk <span style="color:red;">*</span>',
             [self::class, 'settingsSectionCallback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG
         );
@@ -87,14 +87,15 @@ class AdminSettingsPage
     {
         $this->add_field_bus_status();
         $this->add_field_app_locale();
+        $this->add_field_app_key();
         $this->add_field_venture_config();
         $this->add_field_api_username();
         $this->add_field_api_password();
         $this->add_field_api_endpoint();
+        $this->add_field_backoff_duration();
         $this->add_field_slack_hoook_url();
         $this->add_field_slack_channel_name();
         $this->add_field_slack_bot_name();
-        $this->add_field_backoff_duration();
     }
 
     //FIELD - bus_status
@@ -104,7 +105,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_BUS_STATUS,
             // Use $args' label_for to populate the id inside the callback.
-            'Enable Bus API',
+            'Enable Bus API<span style="color:red;">*</span>',
             [self::class, 'field_bus_status_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -159,7 +160,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_VENTURE_CONFIG,
             // Use $args' label_for to populate the id inside the callback.
-            'Event Bus Venture Config ID',
+            'Event Bus Venture Config ID<span style="color:red;">*</span>',
             [self::class, 'field_venture_config_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -188,7 +189,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_APP_LOCALE,
             // Use $args' label_for to populate the id inside the callback.
-            'Site Locale',
+            'Site Locale<span style="color:red;">*</span>',
             [self::class, 'field_app_locale_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -205,6 +206,30 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_app_locale.twig');
     }
 
+    //FIELD - APP KEY
+
+    public function add_field_app_key()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_APP_KEY,
+            // Use $args' label_for to populate the id inside the callback.
+            'Site Identifier<span style="color:red;">*</span>',
+            [self::class, 'field_app_key_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_APP_KEY,
+                'class' => 'wp-bus-row',
+                'field_custom_data' => Enum::FIELD_APP_KEY,
+            ]
+        );
+    }
+
+    public static function field_app_key_callback($args)
+    {
+        self::render_field_tpl($args, 'field_app_key.twig');
+    }
+
     //FIELD - API USERNAME
 
     public function add_field_api_username()
@@ -212,7 +237,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_USERNAME,
             // Use $args' label_for to populate the id inside the callback.
-            'Event Bus API Username',
+            'Event Bus API Username<span style="color:red;">*</span>',
             [self::class, 'field_api_username_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -236,7 +261,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_PASSWORD,
             // Use $args' label_for to populate the id inside the callback.
-            'Event Bus API Password',
+            'Event Bus API Password<span style="color:red;">*</span>',
             [self::class, 'field_api_password_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -260,7 +285,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_ENDPOINT,
             // Use $args' label_for to populate the id inside the callback.
-            'Event Bus API Endpoint (URL)',
+            'Event Bus API Endpoint (URL)<span style="color:red;">*</span>',
             [self::class, 'field_api_endpoint_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -356,7 +381,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_BACKOFF_DURATION,
             // Use $args' label_for to populate the id inside the callback.
-            'Backoff Duration',
+            'Backoff Duration<span style="color:red;">*</span>',
             [self::class, 'field_backoff_duration_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
