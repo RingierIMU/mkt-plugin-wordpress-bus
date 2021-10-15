@@ -76,6 +76,8 @@ class BusPluginClass
                 [
                     Enum::FIELD_BUS_STATUS => 'off',
                     Enum::FIELD_APP_LOCALE => 'en_KE',
+                    Enum::FIELD_APP_KEY => 'MUUK-STAGING',
+                    Enum::FIELD_SLACK_BOT_NAME => 'MUUK-STAGING',
                     Enum::FIELD_BACKOFF_DURATION => 30,
                 ]
             );
