@@ -18,13 +18,14 @@ class Enum
     const ENV_BUS_API_USERNAME = 'RBP_BUS_API_USERNAME';
     const ENV_BUS_API_PASSWORD = 'RBP_BUS_API_PASSWORD';
     const ENV_BUS_API_LOCALE = 'RBP_BUS_API_LOCALE';
+    const ENV_BUS_APP_KEY = 'RBP_BUS_APP_KEY';
     const ENV_SLACK_HOOK_URL = 'RBP_SLACK_HOOK_URL';
     const ENV_SLACK_CHANNEL_NAME = 'RBP_SLACK_CHANNEL_NAME';
     const ENV_SLACK_BOT_NAME = 'RBP_SLACK_BOT_NAME';
     const ENV_SLACK_ENABLED = 'RBP_SLACK_ENABLED';
 
     //ADMIN SETTINGS PAGE
-    const ADMIN_SETTINGS_PAGE_TITLE = 'Ringier Bus API Settings';
+    const ADMIN_SETTINGS_PAGE_TITLE = 'Ringier Event Bus Settings';
     const ADMIN_SETTINGS_MENU_TITLE = 'Bus API';
     const ADMIN_SETTINGS_MENU_SLUG = 'wp-bus-api';
     const ADMIN_SETTINGS_SECTION_1 = 'wp-bus-settings-section01';
@@ -32,6 +33,7 @@ class Enum
     //FIELDS
     const FIELD_BUS_STATUS = 'field_bus_status';
     const FIELD_APP_LOCALE = 'field_bus_app_locale';
+    const FIELD_APP_KEY = 'field_bus_app_key';
     const FIELD_VENTURE_CONFIG = 'field_venture_config';
     const FIELD_API_USERNAME = 'field_bus_api_username';
     const FIELD_API_PASSWORD = 'field_bus_api_password';
