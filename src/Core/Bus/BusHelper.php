@@ -85,7 +85,7 @@ class BusHelper
          * Hope in the future WordPress exposes a better way for us to get this context
          */
         if (is_object($post)) {
-            $blogKey = $_ENV['BLOG_KEY'];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             if (Utils::isPostNew($post_ID) === true) {
                 $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
             } else {
@@ -140,7 +140,7 @@ class BusHelper
      */
     public static function cronSendToBusScheduled($articleTriggerMode, $post_ID, $countCalled)
     {
-        $blogKey = $_ENV['BLOG_KEY'];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
             $blogKey: Now attempting to execute Queued "Push-to-BUS" for article (ID: $post_ID)..
                     
@@ -232,7 +232,7 @@ class BusHelper
             wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
         }
 
-        $blogKey = $_ENV['BLOG_KEY'];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
             $blogKey: [Queuing] Push-to-BUS for article (ID: $post_ID) has just been queued.
             And will run in the next ($minutesToRun)mins..
