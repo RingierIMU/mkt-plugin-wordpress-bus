@@ -21,6 +21,7 @@ class Fields
     public string $field_bus_api_endpoint;
     public int $field_bus_backoff_duration;
     public string $field_bus_locale;
+    public string $field_app_key;
 
     //slack
     public string $field_bus_slack_hook_url;
@@ -63,6 +64,8 @@ class Fields
      */
     public function initBusFields($optionList)
     {
+        $this->field_bus_locale = '';
+        $this->field_app_key = '';
         $this->field_venture_config = '';
         $this->field_bus_api_username = '';
         $this->field_bus_api_password = '';
@@ -70,12 +73,27 @@ class Fields
         $this->field_bus_backoff_duration = 0;
 
         if ($this->is_bus_enabled === true) {
-            $this->field_venture_config = $optionList['field_venture_config'];
-            $this->field_bus_api_username = $optionList['field_bus_api_username'];
-            $this->field_bus_api_password = $optionList['field_bus_api_password'];
-            $this->field_bus_api_endpoint = $optionList['field_bus_api_endpoint'];
-            $this->field_bus_backoff_duration = $optionList['field_bus_backoff_duration'];
-            $this->field_bus_locale = $optionList['field_bus_app_locale'];
+            if (isset($optionList[Enum::FIELD_VENTURE_CONFIG])) {
+                $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG];
+            }
+            if (isset($optionList[Enum::FIELD_API_USERNAME])) {
+                $this->field_bus_api_username = $optionList[Enum::FIELD_API_USERNAME];
+            }
+            if (isset($optionList[Enum::FIELD_API_PASSWORD])) {
+                $this->field_bus_api_password = $optionList[Enum::FIELD_API_PASSWORD];
+            }
+            if (isset($optionList[Enum::FIELD_API_ENDPOINT])) {
+                $this->field_bus_api_endpoint = $optionList[Enum::FIELD_API_ENDPOINT];
+            }
+            if (isset($optionList[Enum::FIELD_BACKOFF_DURATION])) {
+                $this->field_bus_backoff_duration = $optionList[Enum::FIELD_BACKOFF_DURATION];
+            }
+            if (isset($optionList[Enum::FIELD_APP_LOCALE])) {
+                $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE];
+            }
+            if (isset($optionList[Enum::FIELD_APP_KEY])) {
+                $this->field_app_key = $optionList[Enum::FIELD_APP_KEY];
+            }
         }
 
         $error = '';
@@ -134,8 +152,8 @@ class Fields
         $this->field_bus_slack_hook_url = '';
         $this->field_bus_slack_channel_name = '';
         $this->field_bus_slack_bot_name = '';
-
         $this->is_slack_enabled = true;
+
         if ($this->is_bus_enabled === true) {
             $this->field_bus_slack_hook_url = $optionList['field_bus_slack_hook_url'];
             $this->field_bus_slack_channel_name = $optionList['field_bus_slack_channel_name'];
@@ -144,17 +162,18 @@ class Fields
 
         $error = '';
         if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
-            $error .= 'field_bus_slack_hook_url|';
+            $error .= 'Field Slack Hook URL || ';
             ringier_infologthis('[fields] Slack hook url is empty');
         }
         if (!Utils::notEmptyOrNull($this->field_bus_slack_channel_name)) {
-            $error .= 'field_bus_slack_channel_name|';
+            $error .= 'Field Slack Channel Name';
             ringier_infologthis('[fields] Slack Channel name is empty');
         }
 
         if (mb_strlen($error) > 0) {
             $this->is_slack_enabled = false;
             ringier_infologthis('[field] setting SLACK LOGGING to OFF - by rule, as one field is empty');
+            ringier_errorlogthis('[Slack Fields] - The following appear to be empty:');
             ringier_errorlogthis($error);
 
             return false;
@@ -182,6 +201,7 @@ class Fields
             $_ENV[Enum::ENV_BUS_API_USERNAME] = $this->field_bus_api_username;
             $_ENV[Enum::ENV_BUS_API_PASSWORD] = $this->field_bus_api_password;
             $_ENV[Enum::ENV_BUS_API_LOCALE] = $this->field_bus_locale;
+            $_ENV[Enum::ENV_BUS_APP_KEY] = $this->field_app_key;
         }
 
         if ($this->is_slack_enabled === true) {
