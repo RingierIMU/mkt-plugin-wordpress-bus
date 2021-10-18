@@ -27,8 +27,8 @@
   },
   "require": {
     "monolog/monolog": "2.3.5",
-    "timber/timber": "1.19.0",
-    "guzzlehttp/guzzle": "7.3.0",
+    "timber/timber": "1.19.1",
+    "guzzlehttp/guzzle": "7.4.0",
     "symfony/cache": "5.3.8",
     "ramsey/uuid": "4.2.3"
   },
