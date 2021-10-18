@@ -2,10 +2,10 @@
     'root' => array(
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'type' => 'wp-plugin',
+        'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => '15db0fa5947cf206387d107c8ebe28cc7b421d0e',
+        'reference' => 'fc2634211721dfa9057536496cef42e6d0a4f3d7',
         'name' => 'ringierimu/wp-bus',
         'dev' => false,
     ),
@@ -54,7 +54,7 @@
             'aliases' => array(
                 0 => '1.5.x-dev',
             ),
-            'reference' => '136a635e2b4a49b9d79e9c8fee267ffb257fdba0',
+            'reference' => 'b2e8301545358f39b94576b34b305b89cee04193',
             'dev_requirement' => false,
         ),
         'guzzlehttp/psr7' => array(
@@ -65,7 +65,7 @@
             'aliases' => array(
                 0 => '2.1.x-dev',
             ),
-            'reference' => '089edd38f5b8abba6cb01567c2a8aaa47cec4c72',
+            'reference' => '04896ddeb63173888238ff1e8bad58df650a9d90',
             'dev_requirement' => false,
         ),
         'monolog/monolog' => array(
@@ -209,10 +209,10 @@
         'ringierimu/wp-bus' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'type' => 'wp-plugin',
+            'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => '15db0fa5947cf206387d107c8ebe28cc7b421d0e',
+            'reference' => 'fc2634211721dfa9057536496cef42e6d0a4f3d7',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(

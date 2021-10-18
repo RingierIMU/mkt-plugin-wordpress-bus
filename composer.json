@@ -12,9 +12,6 @@
   "type": "wordpress-plugin",
   "config": {
     "vendor-dir": "includes/vendor",
-    "platform": {
-      "php": "7.4"
-    },
     "preferred-install": {
       "*": "dist"
     },
