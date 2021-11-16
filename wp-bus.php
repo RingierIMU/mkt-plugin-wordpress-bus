@@ -7,7 +7,7 @@
  * @license GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name: WP-Bus
+ * Plugin Name: Ringier Bus Plugin
  * Plugin URI: https://github.com/RingierIMU/mkt-plugin-wordpress-bus
  * Description: A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted
  * Version: 1.0.0
