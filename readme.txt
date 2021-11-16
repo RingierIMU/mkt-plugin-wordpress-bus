@@ -1,15 +1,15 @@
-## WP Bus ##
-**Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)
-**Tags:** ringier, bus, api, cde
-**Requires at least:** 5.7.0
-**Tested up to:** 5.8.2
-**Stable tag:** 1.0.0
-**License:** GPLv2 or later
-**License URI:** http://www.gnu.org/licenses/gpl-2.0.html
+=== WP Bus ===
+Contributors: ringier, wkhayrattee
+Tags: ringier, bus, api, cde
+Requires at least: 5.7.0
+Tested up to: 5.8.2
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted.
 
-## Description ##
+== Description ==
 
 ### About | wp-bus
 
@@ -50,7 +50,7 @@ That is, whenever you create or edit an article, it will not send the event imme
 2) To view all scheduled events, make use of this plugin: [Advanced Cron Manager](https://wordpress.org/plugins/advanced-cron-manager/)
 
 
-## Installation ##
+== Installation ==
 
 1) Install & activate the plugin
 
@@ -68,7 +68,7 @@ NOTE:
 - Likewise, if any of the Bus API fields is empty, the plugin will assume BUS Event is OFF even if you enabled it
 
 
-## Contributing ##
+== Contributing ==
 
 The best way to contribute to the development of this plugin is by participating on the GitHub project:
 
@@ -77,10 +77,10 @@ https://github.com/RingierIMU/mkt-plugin-wordpress-bus
 Pull requests and issues are welcome!
 
 
-## Changelog ##
+== Changelog ==
 
-### 1.0.0 (November 16, 2021) ###
+= 1.0.0 (November 16, 2021) =
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
 
-### 0.1.0 (September 26, 2021) ###
+= 0.1.0 (September 26, 2021) =
 * Initial commit of working code for the benefit of everyone who needs this plugin
