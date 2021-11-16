@@ -1,11 +1,11 @@
-## WP Bus ##
-**Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)
-**Tags:** ringier, bus, api, cde
-**Requires at least:** 5.7.0
-**Tested up to:** 5.8.2
-**Stable tag:** 1.0.0
-**License:** GPLv2 or later
-**License URI:** http://www.gnu.org/licenses/gpl-2.0.html
+# WP Bus #
+**Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
+**Tags:** ringier, bus, api, cde   
+**Requires at least:** 5.7.0  
+**Tested up to:** 5.8.1  
+**Stable tag:** 1.0.0  
+**License:** GPLv2 or later  
+**License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
 A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted.
 
