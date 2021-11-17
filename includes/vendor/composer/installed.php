@@ -5,7 +5,7 @@
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => '1fd4934006533cbfb8eacfcf957e82ac02328ea1',
+        'reference' => '8890ba3c20e087b6ff8ba153bb62914b5ae55783',
         'name' => 'ringierimu/wp-bus',
         'dev' => false,
     ),
@@ -54,7 +54,7 @@
             'aliases' => array(
                 0 => '1.5.x-dev',
             ),
-            'reference' => 'b2e8301545358f39b94576b34b305b89cee04193',
+            'reference' => 'fe752aedc9fd8fcca3fe7ad05d419d32998a06da',
             'dev_requirement' => false,
         ),
         'guzzlehttp/psr7' => array(
@@ -65,7 +65,7 @@
             'aliases' => array(
                 0 => '2.1.x-dev',
             ),
-            'reference' => '04896ddeb63173888238ff1e8bad58df650a9d90',
+            'reference' => 'c55d23ab371b472342bee943a8bdb9c3cf963a18',
             'dev_requirement' => false,
         ),
         'monolog/monolog' => array(
@@ -93,12 +93,12 @@
             ),
         ),
         'psr/container' => array(
-            'pretty_version' => '1.1.x-dev',
-            'version' => '1.1.9999999.9999999-dev',
+            'pretty_version' => '1.x-dev',
+            'version' => '1.9999999.9999999.9999999-dev',
             'type' => 'library',
             'install_path' => __DIR__ . '/../psr/container',
             'aliases' => array(),
-            'reference' => '8622567409010282b7aeebe4bb841fe98b58dcaf',
+            'reference' => '513e0666f7216c7459170d56df27dfcefe1689ea',
             'dev_requirement' => false,
         ),
         'psr/http-client' => array(
@@ -212,7 +212,7 @@
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => '1fd4934006533cbfb8eacfcf957e82ac02328ea1',
+            'reference' => '8890ba3c20e087b6ff8ba153bb62914b5ae55783',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(
@@ -228,12 +228,12 @@
             ),
         ),
         'symfony/cache' => array(
-            'pretty_version' => 'v5.3.8',
-            'version' => '5.3.8.0',
+            'pretty_version' => 'v5.3.10',
+            'version' => '5.3.10.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/cache',
             'aliases' => array(),
-            'reference' => '945bcebfef0aeef105de61843dd14105633ae38f',
+            'reference' => '2056f2123f47c9f63102a8b92974c362f4fba568',
             'dev_requirement' => false,
         ),
         'symfony/cache-contracts' => array(
@@ -268,7 +268,7 @@
             'aliases' => array(
                 0 => '1.23.x-dev',
             ),
-            'reference' => 'f24ae462b1d60c333df104f0b81ec7d0e12f6e9f',
+            'reference' => '30885182c981ab175d4d034db0f6f469898070ab',
             'dev_requirement' => false,
         ),
         'symfony/polyfill-mbstring' => array(
@@ -279,7 +279,7 @@
             'aliases' => array(
                 0 => '1.23.x-dev',
             ),
-            'reference' => '344e456152e22a1bce3048c6c311059ea14bde47',
+            'reference' => '11b9acb5e8619aef6455735debf77dde8825795c',
             'dev_requirement' => false,
         ),
         'symfony/polyfill-php73' => array(
@@ -330,7 +330,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/var-exporter',
             'aliases' => array(),
-            'reference' => 'b6e4ed5f511453d65e263ea475ff95d86520b637',
+            'reference' => '1760afd31292d227713564144aadf583fe3e071e',
             'dev_requirement' => false,
         ),
         'timber/timber' => array(
@@ -359,7 +359,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../twig/twig',
             'aliases' => array(),
-            'reference' => '5e7ec8b53dd0f74dad97d7a8cd89e0bfe76e8e55',
+            'reference' => 'a95486f2c6a65a0b5c9a6f413bb4a6312a3db2ed',
             'dev_requirement' => false,
         ),
         'upstatement/routes' => array(
