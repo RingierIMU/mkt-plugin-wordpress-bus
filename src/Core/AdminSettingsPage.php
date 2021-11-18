@@ -70,7 +70,7 @@ class AdminSettingsPage
         }
 
         $timber = new Timber();
-        $settings_page_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'page_settings.twig';
+        $settings_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_settings.twig';
 
         if (file_exists($settings_page_tpl)) {
             $context['admin_page_title'] = $title;
@@ -111,7 +111,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_BUS_STATUS,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_BUS_STATUS,
             ]
         );
@@ -133,7 +133,7 @@ class AdminSettingsPage
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
         $timber = new Timber();
-        $field_bus_status_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'field_bus_status_dropdown.twig';
+        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_bus_status_dropdown.twig';
 
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
@@ -166,7 +166,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_VENTURE_CONFIG,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_VENTURE_CONFIG,
             ]
         );
@@ -195,7 +195,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_APP_LOCALE,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_APP_LOCALE,
             ]
         );
@@ -219,7 +219,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_APP_KEY,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_APP_KEY,
             ]
         );
@@ -243,7 +243,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_API_USERNAME,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_API_USERNAME,
             ]
         );
@@ -267,7 +267,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_API_PASSWORD,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_API_PASSWORD,
             ]
         );
@@ -291,7 +291,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_API_ENDPOINT,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_API_ENDPOINT,
             ]
         );
@@ -315,7 +315,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_SLACK_HOOK_URL,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_HOOK_URL,
             ]
         );
@@ -339,7 +339,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_SLACK_CHANNEL_NAME,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_CHANNEL_NAME,
             ]
         );
@@ -363,7 +363,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_SLACK_BOT_NAME,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_SLACK_BOT_NAME,
             ]
         );
@@ -387,7 +387,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_SECTION_1,
             [
                 'label_for' => Enum::FIELD_BACKOFF_DURATION,
-                'class' => 'wp-bus-row',
+                'class' => 'ringier-bus-row',
                 'field_custom_data' => Enum::FIELD_BACKOFF_DURATION,
             ]
         );
@@ -410,7 +410,7 @@ class AdminSettingsPage
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
         $timber = new Timber();
-        $field_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . $tpl_name;
+        $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . $tpl_name;
 
         $field_value = '';
         if (isset($options[$args['label_for']])) {

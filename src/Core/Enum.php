@@ -26,9 +26,9 @@ class Enum
 
     //ADMIN SETTINGS PAGE
     const ADMIN_SETTINGS_PAGE_TITLE = 'Ringier Event Bus Settings';
-    const ADMIN_SETTINGS_MENU_TITLE = 'Bus API';
-    const ADMIN_SETTINGS_MENU_SLUG = 'wp-bus-api';
-    const ADMIN_SETTINGS_SECTION_1 = 'wp-bus-settings-section01';
+    const ADMIN_SETTINGS_MENU_TITLE = 'Ringier Bus';
+    const ADMIN_SETTINGS_MENU_SLUG = 'ringier-bus-api';
+    const ADMIN_SETTINGS_SECTION_1 = 'ringier-bus-settings-section01';
 
     //FIELDS
     const FIELD_BUS_STATUS = 'field_bus_status';
@@ -45,9 +45,9 @@ class Enum
 
     //ADMIN LOG PAGE
     const ADMIN_LOG_PAGE_TITLE = 'Ringier Bus API Log';
-    const ADMIN_LOG_MENU_TITLE = 'Bus API LOG';
-    const ADMIN_LOG_MENU_SLUG = 'wp-bus-api-log';
-    const ADMIN_LOG_SECTION_1 = 'wp-bus-api-log-section01';
+    const ADMIN_LOG_MENU_TITLE = 'Ringier Bus LOG';
+    const ADMIN_LOG_MENU_SLUG = 'ringier-bus-api-log';
+    const ADMIN_LOG_SECTION_1 = 'ringier-bus-api-log-section01';
 
     //BUS API Related
     const HOOK_NAME_SCHEDULED_EVENTS = 'hookSendToBusScheduled';

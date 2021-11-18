@@ -47,7 +47,7 @@ class Auth implements AuthenticationInterface
     public function __construct()
     {
         $this->authToken = null;
-        $this->cache = new FilesystemAdapter(Enum::CACHE_NAMESPACE, 0, WP_BUS_RINGIER_PLUGIN_CACHE_DIR);
+        $this->cache = new FilesystemAdapter(Enum::CACHE_NAMESPACE, 0, RINGIER_BUS_PLUGIN_CACHE_DIR);
     }
 
     public function setParameters($endpointUrl, $ventureConfig, $username, $password)

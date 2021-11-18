@@ -29,9 +29,8 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 /**
  * load our main file now with composer autoloading
  */
-define('DS', DIRECTORY_SEPARATOR);
-define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
-require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'includes/vendor/autoload.php';
+define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
+require_once RINGIER_BUS_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'includes/vendor/autoload.php';
 
 //Call our uninstall-cleanup process
 ringier_infologthis('uninstall.php called');

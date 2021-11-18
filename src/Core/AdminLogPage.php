@@ -50,8 +50,8 @@ class AdminLogPage
     public static function renderLogPage()
     {
         global $title;
-        $error_log_file = WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_ERROR;
-        $message_log_file = WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_MESSAGE;
+        $error_log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
+        $message_log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_MESSAGE;
         $txtlog_value = $error_msg = $error_msg2 = $messagelog_value = '';
 
         if (!current_user_can('manage_options')) {
@@ -66,7 +66,7 @@ class AdminLogPage
 //            $error_msg = self::clearErrorLog($message_log_file);
 //        }
 
-        $log_page_tpl = WP_BUS_RINGIER_PLUGIN_VIEWS . 'admin' . DS . 'page_log.twig';
+        $log_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_log.twig';
 
         $txtlog_value = self::fetchLogData($error_log_file);
 //        $messagelog_value = self::fetchLogData($message_log_file);

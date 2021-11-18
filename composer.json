@@ -1,5 +1,5 @@
 {
-  "name": "ringierimu/wp-bus",
+  "name": "ringierimu/ringier-bus",
   "description": "A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted",
   "keywords": ["wordpress", "plugin", "cde", "bus"],
   "license": "GPL-2.0-or-later",

@@ -116,8 +116,8 @@ class BusPluginClass
     public static function injectACF()
     {
         // Define path and URL to the ACF plugin.
-        define('MY_ACF_PATH', WP_BUS_RINGIER_PLUGIN_DIR . 'includes/acf/');
-        define('MY_ACF_URL', WP_BUS_RINGIER_PLUGIN_DIR_URL . 'includes/acf/');
+        define('MY_ACF_PATH', RINGIER_BUS_PLUGIN_DIR . 'includes/acf/');
+        define('MY_ACF_URL', RINGIER_BUS_PLUGIN_DIR_URL . 'includes/acf/');
 
         // Include the ACF plugin.
         include_once MY_ACF_PATH . 'acf.php';
@@ -176,7 +176,7 @@ class BusPluginClass
         // remove original path (optional)
         unset($paths[0]);
         // path to our json exports having our custom fields
-        $paths[] = WP_BUS_RINGIER_PLUGIN_DIR . 'includes/acf-json';
+        $paths[] = RINGIER_BUS_PLUGIN_DIR . 'includes/acf-json';
 
         return $paths;
     }

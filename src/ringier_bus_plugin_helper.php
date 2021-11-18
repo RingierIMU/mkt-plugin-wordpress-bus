@@ -19,7 +19,7 @@ use RingierBusPlugin\Enum;
 function ringier_infologthis($message)
 {
     $log = new Logger('ringier_bus_plugin_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_MESSAGE, Logger::INFO);
+    $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_MESSAGE, Logger::INFO);
     $log->pushHandler($stream);
     $log->info($message);
     unset($log);
@@ -36,7 +36,7 @@ function ringier_infologthis($message)
 function ringier_errorlogthis($message)
 {
     $log = new Logger('ringier_bus_plugin_error_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_ERROR, Logger::ERROR);
+    $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR, Logger::ERROR);
     $log->pushHandler($stream);
     $log->error($message);
     unset($log);

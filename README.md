@@ -1,4 +1,4 @@
-# WP Bus #
+# Ringier-Bus WordPress Plugin #
 **Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 5.7.0  
@@ -11,7 +11,7 @@ A plugin to push events to Ringier CDE via the BUS API whenever an article is cr
 
 ## Description ##
 
-### About | wp-bus
+### About | Ringier-Bus
 
 A plugin to push events to the Ringier Content Distribution Engine (CDE) via the BUS API whenever an article is created, updated or deleted.
 
