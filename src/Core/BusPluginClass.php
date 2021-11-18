@@ -116,11 +116,11 @@ class BusPluginClass
     public static function injectACF()
     {
         // Define path and URL to the ACF plugin.
-        define('MY_ACF_PATH', RINGIER_BUS_PLUGIN_DIR . 'includes/acf/');
-        define('MY_ACF_URL', RINGIER_BUS_PLUGIN_DIR_URL . 'includes/acf/');
+        define('RINGIER_BUS_PLUGIN_ACF_PATH', RINGIER_BUS_PLUGIN_DIR . 'includes/acf/');
+        define('RINGIER_BUS_PLUGIN_ACF_URL', RINGIER_BUS_PLUGIN_DIR_URL . 'includes/acf/');
 
         // Include the ACF plugin.
-        include_once MY_ACF_PATH . 'acf.php';
+        include_once RINGIER_BUS_PLUGIN_ACF_PATH . 'acf.php';
 
         // Customize the url setting to fix incorrect asset URLs.
         add_filter('acf/settings/url', [self::class, 'acf_settings_url']);
@@ -147,7 +147,7 @@ class BusPluginClass
      */
     public static function acf_settings_url($url)
     {
-        return MY_ACF_URL;
+        return RINGIER_BUS_PLUGIN_ACF_URL;
     }
 
     /**
