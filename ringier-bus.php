@@ -1,13 +1,13 @@
 <?php
 /**
- * WP-Bus
+ * ringier-bus
  *
  * @author Wasseem Khayrattee
  * @copyright 2021 Ringier
  * @license GPL-2.0-or-later
  *
  * @wordpress-plugin
- * Plugin Name: Ringier Bus Plugin
+ * Plugin Name: Ringier Bus
  * Plugin URI: https://github.com/RingierIMU/mkt-plugin-wordpress-bus
  * Description: A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted
  * Version: 1.0.0
@@ -16,7 +16,7 @@
  * Author URI: https://www.ringier.com/
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: wp-bus
+ * Text Domain: ringier-bus
  * Domain Path: /languages
  *
  *
@@ -48,19 +48,19 @@ if (!function_exists('add_action')) {
 /**
  * Some global constants for our use-case
  */
-define('DS', DIRECTORY_SEPARATOR);
-define('WP_BUS_RINGIER_VERSION', '1.0.0');
-define('WP_BUS_RINGIER_MINIMUM_WP_VERSION', '4.0');
-define('WP_BUS_RINGIER_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailing slash at end
-define('WP_BUS_RINGIER_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
-define('WP_BUS_RINGIER_BASENAME', plugin_basename(WP_BUS_RINGIER_PLUGIN_DIR));
-define('WP_BUS_RINGIER_PLUGIN_VIEWS', WP_BUS_RINGIER_PLUGIN_DIR . 'views' . DS);
-define('WP_BUS_RINGIER_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . DS . 'cache' . DS);
+define('RINGIER_BUS_DS', DIRECTORY_SEPARATOR);
+define('RINGIER_BUS_PLUGIN_VERSION', '1.0.0');
+define('RINGIER_BUS_PLUGIN_MINIMUM_WP_VERSION', '4.0');
+define('RINGIER_BUS_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailing slash at end
+define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
+define('RINGIER_BUS_PLUGIN_BASENAME', plugin_basename(RINGIER_BUS_PLUGIN_DIR));
+define('RINGIER_BUS_PLUGIN_VIEWS', RINGIER_BUS_PLUGIN_DIR . 'views' . RINGIER_BUS_DS);
+define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache' . RINGIER_BUS_DS);
 
 /**
  * load our main file now with composer autoloading
  */
-require_once WP_BUS_RINGIER_PLUGIN_DIR . DS . 'includes/vendor/autoload.php';
+require_once RINGIER_BUS_PLUGIN_DIR . RINGIER_BUS_DS . 'includes/vendor/autoload.php';
 
 /**
  * Register main Hooks
