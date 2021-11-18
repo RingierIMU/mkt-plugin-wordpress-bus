@@ -16,5 +16,5 @@ return array(
     '0d59ee240a4cd96ddbb4ff164fccea4d' => $vendorDir . '/symfony/polyfill-php73/bootstrap.php',
     '37a3dc5111fe8f707ab4c132ef1dbc62' => $vendorDir . '/guzzlehttp/guzzle/src/functions_include.php',
     'e39a8b23c42d4e1452234d762b03835a' => $vendorDir . '/ramsey/uuid/src/functions.php',
-    '8a76648ee1b9e00067a1be196203ff73' => $baseDir . '/src/ringier_bus_plugin_helper.php',
+    '3ffbb1ebb515c183110095caa71af43f' => $baseDir . '/src/ringier_bus_plugin_helper.php',
 );

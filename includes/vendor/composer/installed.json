@@ -2044,12 +2044,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/var-exporter.git",
-                "reference": "1760afd31292d227713564144aadf583fe3e071e"
+                "reference": "833ed7bb4d357f34381883b96ee3a6a833a71c48"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/var-exporter/zipball/1760afd31292d227713564144aadf583fe3e071e",
-                "reference": "1760afd31292d227713564144aadf583fe3e071e",
+                "url": "https://api.github.com/repos/symfony/var-exporter/zipball/833ed7bb4d357f34381883b96ee3a6a833a71c48",
+                "reference": "833ed7bb4d357f34381883b96ee3a6a833a71c48",
                 "shasum": ""
             },
             "require": {
@@ -2059,7 +2059,7 @@
             "require-dev": {
                 "symfony/var-dumper": "^4.4.9|^5.0.9|^6.0"
             },
-            "time": "2021-11-04T08:35:51+00:00",
+            "time": "2021-11-17T12:18:18+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {

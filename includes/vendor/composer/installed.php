@@ -5,8 +5,8 @@
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => '8890ba3c20e087b6ff8ba153bb62914b5ae55783',
-        'name' => 'ringierimu/wp-bus',
+        'reference' => '9a1d25d300642736c2a893e222d4efd85eefc45a',
+        'name' => 'ringierimu/ringier-bus',
         'dev' => false,
     ),
     'versions' => array(
@@ -206,13 +206,13 @@
                 0 => '4.2.3',
             ),
         ),
-        'ringierimu/wp-bus' => array(
+        'ringierimu/ringier-bus' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => '8890ba3c20e087b6ff8ba153bb62914b5ae55783',
+            'reference' => '9a1d25d300642736c2a893e222d4efd85eefc45a',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(
@@ -330,7 +330,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/var-exporter',
             'aliases' => array(),
-            'reference' => '1760afd31292d227713564144aadf583fe3e071e',
+            'reference' => '833ed7bb4d357f34381883b96ee3a6a833a71c48',
             'dev_requirement' => false,
         ),
         'timber/timber' => array(
