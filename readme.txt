@@ -87,6 +87,11 @@ There are many ways you can contribute:
 * Provide us with your feedback and/or suggestions for any improvement or enhancement
 * Translation - this is an area we are yet to do
 
+== Credits/Thanks ==
+
+1) Wasseem Khayrattee - for creating and maintaining the plugin
+2) Mishka Rasool - for conceiving/creating the banner and logo asset files
+
 
 == Changelog ==
 
