@@ -11,6 +11,8 @@ use RingierBusPlugin\Enum;
 
 /**
  * Wrapper to log Messages in a custom log file
+ * Note: This function will only work if you are using $_ENV['APP_ENV']
+ * and if it is set to any other value than 'prod'
  *
  * @param $message
  *
@@ -18,12 +20,14 @@ use RingierBusPlugin\Enum;
  */
 function ringier_infologthis($message)
 {
-    $log = new Logger('ringier_bus_plugin_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_MESSAGE, Logger::INFO);
-    $log->pushHandler($stream);
-    $log->info($message);
-    unset($log);
-    unset($stream);
+    if (isset($_ENV['APP_ENV']) && ($_ENV['APP_ENV'] != 'prod')) {
+        $log = new Logger('ringier_bus_plugin_log');
+        $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_MESSAGE, Logger::INFO);
+        $log->pushHandler($stream);
+        $log->info($message);
+        unset($log);
+        unset($stream);
+    }
 }
 
 /**
