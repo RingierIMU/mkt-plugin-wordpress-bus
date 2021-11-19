@@ -5,7 +5,7 @@
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => '9a1d25d300642736c2a893e222d4efd85eefc45a',
+        'reference' => 'ff78622c5a364b0497f17c63be8d37096b6eed3c',
         'name' => 'ringierimu/ringier-bus',
         'dev' => false,
     ),
@@ -212,7 +212,7 @@
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => '9a1d25d300642736c2a893e222d4efd85eefc45a',
+            'reference' => 'ff78622c5a364b0497f17c63be8d37096b6eed3c',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(
@@ -272,14 +272,12 @@
             'dev_requirement' => false,
         ),
         'symfony/polyfill-mbstring' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
+            'pretty_version' => 'v1.20.0',
+            'version' => '1.20.0.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/polyfill-mbstring',
-            'aliases' => array(
-                0 => '1.23.x-dev',
-            ),
-            'reference' => '11b9acb5e8619aef6455735debf77dde8825795c',
+            'aliases' => array(),
+            'reference' => '39d483bdf39be819deabf04ec872eb0b2410b531',
             'dev_requirement' => false,
         ),
         'symfony/polyfill-php73' => array(

@@ -26,6 +26,7 @@
     "files": ["src/ringier_bus_plugin_helper.php"]
   },
   "require": {
+    "symfony/polyfill-mbstring": "1.20.0",
     "monolog/monolog": "2.3.5",
     "timber/timber": "1.19.1",
     "guzzlehttp/guzzle": "7.4.0",
