@@ -1,4 +1,4 @@
-=== Plugin Name ===
+=== Plugin Name ===.
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 4.7
