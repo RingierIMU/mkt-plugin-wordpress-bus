@@ -90,7 +90,7 @@ There are many ways you can contribute:
 
 == Changelog ==
 
-= 1.0.0 (November 16, 2021) =
+= 1.0.0 (November 19, 2021) =
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
 
 = 0.1.0 (September 26, 2021) =
