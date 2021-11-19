@@ -5,9 +5,9 @@ namespace RingierBusPlugin;
 class Enum
 {
     public const BUS_API_VERSION = '1.0.3';
-    const PLUGIN_KEY = 'WP_BUS';
-    const SETTINGS_PAGE_OPTION_GROUP = 'wp_bus_settingspage_group';
-    const SETTINGS_PAGE_OPTION_NAME = 'wp_bus_settingspage_options';
+    const PLUGIN_KEY = 'RINGIER_BUS_PLUGIN';
+    const SETTINGS_PAGE_OPTION_GROUP = 'ringier_bus_settingspage_group';
+    const SETTINGS_PAGE_OPTION_NAME = 'ringier_bus_settingspage_options';
     const RINGIER_LOG_FILE_MESSAGE = 'ringier_bus_plugin.log';
     const RINGIER_LOG_FILE_ERROR = 'ringier_bus_plugin_error.log';
 
