@@ -1,4 +1,4 @@
-=== Ringier Bus ===
+=== Plugin Name ===
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 5.7.0
