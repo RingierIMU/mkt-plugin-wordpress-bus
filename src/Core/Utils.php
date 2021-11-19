@@ -197,7 +197,7 @@ class Utils
     public static function l($message, $logLevel = 'alert', array $context = [])
     {
         //Enable logging to Slack ONLY IF it was enabled
-        if ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON') {
+        if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
             LoggingHandler::getInstance()->log($logLevel, $message, $context);
 
             ringier_infologthis('[slack] a message was sent to slack');
