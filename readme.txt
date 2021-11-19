@@ -69,6 +69,11 @@ NOTE:
 - Likewise, if any of the Bus API fields is empty, the plugin will assume BUS Event is OFF even if you enabled it
 
 
+== Screenshots ==
+
+1. The admin page
+2. On article dashboard, you can select a value for "Article Lifetime"
+
 == Contributing ==
 
 The best way to contribute to the development of this plugin is by participating on the GitHub project:
