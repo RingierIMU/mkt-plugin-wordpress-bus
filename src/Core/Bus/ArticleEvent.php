@@ -263,7 +263,7 @@ class ArticleEvent
      */
     private function getOgArticleModifiedDate(int $post_ID, \WP_Post $post)
     {
-        if (is_object(YoastSEO())) {
+        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
             return YoastSEO()->meta->for_post($post_ID)->open_graph_article_modified_time;
         }
 
@@ -281,7 +281,7 @@ class ArticleEvent
      */
     private function getOgArticlePublishedDate(int $post_ID, \WP_Post $post)
     {
-        if (is_object(YoastSEO())) {
+        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
             return YoastSEO()->meta->for_post($post_ID)->open_graph_article_published_time;
         }
 
@@ -299,7 +299,7 @@ class ArticleEvent
      */
     private function getOgArticleOgTitle(int $post_ID, \WP_Post $post)
     {
-        if (is_object(YoastSEO())) {
+        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
             return YoastSEO()->meta->for_post($post_ID)->open_graph_title;
         }
 
@@ -317,7 +317,7 @@ class ArticleEvent
      */
     private function getOgArticleOgDescription(int $post_ID, \WP_Post $post)
     {
-        if (is_object(YoastSEO())) {
+        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
             return YoastSEO()->meta->for_post($post_ID)->open_graph_description;
         }
 
