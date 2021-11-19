@@ -1,4 +1,7 @@
 # Ringier-Bus WordPress Plugin #
+
+![ringier bus banner](assets/banner.png)
+
 **Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 5.7.0  
@@ -67,6 +70,11 @@ NOTE:
 - If you leave any field regarding the Slack feature, the plugin will assume Slack option is OFF
 - Likewise, if any of the Bus API fields is empty, the plugin will assume BUS Event is OFF even if you enabled it
 
+## Credits/Thanks ##
+
+1) [Wasseem Khayrattee](https://github.com/wkhayrattee) - for creating and maintaining the plugin
+2) Mishka Rasool - for conceiving/creating the [banner](assets/banner.png) and [logo](assets/logo.png) asset files
+
 
 ## Contributing ##
 
@@ -74,12 +82,17 @@ The best way to contribute to the development of this plugin is by participating
 
 https://github.com/RingierIMU/mkt-plugin-wordpress-bus
 
-Pull requests and issues are welcome!
+There are many ways you can contribute:
+
+* Raise an issue if you found one
+* Create/send us a Pull Request with your bug fixes and/or new features
+* Provide us with your feedback and/or suggestions for any improvement or enhancement
+* Translation - this is an area we are yet to do
 
 
 ## Changelog ##
 
-### 1.0.0 (November 16, 2021) ###
+### 1.0.0 (November 19, 2021) ###
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
 
 ### 0.1.0 (September 26, 2021) ###

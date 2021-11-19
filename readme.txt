@@ -74,7 +74,12 @@ The best way to contribute to the development of this plugin is by participating
 
 https://github.com/RingierIMU/mkt-plugin-wordpress-bus
 
-Pull requests and issues are welcome!
+There are many ways you can contribute:
+
+* Raise an issue if you found one
+* Create/send us a Pull Request with your bug fixes and/or new features
+* Provide us with your feedback and/or suggestions for any improvement or enhancement
+* Translation - this is an area we are yet to do
 
 
 == Changelog ==
