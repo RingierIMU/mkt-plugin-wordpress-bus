@@ -2,7 +2,7 @@
 
 ![ringier bus banner](assets/banner.png)
 
-**Contributors:** [ringier](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
+**Contributors:** [RingierSA](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 5.7.0  
 **Tested up to:** 5.8.1  
@@ -10,13 +10,13 @@
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
-A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted.
+A plugin to push events to the BUS via the BUS API whenever an article is created, updated or deleted.
 
 ## Description ##
 
 ### About | Ringier-Bus
 
-A plugin to push events to the Ringier Content Distribution Engine (CDE) via the BUS API whenever an article is created, updated or deleted.
+A plugin to push events to the BUS via the BUS API whenever an article is created, updated or deleted.
 
 ### List of Events
 
@@ -47,7 +47,7 @@ It has some good hints about the journey of your BUS API from seeing if the Plug
 
 1) Events are sent AFTER 2 minutues.
 
-This plugin will always scheduled the sending of the events to the BUS.
+This plugin will always schedule the sending of the events to the BUS.
 That is, whenever you create or edit an article, it will not send the event immediately. Instead it will wait for TWO MINUTES before sending the event to the BUS Endpoint.
 
 2) To view all scheduled events, make use of this plugin: [Advanced Cron Manager](https://wordpress.org/plugins/advanced-cron-manager/)
