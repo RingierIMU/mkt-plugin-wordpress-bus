@@ -78,7 +78,7 @@ NOTE:
 
 The best way to contribute to the development of this plugin is by participating on the GitHub project:
 
-https://github.com/RingierIMU/mkt-plugin-wordpress-bus
+[https://github.com/RingierIMU/mkt-plugin-wordpress-bus](https://github.com/RingierIMU/mkt-plugin-wordpress-bus)
 
 There are many ways you can contribute:
 
