@@ -5,8 +5,8 @@
 **Contributors:** [RingierSA](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 5.7.0  
-**Tested up to:** 5.8.1  
-**Stable tag:** 1.0.0  
+**Tested up to:** 5.8.2  
+**Stable tag:** 1.0.1  
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
@@ -92,8 +92,4 @@ There are many ways you can contribute:
 
 ## Changelog ##
 
-### 1.0.0 (November 19, 2021) ###
-* Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
-
-### 0.1.0 (September 26, 2021) ###
-* Initial commit of working code for the benefit of everyone who needs this plugin
+See our [Changelog](CHANGELOG.md)

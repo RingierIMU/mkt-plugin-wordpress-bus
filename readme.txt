@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 4.7
 Tested up to: 5.8.2
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -94,6 +94,9 @@ There are many ways you can contribute:
 
 
 == Changelog ==
+
+### 1.0.1 (November 25, 2021) ###
+* Update ACF to latest v5.11.3
 
 = 1.0.0 (November 19, 2021) =
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
