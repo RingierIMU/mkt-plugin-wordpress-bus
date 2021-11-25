@@ -29,6 +29,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 /**
  * load our main file now with composer autoloading
  */
+define('RINGIER_BUS_DS', DIRECTORY_SEPARATOR);
 define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
 require_once RINGIER_BUS_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'includes/vendor/autoload.php';
 
