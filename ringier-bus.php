@@ -10,7 +10,7 @@
  * Plugin Name: Ringier Bus
  * Plugin URI: https://github.com/RingierIMU/mkt-plugin-wordpress-bus
  * Description: A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted
- * Version: 1.0.1
+ * Version: 1.0.2
  * Requires at least: 4.7.0
  * Author: Ringier SA, Wasseem Khayrattee
  * Author URI: https://www.ringier.com/
@@ -49,7 +49,7 @@ if (!function_exists('add_action')) {
  * Some global constants for our use-case
  */
 define('RINGIER_BUS_DS', DIRECTORY_SEPARATOR);
-define('RINGIER_BUS_PLUGIN_VERSION', '1.0.1');
+define('RINGIER_BUS_PLUGIN_VERSION', '1.0.2');
 define('RINGIER_BUS_PLUGIN_MINIMUM_WP_VERSION', '4.7');
 define('RINGIER_BUS_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailing slash at end
 define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
