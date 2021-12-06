@@ -136,7 +136,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
      *
      * @param array $ids An array of identifiers that should be removed from the pool
      *
-     * @return bool
+     * @return bool True if the items were successfully removed, false otherwise
      */
     abstract protected function doDelete(array $ids);
 
@@ -152,7 +152,7 @@ abstract class AbstractTagAwareAdapter implements TagAwareAdapterInterface, TagA
      *
      * @param string[] $tagIds An array of tags to invalidate, key is tag and value is tag id
      *
-     * @return bool
+     * @return bool True on success
      */
     abstract protected function doInvalidate(array $tagIds): bool;
 
