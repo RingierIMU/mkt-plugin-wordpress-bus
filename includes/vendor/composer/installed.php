@@ -5,7 +5,7 @@
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => '90021a2b436715059d0b6169dc7dca014121bb35',
+        'reference' => '323e7cd48ae1a16300d9795380eb9e458b243776',
         'name' => 'ringierimu/ringier-bus',
         'dev' => false,
     ),
@@ -170,7 +170,7 @@
         'psr/simple-cache-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '1.0|2.0',
             ),
         ),
         'ralouphie/getallheaders' => array(
@@ -212,7 +212,7 @@
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => '90021a2b436715059d0b6169dc7dca014121bb35',
+            'reference' => '323e7cd48ae1a16300d9795380eb9e458b243776',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(
@@ -228,12 +228,12 @@
             ),
         ),
         'symfony/cache' => array(
-            'pretty_version' => 'v5.3.10',
-            'version' => '5.3.10.0',
+            'pretty_version' => 'v5.4.0',
+            'version' => '5.4.0.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/cache',
             'aliases' => array(),
-            'reference' => '2056f2123f47c9f63102a8b92974c362f4fba568',
+            'reference' => 'd97d6d7f46cb69968f094e329abd987d5ee17c79',
             'dev_requirement' => false,
         ),
         'symfony/cache-contracts' => array(
@@ -242,7 +242,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/cache-contracts',
             'aliases' => array(),
-            'reference' => 'c385af13d628eb4fc25b017f332c8bcc55bd0d95',
+            'reference' => 'ac2e168102a2e06a2624f0379bde94cd5854ced2',
             'dev_requirement' => false,
         ),
         'symfony/cache-implementation' => array(
@@ -319,7 +319,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/service-contracts',
             'aliases' => array(),
-            'reference' => '56b990c18120c91eaf0d38a93fabfa2a1f7fa413',
+            'reference' => '034c73d5dd4c05c71a27f05b3c43c0f2fcc8985a',
             'dev_requirement' => false,
         ),
         'symfony/var-exporter' => array(
@@ -357,7 +357,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../twig/twig',
             'aliases' => array(),
-            'reference' => 'a95486f2c6a65a0b5c9a6f413bb4a6312a3db2ed',
+            'reference' => 'a41a6cce6272a1dd027089e711fff488b4d9b614',
             'dev_requirement' => false,
         ),
         'upstatement/routes' => array(
