@@ -210,7 +210,7 @@ class BusPluginClass
                         'time-limited' => 'time-limited',
                     ],
                     'default_value' => false,
-                    'allow_null' => 0,
+                    'allow_null' => true,
                     'multiple' => 0,
                     'ui' => 0,
                     'return_format' => 'value',
