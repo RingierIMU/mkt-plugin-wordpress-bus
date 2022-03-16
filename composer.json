@@ -27,11 +27,11 @@
   },
   "require": {
     "symfony/polyfill-mbstring": "1.23.1",
-    "monolog/monolog": "2.3.5",
+    "monolog/monolog": "2.4.0",
     "timber/timber": "1.19.1",
-    "guzzlehttp/guzzle": "7.4.0",
+    "guzzlehttp/guzzle": "7.4.1",
     "symfony/service-contracts": "2.4.1",
-    "symfony/cache": "5.4.0",
+    "symfony/cache": "5.4.6",
     "ramsey/uuid": "4.2.3"
   },
   "repositories": [
