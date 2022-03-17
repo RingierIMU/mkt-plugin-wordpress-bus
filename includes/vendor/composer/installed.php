@@ -5,7 +5,7 @@
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
-        'reference' => 'd593974cb54439accfbacdf80183278c9013a323',
+        'reference' => '4365cc39dbf5d6fe9330590c543847fa91384e59',
         'name' => 'ringierimu/ringier-bus',
         'dev' => false,
     ),
@@ -212,7 +212,7 @@
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
-            'reference' => 'd593974cb54439accfbacdf80183278c9013a323',
+            'reference' => '4365cc39dbf5d6fe9330590c543847fa91384e59',
             'dev_requirement' => false,
         ),
         'roundcube/plugin-installer' => array(

@@ -16,7 +16,10 @@
       "*": "dist"
     },
     "sort-packages": true,
-    "optimize-autoloader": true
+    "optimize-autoloader": true,
+    "allow-plugins": {
+      "composer/installers": true
+    }
   },
   "minimum-stability": "dev",
   "autoload": {
