@@ -242,12 +242,16 @@ class ArticleEvent
         return [
             'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
             'title' => [
-                'culture' => ringier_getLocale(),
-                'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
+                ],
             ],
             'slug' => [
-                'culture' => ringier_getLocale(),
-                'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
+                ],
             ],
         ];
     }
