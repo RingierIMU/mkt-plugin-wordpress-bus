@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 4.7
-Tested up to: 5.8.2
-Stable tag: 1.0.2
+Tested up to: 5.9.3
+Stable tag: 1.0.3
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -94,6 +94,9 @@ There are many ways you can contribute:
 
 
 == Changelog ==
+
+### 1.0.3 (April 14, 2022) ###
+* update ACF to v5.12.2
 
 ### 1.0.2 (December 06, 2021) ###
 * update symfony/cache to v5.4.0 - we will stick to 5.x for now because v6.x focuses on php v8+
