@@ -36,10 +36,26 @@ class ArticleEvent
     private $authClient;
     private $eventType;
 
+    /**
+     * @var \Brand_settings
+     * This class is specific to Ringier Blog platforms
+     * For others not using this, the object would be null
+     * Used mainly for retrieving custom meta data for Sailthru:
+     *  E.g:
+     *      "sailthru_tags": ["apartments-for-sale", "apartments-for-rent"],
+     *      "sailthru_vars": {
+     *          "page_type" : "article",
+     *          "user_type": ["seeker"],
+     *          "user_status": ["active", "passive"]
+     *      },
+     */
+    public $brandSettings;
+
     public function __construct(AuthenticationInterface $authClient)
     {
         $this->authClient = $authClient; //Let's get an auth token early
         $this->eventType = Enum::EVENT_ARTICLE_CREATED;
+        $this->brandSettings = null; //initially null until set by respective brands' blog
     }
 
     /**
@@ -230,10 +246,49 @@ class ArticleEvent
                 BusHelper::getImageArrayForApi($post_ID, 'large_square'),
             ],
             'parent_category' => $this->getParentCategoryArray($post_ID),
-            'sailthru_tags' => [
-
-            ],
+            'sailthru_tags' => $this->getSailthruTags($post_ID),
+            'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
+        ];
+    }
+
+    private function getSailthruTags($post_ID)
+    {
+        if ($this->brandSettings == null) {
+            return [];
+        } elseif (isset($this->brandSettings->sailthru) && $this->brandSettings->sailthru->enable === false) {
+            return [];
+        }
+
+        //else proceed further
+        $vertical_type = (int) $this->brandSettings->sailthru->vertical;
+        if ($vertical_type == 1) { //jobs
+            //todo
+        } elseif ($vertical_type == 3) { //property
+            $meta_type_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_property_type'), 'slug');
+
+            return $meta_type_list;
+        }
+
+        return [];
+    }
+
+    private function getSailthruVars($post_ID)
+    {
+        if ($this->brandSettings == null) {
+            return [];
+        } elseif ($this->brandSettings->sailthru->enable === false) {
+            return [];
+        }
+        //get user_type
+        $user_type_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_user_type'), 'slug');
+        //get user_status
+        $user_status_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_user_status'), 'slug');
+
+        return [
+            'page_type' => 'article',
+            'user_type' => $user_type_list,
+            'user_status' => $user_status_list,
         ];
     }
 
@@ -330,6 +385,7 @@ class ArticleEvent
 
     /**
      * NOT USED for now
+     * TODO: remove this foo
      *
      * @param object $sailthruTaxonomy
      * @param \WP_Post $post
