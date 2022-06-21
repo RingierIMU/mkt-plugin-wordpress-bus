@@ -175,6 +175,11 @@ class BusHelper
             $result = $authClient->acquireToken();
             if ($result === true) {
                 $articleEvent = new ArticleEvent($authClient);
+
+                if (class_exists('Brand_settings')) {
+                    $articleEvent->brandSettings = new \Brand_settings();
+                }
+
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
