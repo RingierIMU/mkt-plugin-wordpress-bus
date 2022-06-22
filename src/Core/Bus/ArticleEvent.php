@@ -263,8 +263,13 @@ class ArticleEvent
         //else proceed further
         $vertical_type = (int) $this->brandSettings->sailthru->vertical;
         if ($vertical_type == 1) { //jobs
-            //todo
+            //todo: check for false or WP_Error on get_the_terms
+            $functions_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_functions'), 'slug');
+            $experience_level_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_experience_level'), 'slug');
+
+            return array_merge($functions_list, $experience_level_list);
         } elseif ($vertical_type == 3) { //property
+            //todo: check for false or WP_Error on get_the_terms
             $meta_type_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_property_type'), 'slug');
 
             return $meta_type_list;
