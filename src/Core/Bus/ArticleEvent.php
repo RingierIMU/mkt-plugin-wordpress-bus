@@ -263,14 +263,27 @@ class ArticleEvent
         //else proceed further
         $vertical_type = (int) $this->brandSettings->sailthru->vertical;
         if ($vertical_type == 1) { //jobs
-            //todo: check for false or WP_Error on get_the_terms
-            $functions_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_functions'), 'slug');
-            $experience_level_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_experience_level'), 'slug');
+            $functions_terms_object = get_the_terms($post_ID, 'sailthru_functions');
+            if (($functions_terms_object === false) || is_wp_error($functions_terms_object)) {
+                $functions_list = [];
+            } else {
+                $functions_list = wp_list_pluck($functions_terms_object, 'slug');
+            }
+
+            $experience_level_terms_object = get_the_terms($post_ID, 'sailthru_experience_level');
+            if (($experience_level_terms_object === false) || is_wp_error($experience_level_terms_object)) {
+                $experience_level_list = [];
+            } else {
+                $experience_level_list = wp_list_pluck($experience_level_terms_object, 'slug');
+            }
 
             return array_merge($functions_list, $experience_level_list);
         } elseif ($vertical_type == 3) { //property
-            //todo: check for false or WP_Error on get_the_terms
-            $meta_type_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_property_type'), 'slug');
+            $meta_type_terms_object = get_the_terms($post_ID, 'sailthru_property_type');
+            if (($meta_type_terms_object === false) || (is_wp_error($meta_type_terms_object))) {
+                return [];
+            }
+            $meta_type_list = wp_list_pluck($meta_type_terms_object, 'slug');
 
             return $meta_type_list;
         }
@@ -286,9 +299,20 @@ class ArticleEvent
             return [];
         }
         //get user_type
-        $user_type_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_user_type'), 'slug');
+        $user_type_terms_object = get_the_terms($post_ID, 'sailthru_user_type');
+        if (($user_type_terms_object === false) || is_wp_error($user_type_terms_object)) {
+            $user_type_list = [];
+        } else {
+            $user_type_list = wp_list_pluck($user_type_terms_object, 'slug');
+        }
+
         //get user_status
-        $user_status_list = wp_list_pluck(get_the_terms($post_ID, 'sailthru_user_status'), 'slug');
+        $user_status_terms_object = get_the_terms($post_ID, 'sailthru_user_status');
+        if (($user_status_terms_object === false) || is_wp_error($user_status_terms_object)) {
+            $user_status_list = [];
+        } else {
+            $user_status_list = wp_list_pluck($user_status_terms_object, 'slug');
+        }
 
         return [
             'page_type' => 'article',
