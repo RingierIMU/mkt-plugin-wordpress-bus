@@ -171,12 +171,9 @@ class ArticleEvent
             'events' => [
                 $this->eventType,
             ],
-            'venture_config_id' => $this->authClient->getVentureId(),
-            'venture_reference' => "$post_ID",
+            'from' => $this->authClient->getVentureId(),
+            'reference' => "$post_ID",
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
-            'culture' => ringier_getLocale(),
-            'action_type' => 'user',
-            'action_reference' => Utils::uuid(),
             'version' => Enum::BUS_API_VERSION,
             'payload' => [
                 'article' => $this->buildArticlePayloadData($post_ID, $post),
