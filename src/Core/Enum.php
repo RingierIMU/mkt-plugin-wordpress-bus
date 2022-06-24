@@ -4,7 +4,7 @@ namespace RingierBusPlugin;
 
 class Enum
 {
-    public const BUS_API_VERSION = '1.0.3';
+    public const BUS_API_VERSION = '2.0.0';
     const PLUGIN_KEY = 'RINGIER_BUS_PLUGIN';
     const SETTINGS_PAGE_OPTION_GROUP = 'ringier_bus_settingspage_group';
     const SETTINGS_PAGE_OPTION_NAME = 'ringier_bus_settingspage_options';
