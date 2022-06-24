@@ -103,7 +103,7 @@ class Auth implements AuthenticationInterface
                     'json' => [
                         'username' => $this->username,
                         'password' => $this->password,
-                        'venture_config_id' => $this->ventureConfig,
+                        'node_id' => $this->ventureConfig,
                     ],
                 ]
                 );
