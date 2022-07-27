@@ -1,6 +1,6 @@
 function deploy () {
 	cd ~/Sites/timber
-	git checkout master
+	git checkout tags/$1 -b v$1
 	rm ~/Sites/timber/timber.php
 	rm -rf ~/Sites/timber/vendor
 	rm -rf ~/Sites/timber/wp-content
@@ -8,7 +8,7 @@ function deploy () {
 	git clone git@github.com:Upstatement/timber-starter-theme.git
 	rm -rf ~/Sites/timber/timber-starter-theme/.git
 	rm composer.lock
-	composer config platform.php 5.6.4
+	composer config platform.php 5.6.20
 	composer install --no-dev --optimize-autoloader
 	rm -rf ~/Sites/timber/vendor/upstatement/routes/.git
 	cd ~/Sites/timber-wp

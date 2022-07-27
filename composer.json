@@ -29,12 +29,11 @@
     "files": ["src/ringier_bus_plugin_helper.php"]
   },
   "require": {
-    "symfony/polyfill-mbstring": "1.23.1",
-    "monolog/monolog": "2.4.0",
-    "timber/timber": "1.19.1",
-    "guzzlehttp/guzzle": "7.4.1",
-    "symfony/service-contracts": "2.4.1",
-    "symfony/cache": "5.4.6",
+    "monolog/monolog": "2.8.0",
+    "timber/timber": "1.20.0",
+    "guzzlehttp/guzzle": "7.4.5",
+    "symfony/service-contracts": "2.5.2",
+    "symfony/cache": "5.4.10",
     "ramsey/uuid": "4.2.3"
   },
   "repositories": [
