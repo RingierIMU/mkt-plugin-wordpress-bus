@@ -1,5 +1,14 @@
 # Changelog Details
 
+### 1.1.0 (Jul 27, 2022) ###
+* [vendor] update ACF to v5.12.3
+* Added Sailthru Tags & Vars to the JSON request
+* Changes to BUS API
+  * update BUS API version to v2.0.0
+  * Main JSON - rename venture_config_id to node_id
+  * Article JSON - rename venture_config_id to from
+  * Article JSON rename venture_reference to reference
+
 ### 1.0.3 (April 14, 2022) ###
 * update ACF to v5.12.2
 
