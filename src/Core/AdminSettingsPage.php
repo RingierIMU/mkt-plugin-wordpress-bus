@@ -160,7 +160,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_VENTURE_CONFIG,
             // Use $args' label_for to populate the id inside the callback.
-            'Event Bus Venture Config ID<span style="color:red;">*</span>',
+            'Event Bus Node ID<span style="color:red;">*</span>',
             [self::class, 'field_venture_config_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
