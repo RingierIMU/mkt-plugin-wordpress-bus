@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 4.7
 Tested up to: 6.0.1
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -48,11 +48,11 @@ There are many ways you can contribute:
 
 == Installation ==
 
-## SETUP
+### SETUP
 
-The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".  
-Once you have installed the plugin, a Ringier Bus menu will appear. Please fill in the required fields to set up the plugin.  
-In order to get an Event Bus node id, username and password, please contact the bus team via Slack or by email at bus@ringier.co.za to gain access to the Bus admin.   You will be able add a new node onto the bus and set up your event destinations.
+1. The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".
+2. Once you have installed the plugin, a Ringier Bus menu will appear. Please fill in the required fields to set up the plugin.
+3. In order to get an Event Bus node id, username and password, please contact the bus team via Slack or by email at bus@ringier.co.za to gain access to the Bus admin.   You will be able to add a new node onto the bus and set up your event destinations.
 
 ## LOGS
 
@@ -67,6 +67,22 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 
 == Changelog ==
 
+### 1.1.1 (Aug 16, 2022) ###
+* [JSON Request] The API's field `description` field truncated to 2500 chars since the BUS API request will fail on more than 3000 chars.
+* [Doc] The readme has been given some polishing
+
+### 1.1.0 (Jul 27, 2022) ###
+* [vendor] update ACF to v5.12.3
+* Added Sailthru Tags & Vars to the JSON request
+* Changes to BUS API
+  * update BUS API version to v2.0.0
+  * Main JSON - rename venture_config_id to node_id
+  * Article JSON - rename venture_config_id to from
+  * Article JSON rename venture_reference to reference
+
+### 1.1.0 (Jul 27, 2022) ###
+* update ACF to v5.12.2
+
 ### 1.0.3 (April 14, 2022) ###
 * update ACF to v5.12.2
 
@@ -77,8 +93,8 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 ### 1.0.1 (November 25, 2021) ###
 * Update ACF to latest v5.11.3
 
-= 1.0.0 (November 19, 2021) =
+### 1.0.0 (November 19, 2021) ###
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
 
-= 0.1.0 (September 26, 2021) =
+### 0.1.0 (September 26, 2021) ###
 * Initial commit of working code for the benefit of everyone who needs this plugin
