@@ -1,5 +1,10 @@
 # Changelog Details
 
+### 1.1.1 (Aug 16, 2022) ###
+* [JSON Request] The API's field `description` field truncated to 2500 chars since the BUS API request will fail on more than 3000 chars.
+* [Doc] The readme has been given some polishing
+
+
 ### 1.1.0 (Jul 27, 2022) ###
 * [vendor] update ACF to v5.12.3
 * Added Sailthru Tags & Vars to the JSON request
