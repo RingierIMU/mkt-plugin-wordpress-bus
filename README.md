@@ -6,7 +6,7 @@
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 5.7.0  
 **Tested up to:** 6.0.1  
-**Stable tag:** 1.1.0  
+**Stable tag:** 1.1.1  
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
@@ -39,11 +39,11 @@ The plugin also creates two custom fields, available on the article edition page
 
 ## Installation ##
 
-## SETUP
+### SETUP
 
-The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".  
-Once you have installed the plugin, a Ringier Bus menu will appear. Please fill in the required fields to set up the plugin.  
-In order to get an Event Bus node id, username and password, please contact the bus team via Slack or by email at bus@ringier.co.za to gain access to the Bus admin.   You will be able add a new node onto the bus and set up your event destinations.
+1. The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".  
+2. Once you have installed the plugin, a Ringier Bus menu will appear. Please fill in the required fields to set up the plugin.  
+3. In order to get an Event Bus node id, username and password, please contact the bus team via Slack or by email at bus@ringier.co.za to gain access to the Bus admin.   You will be able to add a new node onto the bus and set up your event destinations.
 
 ## LOGS
 
