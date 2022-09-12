@@ -74,39 +74,47 @@ class BusHelper
      */
     public static function triggerArticleEvent(\WP_Post $post)
     {
-        ringier_infologthis('triggerArticleEvent called');
-        $post_ID = $post->ID;
+        $wordpress_post_status = $post->post_status;
+        //we don't want to trigger the event if it is a draft, only when in public
+        if (strcmp($wordpress_post_status, 'publish') == 0) {
+            ringier_infologthis('$post object:');
+            ringier_infologthis(print_r($post, true));
+            ringier_infologthis(print_r($post->post_status, true));
 
-        $post_ID = Utils::getParentPostId($post_ID);
-        $articleTriggerMode = 'ArticleCreated';
-        /*
-         * This conditioning helps us get context if the post is in mode NEW or EDIT
-         * There is no other way around this as of this date of coding (Apr 2021)
-         * Hope in the future WordPress exposes a better way for us to get this context
-         */
-        if (is_object($post)) {
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
-            if (Utils::isPostNew($post_ID) === true) {
-                $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
-            } else {
-                $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
+            ringier_infologthis('triggerArticleEvent called');
+            $post_ID = $post->ID;
+
+            $post_ID = Utils::getParentPostId($post_ID);
+            $articleTriggerMode = 'ArticleCreated';
+            /*
+             * This conditioning helps us get context if the post is in mode NEW or EDIT
+             * There is no other way around this as of this date of coding (Apr 2021)
+             * Hope in the future WordPress exposes a better way for us to get this context
+             */
+            if (is_object($post)) {
+                $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+                if (Utils::isPostNew($post_ID) === true) {
+                    $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
+                } else {
+                    $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
+                }
+                ringier_infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
             }
-            ringier_infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
-        }
-        /*
-         * we will now schedule the event after 1min instead of instantly executing it, because:
-         * not all meta data of the article are updated correctly when:
-         *      - article is first created,
-         *      - when article meta are changed
-         */
-        self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
+            /*
+             * we will now schedule the event after 1min instead of instantly executing it, because:
+             * not all meta data of the article are updated correctly when:
+             *      - article is first created,
+             *      - when article meta are changed
+             */
+            self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
 
-        //push to SLACK
-        $message = <<<EOF
+            //push to SLACK
+            $message = <<<EOF
             $blogKey: $articleTriggerMode queued for article (ID: $post_ID)
             Scheduled to run in the next minute(s)
         EOF;
-        Utils::l($message);
+            Utils::l($message);
+        }
     }
 
     /**
