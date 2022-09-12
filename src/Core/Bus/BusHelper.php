@@ -77,10 +77,6 @@ class BusHelper
         $wordpress_post_status = $post->post_status;
         //we don't want to trigger the event if it is a draft, only when in public
         if (strcmp($wordpress_post_status, 'publish') == 0) {
-            ringier_infologthis('$post object:');
-            ringier_infologthis(print_r($post, true));
-            ringier_infologthis(print_r($post->post_status, true));
-
             ringier_infologthis('triggerArticleEvent called');
             $post_ID = $post->ID;
 
@@ -114,6 +110,8 @@ class BusHelper
             Scheduled to run in the next minute(s)
         EOF;
             Utils::l($message);
+        } else {
+            ringier_infologthis('Event not sent due to post_status being: ' . $wordpress_post_status);
         }
     }
 
