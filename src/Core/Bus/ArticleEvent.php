@@ -246,7 +246,79 @@ class ArticleEvent
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
+            'primary_media_type' => $this->getPrimaryMediaType($post),
         ];
+    }
+
+    private function getPrimaryMediaType(\WP_Post $post)
+    {
+        //default value
+        $media_type = 'text';
+
+        if (isset($post->post_content)) {
+            $content = $post->post_content;
+
+            if ($this->hasVideo($content)) {
+                $media_type = 'video';
+            } elseif ($this->hasGallery($content) === true) {
+                $media_type = 'gallery';
+            } elseif ($this->hasAudio($content)) {
+                $media_type = 'audio';
+            }
+        }
+
+        return $media_type;
+    }
+
+    /**
+     * Check if the WordPress content `$post->post_content` has gallery
+     *
+     * @param $content
+     *
+     * @return bool
+     */
+    private function hasGallery($content)
+    {
+        //we are using `strpos` instead of `str_contains` to be php7.4 compatible
+        if ((mb_strpos($content, 'wp-block-gallery') !== false) ||
+            (mb_strpos($content, 'wp:gallery') !== false)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the WordPress content `$post->post_content` has a youtube video
+     *
+     * @param $content
+     *
+     * @return bool
+     */
+    private function hasVideo($content)
+    {
+        if ((mb_strpos($content, 'youtube.com') !== false) ||
+            (mb_strpos($content, 'youtu.be') !== false)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the WordPress content `$post->post_content` has an audio file
+     *
+     * @param $content
+     *
+     * @return bool
+     */
+    private function hasAudio($content)
+    {
+        if ((mb_strpos($content, '.mp3') !== false)) {
+            return true;
+        }
+
+        return false;
     }
 
     private function getSailthruTags($post_ID)
