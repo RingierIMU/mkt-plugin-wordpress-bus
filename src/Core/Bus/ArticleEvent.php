@@ -297,8 +297,8 @@ class ArticleEvent
      */
     private function hasVideo($content)
     {
-        if ((mb_strpos($content, 'youtube.com') !== false) ||
-            (mb_strpos($content, 'youtu.be') !== false)) {
+        if ((mb_strpos($content, 'https://www.youtube.com/') !== false) ||
+            (mb_strpos($content, 'https://youtu.be/') !== false)) {
             return true;
         }
 
