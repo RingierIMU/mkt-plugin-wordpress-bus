@@ -1,7 +1,6 @@
 # Changelog Details
 
 ### 1.2.0 (Oct 04, 2022) ###
-
 * [FIX] Events should not be triggered when "saving draft"
 * [NEW] Logging | Add additional log message when an Event is not sent to know why
 * [NEW] Addition of new logic for new field: primary_media_type

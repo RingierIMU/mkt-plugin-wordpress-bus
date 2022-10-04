@@ -67,6 +67,11 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 
 == Changelog ==
 
+### 1.2.0 (Oct 04, 2022) ###
+* [FIX] Events should not be triggered when "saving draft"
+* [NEW] Logging | Add additional log message when an Event is not sent to know why
+* [NEW] Addition of new logic for new field: primary_media_type
+
 ### 1.1.1 (Aug 16, 2022) ###
 * [JSON Request] The API's field `description` field truncated to 2500 chars since the BUS API request will fail on more than 3000 chars.
 * [Doc] The readme has been given some polishing
