@@ -48,10 +48,43 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
+            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
         }
+    }
+
+    /**
+     * To cater for custom post_type only
+     *
+     * @param $new_status
+     * @param $old_status
+     * @param $post
+     */
+    public function cater_for_custom_post($new_status, $old_status, $post)
+    {
+        //bail if a page
+        if (strcmp($post->post_type, 'page') == 0) {
+            return;
+        }
+        //bail is normal post, we are catering for custom posts
+        if (strcmp($post->post_type, 'post') == 0) {
+            return;
+        }
+        if (empty($post->post_type)) {
+            return;
+        }
+
+        // Bail if we're working on a draft or trashed item
+        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+            return;
+        }
+
+//        ringier_errorlogthis('post_type for this trigger: ' . print_r($post->post_type, true));
+        add_action('rest_after_insert_' . trim($post->post_type), [self::class, 'triggerArticleEvent'], 15, 1);
+
+        return;
     }
 
     /**
