@@ -242,8 +242,8 @@ class BusPluginClass
                 [
                     [
                         'param' => 'post_type',
-                        'operator' => '==',
-                        'value' => 'post',
+                        'operator' => '!=',
+                        'value' => 'page',
                     ],
                 ],
             ],
