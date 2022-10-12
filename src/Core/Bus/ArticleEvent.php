@@ -384,7 +384,7 @@ class ArticleEvent
         }
 
         return [
-            'page_type' => 'article',
+            'content_type' => 'article',
             'locale' => ringier_getLocale(),
             'user_type' => $user_type_list,
             'user_status' => $user_status_list,
