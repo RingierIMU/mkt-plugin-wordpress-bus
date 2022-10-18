@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 4.7
 Tested up to: 6.0.2
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,9 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### 1.3.1 (Oct 18, 2022) ###
+* [UPDATE] JSON | change page_type to content_type for sailthru vars
 
 ### 1.3.0 (Oct 12, 2022) ###
 * [NEW] custom post_type event | handle triggering of events separately for custom post_type
