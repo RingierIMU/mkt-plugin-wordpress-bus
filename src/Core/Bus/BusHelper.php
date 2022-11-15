@@ -62,7 +62,7 @@ class BusHelper
      * @param $old_status
      * @param $post
      */
-    public function cater_for_custom_post($new_status, $old_status, $post)
+    public static function cater_for_custom_post($new_status, $old_status, $post)
     {
         //bail if a page
         if (strcmp($post->post_type, 'page') == 0) {
