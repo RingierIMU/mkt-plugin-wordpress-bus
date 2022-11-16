@@ -55,7 +55,7 @@ abstract class CallExpression extends AbstractExpression
         $this->compileArguments($compiler);
     }
 
-    protected function compileArguments(Compiler $compiler, $isArray = false)
+    protected function compileArguments(Compiler $compiler, $isArray = false): void
     {
         $compiler->raw($isArray ? '[' : '(');
 
@@ -232,7 +232,7 @@ abstract class CallExpression extends AbstractExpression
         return $arguments;
     }
 
-    protected function normalizeName($name)
+    protected function normalizeName(string $name): string
     {
         return strtolower(preg_replace(['/([A-Z]+)([A-Z][a-z])/', '/([a-z\d])([A-Z])/'], ['\\1_\\2', '\\1_\\2'], $name));
     }
@@ -305,8 +305,7 @@ abstract class CallExpression extends AbstractExpression
             $callable = [$object, $r->name];
             $callableName = (\function_exists('get_debug_type') ? get_debug_type($object) : \get_class($object)).'::'.$r->name;
         } elseif ($class = $r->getClosureScopeClass()) {
-            $callable = [$class, $r->name];
-            $callableName = $class.'::'.$r->name;
+            $callableName = (\is_array($callable) ? $callable[0] : $class->name).'::'.$r->name;
         } else {
             $callable = $callableName = $r->name;
         }
@@ -318,5 +317,3 @@ abstract class CallExpression extends AbstractExpression
         return $this->reflector = [$r, $callable, $callableName];
     }
 }
-
-class_alias('Twig\Node\Expression\CallExpression', 'Twig_Node_Expression_Call');
