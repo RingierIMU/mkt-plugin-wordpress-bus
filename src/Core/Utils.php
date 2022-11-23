@@ -43,6 +43,10 @@ class Utils
      */
     public static function hashImage($image_url)
     {
+        if (empty($image_url) || is_null($image_url)) {
+            return '';
+        }
+
         $imagelink = @file_get_contents($image_url);
         if ($imagelink === false) {
             return '';
