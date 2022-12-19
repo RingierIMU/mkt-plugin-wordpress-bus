@@ -71,9 +71,9 @@ register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugi
 //register_uninstall_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_uninstall']);
 
 /**
- * Leverage the ACF plugin superpowers
+ * Load our custom Meta Box & its related custom fields
  */
-\RingierBusPlugin\BusPluginClass::injectACF();
+\RingierBusPlugin\BusPluginClass::loadCustomMetaBox();
 
 /**
  * Load the admin page interface
