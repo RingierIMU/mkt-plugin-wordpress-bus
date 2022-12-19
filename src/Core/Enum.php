@@ -64,6 +64,7 @@ class Enum
 
     // ACF Fields
     public const ACF_ARTICLE_LIFETIME_KEY = 'article_lifetime';
+    public const ACF_ARTICLE_LIFETIME_VALUES = ['evergreen', 'seasonal', 'time-limited'];
     public const ACF_IS_POST_NEW_KEY = 'is_post_new';
     public const ACF_IS_POST_NEW_DEFAULT_VALUE = 'not_new';
 }
