@@ -8,8 +8,6 @@
 
 namespace RingierBusPlugin;
 
-use RingierBusPlugin\Bus\BusHelper;
-
 class BusPluginClass
 {
     /**
