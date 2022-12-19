@@ -104,7 +104,7 @@ class BusPluginClass
     public static function renderHtmlForArticleLifetimeField(\WP_Post $post)
     {
         $field_key = sanitize_text_field(Enum::ACF_ARTICLE_LIFETIME_KEY);
-        $field_from_db = trim(get_post_meta($post->ID, $field_key, true));
+        $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
 
         //parent div
         echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '">';
@@ -121,12 +121,12 @@ class BusPluginClass
         $field_key_list = Enum::ACF_ARTICLE_LIFETIME_VALUES;
         echo '<option value="-1">- Select -</option>';
         foreach ($field_key_list as $field_value) {
-            $field_value = trim($field_value);
+            $field_value = sanitize_text_field($field_value);
             $is_field_selected = '';
             if (strcmp($field_from_db, $field_value) == 0) {
                 $is_field_selected = 'selected="selected"';
             }
-            echo '<option value="' . sanitize_text_field($field_value) . '" ' . $is_field_selected . '>' . sanitize_text_field($field_value) . '</option>';
+            echo '<option value="' . $field_value . '" ' . $is_field_selected . '>' . $field_value . '</option>';
         }
 
         echo '</select>';
@@ -141,7 +141,7 @@ class BusPluginClass
         $field_key = sanitize_text_field(Enum::ACF_IS_POST_NEW_KEY);
         $input_value = Enum::ACF_IS_POST_VALUE_NEW; //'is_new';
 
-        $field_from_db = trim(get_post_meta($post->ID, $field_key, true));
+        $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
         if (!empty($field_from_db)) {
             $input_value = $field_from_db;
         }
