@@ -111,12 +111,12 @@ class BusPluginClass
 
         //label
         echo '<div class="bus-label">';
-        echo '<label for="' . $field_key . '">Article Lifetime</label>';
+        echo '<label for="' . $field_key . '" style="color:#2b689e;font-weight:bold;">Article Lifetime</label>';
         echo '</div>';
 
         //select field
         echo '<div class="bus-select">';
-        echo '<select id="' . $field_key . '" name="' . $field_key . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;font-size:14px;line-height:1.4">';
+        echo '<select id="' . $field_key . '" name="' . $field_key . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;border-color:#2b689e;font-size:14px;line-height:1.4">';
 
         $field_key_list = Enum::ACF_ARTICLE_LIFETIME_VALUES;
         echo '<option value="-1">- Select -</option>';
