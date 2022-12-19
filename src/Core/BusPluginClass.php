@@ -130,11 +130,104 @@ class BusPluginClass
 
         //Load our custom fields using php structure
         add_action('acf/init', [self::class, 'register_acf_custom_fields']);
+        add_action('add_meta_boxes', [self::class, 'add_meta_boxes_for_custom_fields'], 10, 2);
 
         //Load json storage
         //NOTE: this does not seem to work, bypassing to use PHP way instead (above line)
 //        add_filter('acf/settings/load_json', [self::class, 'acf_local_json_storage']);
 //        add_filter('acf/settings/save_json', [self::class, 'acf_local_json_storage']);
+    }
+
+    public static function add_meta_boxes_for_custom_fields(string $post_type, \WP_Post $post)
+    {
+        //add_meta_box( $id, $title, $callback, $screen = null, $context = 'advanced', $priority = 'default', $callback_args = null )
+        add_meta_box('event_bus_meta_box', __('BUS Plugin Fields'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
+    }
+
+    public static function render_meta_box_for_custom_fields(\WP_Post $post)
+    {
+        wp_nonce_field('event_bus_meta_box_nonce_action', 'event_bus_meta_box_nonce_field');
+        self::renderHtmlForArticleLifetimeField($post);
+        self::renderHtmlForHiddenPostStatusField($post);
+    }
+
+    /*
+     <div class="acf-field acf-field-select acf-field-61681d5ac63ee" data-name="article_lifetime" data-type="select" data-key="field_61681d5ac63ee">
+
+        <div class="acf-label">
+            <label for="acf-field_61681d5ac63ee">Article Lifetime</label>
+        </div>
+        <div class="acf-input">
+            <select id="acf-field_61681d5ac63ee" class="" name="acf[field_61681d5ac63ee]" data-ui="0" data-ajax="0" data-multiple="0" data-placeholder="Select" data-allow_null="1">
+                <option value="" selected="selected" data-i="0">- Select -</option>
+                <option value="evergreen">evergreen</option>
+                <option value="seasonal">seasonal</option>
+                <option value="time-limited">time-limited</option>
+            </select>
+        </div>
+    </div>
+     */
+    public static function renderHtmlForArticleLifetimeField(\WP_Post $post)
+    {
+        $field_key = sanitize_text_field(Enum::ACF_ARTICLE_LIFETIME_KEY);
+        $field_from_db = trim(get_post_meta($post->ID, $field_key, true));
+
+        //parent div
+        echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '">';
+
+        //label
+        echo '<div class="bus-label">';
+        echo '<label for="' . $field_key . '">Article Lifetime</label>';
+        echo '</div>';
+
+        //select field
+        echo '<div class="bus-select">';
+        echo '<select id="' . $field_key . '" name="' . $field_key . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;font-size:14px;line-height:1.4">';
+
+        $field_key_list = Enum::ACF_ARTICLE_LIFETIME_VALUES;
+        echo '<option value="-1">- Select -</option>';
+        foreach ($field_key_list as $field_value) {
+            $field_value = trim($field_value);
+            $is_field_selected = '';
+            if (strcmp($field_from_db, $field_value) == 0) {
+                $is_field_selected = 'selected="selected"';
+            }
+            echo '<option value="' . sanitize_text_field($field_value) . '" ' . $is_field_selected . '>' . sanitize_text_field($field_value) . '</option>';
+        }
+
+        echo '</select>';
+        echo '</div>';
+
+        //close parent div
+        echo '</div>';
+    }
+
+    //<input type="text" id="acf-field_609a883e62def" name="acf[field_609a883e62def]" value="not_new">
+    public static function renderHtmlForHiddenPostStatusField(\WP_Post $post)
+    {
+        $field_key = sanitize_text_field(Enum::ACF_IS_POST_NEW_KEY);
+        $input_value = Enum::ACF_IS_POST_VALUE_NEW; //'is_new';
+
+        $field_from_db = trim(get_post_meta($post->ID, $field_key, true));
+        if (!empty($field_from_db)) {
+            $input_value = $field_from_db;
+        }
+
+        //parent div
+        echo '<div class="bus-hidden-text-field" data-name="' . $field_key . '" data-type="text" data-key="' . $field_key . '" style="margin: 10px 0;">';
+
+        //label
+        echo '<div class="bus-label bus-hidden" style="color: #a29f9f">';
+        echo '<label for="' . $field_key . '">Article status (internal use)</label>';
+        echo '</div>';
+
+        //field
+        echo '<div class="bus-text">';
+        echo '<input type="text" disabled id="' . $field_key . '" name="' . $field_key . '" value="' . $input_value . '">';
+        echo '</div>';
+
+        //close parent div
+        echo '</div>';
     }
 
     /**
