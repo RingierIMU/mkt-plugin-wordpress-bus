@@ -62,9 +62,15 @@ class Enum
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
 
-    // ACF Fields
+    /*
+     * Note:
+     *  these were previously being used with ACF Fields
+     *  But is now used with the new native approach, the prefix ACF has been kept to hint it's for custom fields
+     */
     public const ACF_ARTICLE_LIFETIME_KEY = 'article_lifetime';
     public const ACF_ARTICLE_LIFETIME_VALUES = ['evergreen', 'seasonal', 'time-limited'];
+    public const ACF_IS_POST_NEW_DEFAULT_VALUE = 'not_new'; //old - deprecated
     public const ACF_IS_POST_NEW_KEY = 'is_post_new';
-    public const ACF_IS_POST_NEW_DEFAULT_VALUE = 'not_new';
+    public const ACF_IS_POST_VALUE_NEW = 'is_new';
+    public const ACF_IS_POST_VALUE_EXISTED = 'not_new';
 }
