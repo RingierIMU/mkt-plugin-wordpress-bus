@@ -96,7 +96,7 @@ class BusPluginClass
 
     public static function render_meta_box_for_custom_fields(\WP_Post $post)
     {
-        wp_nonce_field('event_bus_meta_box_nonce_action', 'event_bus_meta_box_nonce_field');
+        wp_nonce_field(Enum::ACF_NONCE_ACTION, Enum::ACF_NONCE_FIELD);
         self::renderHtmlForArticleLifetimeField($post);
         self::renderHtmlForHiddenPostStatusField($post);
     }

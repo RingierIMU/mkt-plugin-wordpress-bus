@@ -77,8 +77,18 @@ class BusHelper
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
-
+        // Bail if we're working on a draft or trashed item
         $wordpress_post_status = $post->post_status;
+        if (in_array($wordpress_post_status, ['auto-draft', 'draft', 'inherit', 'trash'])) {
+            return;
+        }
+
+        //if nonce not verified, possible malicious attempt or API trying to re-save, bail out
+        if (!isset($_POST[Enum::ACF_NONCE_FIELD])
+            || !wp_verify_nonce($_POST[Enum::ACF_NONCE_FIELD], Enum::ACF_NONCE_ACTION)) {
+            return;
+        }
+
         if (strcmp($wordpress_post_status, 'publish') == 0) { //save only when in publish state, no for drafts..etc
             $post_id = Utils::getParentPostId($post_id);
 

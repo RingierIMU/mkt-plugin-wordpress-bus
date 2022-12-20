@@ -73,4 +73,8 @@ class Enum
     public const ACF_IS_POST_NEW_KEY = 'is_post_new';
     public const ACF_IS_POST_VALUE_NEW = 'is_new';
     public const ACF_IS_POST_VALUE_EXISTED = 'not_new';
+
+    //Nonce fields for Custom Fields
+    public const ACF_NONCE_ACTION = 'event_bus_meta_box_nonce_action';
+    public const ACF_NONCE_FIELD = 'event_bus_meta_box_nonce_field';
 }
