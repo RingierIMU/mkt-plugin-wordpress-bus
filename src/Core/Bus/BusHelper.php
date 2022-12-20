@@ -48,10 +48,54 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
+            add_action('save_post', [self::class, 'save_custom_fields'], 10, 3);
             add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
+        }
+    }
+
+    /**
+     * To save our custom fields like Article Lifetime & is_post_new
+     *
+     * @param int $post_id
+     * @param \WP_Post $post
+     * @param bool $update
+     *
+     * @throws \Exception
+     */
+    public static function save_custom_fields(int $post_id, \WP_Post $post, bool $update)
+    {
+        //bail if a page
+        if (strcmp($post->post_type, 'page') == 0) {
+            return;
+        }
+        if (empty($post->post_type)) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        $wordpress_post_status = $post->post_status;
+        if (strcmp($wordpress_post_status, 'publish') == 0) { //save only when in publish state, no for drafts..etc
+            $post_id = Utils::getParentPostId($post_id);
+
+            //save custom field: article_lifetime
+            if (isset($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY])) {
+                $article_lifetime_value = sanitize_text_field($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY]);
+                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
+                    update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
+                } else {
+                    ringier_errorlogthis('[error] BUS: article_lifetime field value not in whitelist');
+                }
+            }
+
+            //save custom field: is_post_new | for this we do not care if it is set or nnot, it;'s a hidden field
+            update_post_meta($post_id, Enum::ACF_IS_POST_NEW_KEY, Enum::ACF_IS_POST_VALUE_EXISTED);
+        } else {
+            ringier_errorlogthis('[error] BUS: could not save custom fields');
         }
     }
 
