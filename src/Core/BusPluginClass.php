@@ -91,7 +91,7 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, \WP_Post $post)
     {
-        add_meta_box('event_bus_meta_box', __('BUS Event Fields'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
+        add_meta_box('event_bus_meta_box', __('Article Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
     }
 
     public static function render_meta_box_for_custom_fields(\WP_Post $post)
@@ -110,9 +110,9 @@ class BusPluginClass
         echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '">';
 
         //label
-        echo '<div class="bus-label">';
-        echo '<label for="' . $field_key . '" style="color:#2b689e;font-weight:bold;">Article Lifetime</label>';
-        echo '</div>';
+//        echo '<div class="bus-label">';
+//        echo '<label for="' . $field_key . '" style="color:#2b689e;font-weight:bold;">Article Lifetime</label>';
+//        echo '</div>';
 
         //select field
         echo '<div class="bus-select">';
