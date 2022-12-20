@@ -147,7 +147,7 @@ class BusPluginClass
         }
 
         //parent div
-        echo '<div class="bus-hidden-text-field" data-name="' . $field_key . '" data-type="text" data-key="' . $field_key . '" style="margin: 10px 0;">';
+        echo '<div class="bus-hidden-text-field" data-name="' . $field_key . '" data-type="text" data-key="' . $field_key . '" style="margin: 10px 0;display:none">';
 
         //label
         echo '<div class="bus-label bus-hidden" style="color: #a29f9f">';
