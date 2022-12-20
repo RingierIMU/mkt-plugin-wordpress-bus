@@ -218,6 +218,10 @@ class BusHelper
         ringier_infologthis('publish_to_trash called');
         $post_ID = Utils::getParentPostId($post->ID);
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
+
+        //delete custom fields
+        delete_post_meta($post_ID, Enum::ACF_IS_POST_NEW_KEY);
+        delete_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY);
     }
 
     /**
