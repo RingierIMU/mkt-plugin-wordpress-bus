@@ -91,7 +91,7 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, \WP_Post $post)
     {
-        add_meta_box('event_bus_meta_box', __('Article Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
+        add_meta_box('event_bus_meta_box', __('Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
     }
 
     public static function render_meta_box_for_custom_fields(\WP_Post $post)
