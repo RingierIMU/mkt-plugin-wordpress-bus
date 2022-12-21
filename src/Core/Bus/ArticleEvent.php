@@ -241,6 +241,19 @@ class ArticleEvent
                 BusHelper::getImageArrayForApi($post_ID, 'large_square'),
             ],
             'parent_category' => $this->getParentCategoryArray($post_ID),
+            /*
+             * NOTE:
+             *  For now 'categories' will have only one time similar to 'parent_category
+             *  As per MKT-1639, until further priority comes, we agreed on the following:
+             *      - Currently on the blog, there is only one level of categories
+             *      - add categories and keep parent_category for now, as the CDE
+             *        and the Sailthru publishing services will need some time to switch over
+             *
+             * (wasseem | 9th Dec 2022)
+             */
+            'categories' => [
+                $this->getParentCategoryArray($post_ID),
+            ],
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
