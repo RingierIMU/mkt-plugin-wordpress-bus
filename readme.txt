@@ -48,6 +48,12 @@ There are many ways you can contribute:
 
 == Installation ==
 
+### PHP Version ###
+
+This plugin needs *PHP version >= 8.0.2*.
+But it is ***not yet PHP 8.1 compatible*** since WordPress itself is not officially supported beyond PHP 8.0 at this point in time.
+
+
 ### SETUP ###
 
 1. The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".
