@@ -2,7 +2,7 @@
 Contributors: jarednova
 Tags: template engine, templates, twig
 Tested up to: 6.1
-Stable tag: 1.22.0
+Stable tag: 1.22.1
 Requires PHP: 7.2.5
 Requires at least: 5.3.0
 License: GPLv2 or later
@@ -37,6 +37,10 @@ _Twig is the template language powering Timber; if you need a little background 
 **Changes for Theme Developers**
 
 **Fixes and improvements**
+
+= 1.22.1 =
+
+* Fixed a bug when Twig version 3 was accidentally installed when installing Timber through Composer, by @rmens in https://github.com/timber/timber/pull/2679.
 
 = 1.22.0 =
 
