@@ -11,35 +11,35 @@
 
 namespace RingierBusPlugin\Bus;
 
+use GuzzleHttp\Client;
+
 interface AuthenticationInterface
 {
     /**
      * Exposes the httpClient object
      *
-     * @return mixed
+     * @return Client
      */
-    public function getHttpClient();
+    public function getHttpClient(): Client;
 
     /**
      * Exposes the venture_config_id to be reused
      *
-     * @return mixed
+     * @return string
      */
-    public function getVentureId();
+    public function getVentureId(): string;
 
     /**
      * Set all major parameters.
      * We'll use $_ENV from WordPress to pass the parameters
      * Going this way since we are not using any DIC Containers or parameter bags
      *
-     * @param $endpointUrl
-     * @param $ventureConfig
-     * @param $username
-     * @param $password
-     *
-     * @return mixed
+     * @param string $endpointUrl
+     * @param string $ventureConfig
+     * @param string $username
+     * @param string $password
      */
-    public function setParameters($endpointUrl, $ventureConfig, $username, $password);
+    public function setParameters(string $endpointUrl, string $ventureConfig, string $username, string $password);
 
     /**
      * Idea here is for this function fetch the token and save in the cache
@@ -48,17 +48,17 @@ interface AuthenticationInterface
      *
      * @return mixed
      */
-    public function acquireToken();
+    public function acquireToken(): mixed;
 
     /**
      * Fetch the actual token
      * with the possibility of telling the system to delete old key and fetch a new (current) one
      *
-     * @param false $regenerate
+     * @param mixed $regenerate
      *
      * @return mixed
      */
-    public function getToken($regenerate = false);
+    public function getToken(mixed $regenerate = false);
 
     /**
      * Should unset token everywhere - cache + in object
