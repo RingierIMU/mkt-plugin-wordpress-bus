@@ -18,8 +18,6 @@ class BusPluginClass
     public static function plugin_activation()
     {
         add_option(Enum::PLUGIN_KEY, true);
-        //nothing for now
-        ringier_infologthis('bus_plugin_activated');
     }
 
     /**
@@ -30,8 +28,7 @@ class BusPluginClass
      */
     public static function plugin_deactivation()
     {
-        ringier_infologthis('bus_plugin_deactivated');
-        // TODO: Remove any scheduled cron jobs.
+        // TODO: Remove any scheduled cron jobs?
     }
 
     /**
@@ -39,7 +36,6 @@ class BusPluginClass
      */
     public static function plugin_uninstall()
     {
-        ringier_infologthis('plugin_uninstall hook called');
         delete_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         delete_option(Enum::PLUGIN_KEY);
     }
@@ -51,7 +47,6 @@ class BusPluginClass
     {
         //if on plugin activation
         if (get_option(Enum::PLUGIN_KEY)) {
-            ringier_infologthis('POST Activation phase');
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF
@@ -69,7 +64,10 @@ class BusPluginClass
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
-        //Register Bus API Mechanism
+        /*
+         * Register Bus API Mechanism
+         * Note: commented out because we are now fetching values from the UI (dashboard) itself
+         */
 //        BusHelper::load_vars_into_env();
     }
 
@@ -108,11 +106,6 @@ class BusPluginClass
 
         //parent div
         echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '">';
-
-        //label
-//        echo '<div class="bus-label">';
-//        echo '<label for="' . $field_key . '" style="color:#2b689e;font-weight:bold;">Article Lifetime</label>';
-//        echo '</div>';
 
         //select field
         echo '<div class="bus-select">';
