@@ -33,8 +33,8 @@ use RingierBusPlugin\Utils;
 class ArticleEvent
 {
     /** @var AuthenticationInterface */
-    private $authClient;
-    private $eventType;
+    private AuthenticationInterface $authClient;
+    private string $eventType;
 
     /**
      * @var \Brand_settings
@@ -49,7 +49,7 @@ class ArticleEvent
      *          "user_status": ["active", "passive"]
      *      },
      */
-    public $brandSettings;
+    public mixed $brandSettings;
 
     public function __construct(AuthenticationInterface $authClient)
     {
@@ -61,9 +61,9 @@ class ArticleEvent
     /**
      * We will need to be able to set the type individually in the scenario for ArticleDeleted
      *
-     * @param $type
+     * @param string $type
      */
-    public function setEventType($type)
+    public function setEventType(string $type)
     {
         $this->eventType = $type;
     }
@@ -118,19 +118,15 @@ class ArticleEvent
                     $this->buildMainRequestBody($post_ID, $post),
                 ],
             ];
-//            ringier_infologthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
+//            ringier_errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
             $response = $this->authClient->getHttpClient()->request(
                 'POST',
                 'events',
                 $requestBody
             );
-            ringier_infologthis('[api] attempting to push to bus');
             $bodyArray = json_decode((string) $response->getBody(), true);
-            ringier_infologthis('[api] the push have probably succeeded at this point');
-//            errorlogthis($bodyArray);
+//            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
-            ringier_infologthis('[api] ERROR - could not push to BUS');
-
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
@@ -143,8 +139,6 @@ class ArticleEvent
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
             ringier_errorlogthis($exception->getMessage()); //push to SLACK
-//            ringier_errorlogthis('[api] ERROR occurred, below json response');
-//            ringier_errorlogthis($bodyArray);
 
             //send to slack
             Utils::l($message . $exception->getMessage()); //push to SLACK
@@ -162,6 +156,8 @@ class ArticleEvent
      *
      * @param int $post_ID
      * @param \WP_Post $post
+     *
+     * @throws \Exception
      *
      * @return array
      */
@@ -187,6 +183,8 @@ class ArticleEvent
      *
      * @param int $post_ID
      * @param \WP_Post $post
+     *
+     * @throws \Exception
      *
      * @return array
      */
@@ -273,11 +271,11 @@ class ArticleEvent
     /**
      * Check if the WordPress content `$post->post_content` has gallery
      *
-     * @param $content
+     * @param string $content
      *
      * @return bool
      */
-    private function hasGallery($content)
+    private function hasGallery(string $content)
     {
         //we are using `strpos` instead of `str_contains` to be php7.4 compatible
         if ((mb_strpos($content, 'wp-block-gallery') !== false) ||
@@ -291,11 +289,11 @@ class ArticleEvent
     /**
      * Check if the WordPress content `$post->post_content` has a youtube video
      *
-     * @param $content
+     * @param string $content
      *
      * @return bool
      */
-    private function hasVideo($content)
+    private function hasVideo(string $content)
     {
         if ((mb_strpos($content, 'https://www.youtube.com/') !== false) ||
             (mb_strpos($content, 'https://youtu.be/') !== false)) {
@@ -308,11 +306,11 @@ class ArticleEvent
     /**
      * Check if the WordPress content `$post->post_content` has an audio file
      *
-     * @param $content
+     * @param string $content
      *
      * @return bool
      */
-    private function hasAudio($content)
+    private function hasAudio(string $content)
     {
         if ((mb_strpos($content, '.mp3') !== false)) {
             return true;
@@ -321,7 +319,7 @@ class ArticleEvent
         return false;
     }
 
-    private function getSailthruTags($post_ID)
+    private function getSailthruTags(int $post_ID)
     {
         if ($this->brandSettings == null) {
             return [];
@@ -360,7 +358,7 @@ class ArticleEvent
         return [];
     }
 
-    private function getSailthruVars($post_ID)
+    private function getSailthruVars(int $post_ID)
     {
         if ($this->brandSettings == null) {
             return [];
@@ -391,7 +389,7 @@ class ArticleEvent
         ];
     }
 
-    private function getParentCategoryArray($post_ID)
+    private function getParentCategoryArray(int $post_ID)
     {
         return [
             'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
@@ -480,32 +478,5 @@ class ArticleEvent
         }
 
         return get_the_excerpt($post_ID);
-    }
-
-    /**
-     * NOT USED for now
-     * TODO: remove this foo
-     *
-     * @param object $sailthruTaxonomy
-     * @param \WP_Post $post
-     *
-     * @return array|mixed
-     */
-    public function getSailthruMeta($sailthruTaxonomy, \WP_Post $post)
-    {
-        //Code block reuse from Sailthru_taxonomy class
-        $tags = [];
-        foreach ($sailthruTaxonomy->settings->get_meta() as $value) {
-            $input_name = $value['name'];
-            // Check if the there's a meta field for the current type
-            if (isset($meta[$input_name])) {
-                if ($value['tag']) {
-                    $tags = $meta[$input_name];
-                    continue;
-                }
-            }
-        }
-
-        return $tags;
     }
 }
