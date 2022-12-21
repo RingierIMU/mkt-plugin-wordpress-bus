@@ -47,7 +47,7 @@ class Utils
             return '';
         }
 
-        $imagelink = @file_get_contents($image_url);
+        $imagelink = file_get_contents($image_url);
         if ($imagelink === false) {
             return '';
         }
@@ -122,7 +122,7 @@ class Utils
 
     /**
      * Check if a post is new - return true if YES, else false otherwise
-     * We check this by adding a custom field using ACF
+     * We check this by adding a custom field named is_post_new
      * When the post UI is first loaded, this field will not exist.
      * After an article is saved, the field will exists
      *
@@ -179,7 +179,7 @@ class Utils
 
             if (is_object($results)) {
                 if (isset($results->meta_value)) {
-                    return $results->meta_value;
+                    return sanitize_text_field($results->meta_value);
                 }
             }
 
@@ -203,10 +203,8 @@ class Utils
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
             LoggingHandler::getInstance()->log($logLevel, $message, $context);
-
-            ringier_infologthis('[slack] a message was sent to slack');
         } else {
-            ringier_errorlogthis('[slack] ERROR - could not sent to Slack, it is probably OFF');
+            ringier_errorlogthis('[info] - did not to Slack, it is probably OFF');
         }
     }
 
