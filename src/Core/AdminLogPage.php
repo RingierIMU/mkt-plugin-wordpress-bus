@@ -1,6 +1,6 @@
 <?php
 /**
- * To handle everything regarding our main Admin LOG Page
+ * To handle everything regarding the main Admin LOG Page
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
@@ -40,8 +40,6 @@ class AdminLogPage
             Enum::ADMIN_LOG_MENU_SLUG,
             [self::class, 'renderLogPage']
         );
-
-        //Fields for the LOG Page
     }
 
     /**
@@ -51,8 +49,7 @@ class AdminLogPage
     {
         global $title;
         $error_log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
-        $message_log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_MESSAGE;
-        $txtlog_value = $error_msg = $error_msg2 = $messagelog_value = '';
+        $error_msg = '';
 
         if (!current_user_can('manage_options')) {
             return;
@@ -62,22 +59,15 @@ class AdminLogPage
         if (isset($_POST['clearlog_btn'])) {
             $error_msg = self::clearErrorLog($error_log_file);
         }
-//        if (isset($_POST['clearmessage_log_btn'])) {
-//            $error_msg = self::clearErrorLog($message_log_file);
-//        }
 
         $log_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_log.twig';
-
         $txtlog_value = self::fetchLogData($error_log_file);
-//        $messagelog_value = self::fetchLogData($message_log_file);
 
         $timber = new Timber();
         if (file_exists($log_page_tpl)) {
             $context['admin_page_title'] = $title;
             $context['error_msg'] = $error_msg;
             $context['txtlog_value'] = $txtlog_value;
-//            $context['error_msg2'] = $error_msg2;
-//            $context['messagelog_value'] = $messagelog_value;
 
             $timber::render($log_page_tpl, $context);
         }
@@ -95,28 +85,26 @@ class AdminLogPage
     public static function fetchLogData($log_file_path)
     {
         $log_file = $log_file_path;
-//        $log_file = WP_CONTENT_DIR . DS . Enum::RINGIER_LOG_FILE_MESSAGE;
         $max_lines = 10;
         $log_data = '';
-        $log_data_array = [];
 
         if (!file_exists($log_file)) {
-            return $log_data = 'The log seems empty!';
+            return 'The log seems empty!';
         }
 
         if (!is_writable($log_file)) {
-            return $log_data = '[NOTICE] the log is not writable. Please chmod it to 0777';
+            return '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
         $log_data_array = file($log_file, FILE_SKIP_EMPTY_LINES);
 
         if ($log_data_array === false) {
-            return $log_data = 'Unable to open the log for read operation!';
+            return 'Unable to open the log for read operation!';
         }
 
         $lines = count($log_data_array);
         if ($lines == 0) {
-            return $log_data = 'The log is empty.';
+            return 'The log is empty.';
         }
 
         //We only want to display the latest 10 entries
@@ -143,23 +131,18 @@ class AdminLogPage
      */
     public static function clearErrorLog($log_file_path)
     {
-        $log_file = $log_file_path;
-        $max_lines = 10;
-        $log_data = '';
-        $log_data_array = [];
-
-        if (!file_exists($log_file)) {
-            return $log_data = 'The log seems empty!';
+        if (!file_exists($log_file_path)) {
+            return 'The log seems empty!';
         }
 
-        if (!is_writable($log_file)) {
-            return $log_data = '[NOTICE] the log is not writable. Please chmod it to 0777';
+        if (!is_writable($log_file_path)) {
+            return '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
-        if (file_exists($log_file)) {
-            unlink($log_file);
+        if (file_exists($log_file_path)) {
+            unlink($log_file_path);
 
-            return $log_data = '[done] the log was cleared';
+            return '[done] the log was cleared';
         }
     }
 }

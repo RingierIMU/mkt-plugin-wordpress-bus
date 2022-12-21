@@ -34,5 +34,4 @@ define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slas
 require_once RINGIER_BUS_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'includes/vendor/autoload.php';
 
 //Call our uninstall-cleanup process
-ringier_infologthis('uninstall.php called');
 \RingierBusPlugin\BusPluginClass::plugin_uninstall();
