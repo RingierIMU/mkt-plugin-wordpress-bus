@@ -89,7 +89,21 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, \WP_Post $post)
     {
-        add_meta_box('event_bus_meta_box', __('Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], 'post', 'side');
+        //to show meta box on all current & future custom post_type
+        $args = [
+            'post_type' => 'page',
+            'public' => false,
+        ];
+        $screens = get_post_types($args, 'names', 'not'); //pay attention to the operator (last param)
+        //we do not want to show it on "Page"
+        if (in_array('page', $screens)) {
+            unset($screens['page']);
+        }
+        //Remove any other non desired custom post_type that came through
+        if (in_array('attachment', $screens)) {
+            unset($screens['attachment']);
+        }
+        add_meta_box('event_bus_meta_box', __('Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], $screens, 'side');
     }
 
     public static function render_meta_box_for_custom_fields(\WP_Post $post)
