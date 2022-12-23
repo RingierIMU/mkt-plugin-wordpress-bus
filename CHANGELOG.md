@@ -1,5 +1,12 @@
 # Changelog Details
 
+### 2.0.0 (Dec 23, 2022) ###
+
+* [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.0.2
+* [BREAKING] PHP Version | The code base has been refactored to be PHP 8 compatible - but no PHP 8.1+ support yet since WordPress itself is not officially PHP 8.0 compatible to-date.
+* [UPDATE] API | New field `Categories[]` has been introduced to the JSON request - see commit#e857e083fb33a9bd58374482105e2d3215bbd5f1
+* [REFACTOR] Removal of the ACF plugin 3rd-party plugin in favor of doing things in native WordPress, see commit#b2e489b156ed12187403bb4599107972a61b4493
+
 ### 1.3.1 (Oct 18, 2022) ###
 * [UPDATE] JSON | change page_type to content_type for sailthru vars
 
