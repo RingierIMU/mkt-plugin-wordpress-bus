@@ -1,9 +1,9 @@
 === Ringier-Bus ===
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
-Requires at least: 4.7
-Tested up to: 6.0.2
-Stable tag: 1.3.1
+Requires at least: 6.0
+Tested up to: 6.1.1
+Stable tag: 2.0.0
 Requires PHP: 8.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -50,8 +50,8 @@ There are many ways you can contribute:
 
 ### PHP Version ###
 
-This plugin needs *PHP version >= 8.0.2*.
-But it is ***not yet PHP 8.1 compatible*** since WordPress itself is not officially supported beyond PHP 8.0 at this point in time.
+This plugin requires *PHP version >= 8.0.2*.
+But no ***PHP 8.1+ support*** yet  since WordPress itself is not officially supported beyond PHP 8.0 at this point in time.
 
 
 ### SETUP ###
