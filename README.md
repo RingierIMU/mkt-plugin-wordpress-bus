@@ -7,6 +7,7 @@
 **Requires at least:** 5.7.0  
 **Tested up to:** 6.0.2  
 **Stable tag:** 1.3.1  
+**Requires PHP:** 8.0.2  
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
 
@@ -38,6 +39,12 @@ The plugin also creates two custom fields, available on the article edition page
 - The second field, called "Hidden field", is for internal use. It is made to determine if the article is being created or updated, information which is not available by default on WordPress due to the way articles are saved.
 
 ## Installation ##
+
+### PHP Version
+
+This plugin needs *PHP version >= 8.0.2*.
+But it is ***not yet PHP 8.1 compatible*** since WordPress itself is not officially supported beyond PHP 8.0 at this point in time.
+
 
 ### SETUP
 

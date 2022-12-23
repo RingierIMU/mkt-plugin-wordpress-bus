@@ -14,13 +14,13 @@ class BusHelper
     /**
      * Used in in ArticleEvent class
      *
-     * @param $post_ID
+     * @param int $post_ID
      * @param string $image_size_name
-     * @param mixed $isHero
+     * @param string $isHero
      *
      * @return array
      */
-    public static function getImageArrayForApi($post_ID, $image_size_name = 'large_rectangle', $isHero = 'false')
+    public static function getImageArrayForApi(int $post_ID, string $image_size_name = 'large_rectangle', string $isHero = 'false')
     {
         $image_id = get_post_thumbnail_id($post_ID);
         $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
@@ -48,6 +48,7 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
+            add_action('save_post', [self::class, 'save_custom_fields'], 10, 3);
             add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
@@ -56,13 +57,66 @@ class BusHelper
     }
 
     /**
+     * To save our custom fields like Article Lifetime & is_post_new
+     *
+     * @param int $post_id
+     * @param \WP_Post $post
+     * @param bool $update
+     *
+     * @throws \Exception
+     */
+    public static function save_custom_fields(int $post_id, \WP_Post $post, bool $update)
+    {
+        //bail if a page
+        if (strcmp($post->post_type, 'page') == 0) {
+            return;
+        }
+        if (empty($post->post_type)) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        // Bail if we're working on a draft or trashed item
+        $wordpress_post_status = $post->post_status;
+        if (in_array($wordpress_post_status, ['auto-draft', 'draft', 'inherit', 'trash'])) {
+            return;
+        }
+
+        //if nonce not verified, possible malicious attempt or API trying to re-save, bail out
+        if (!isset($_POST[Enum::ACF_NONCE_FIELD])
+            || !wp_verify_nonce($_POST[Enum::ACF_NONCE_FIELD], Enum::ACF_NONCE_ACTION)) {
+            return;
+        }
+
+        if (strcmp($wordpress_post_status, 'publish') == 0) { //save only when in publish state, no for drafts..etc
+            $post_id = Utils::getParentPostId($post_id);
+
+            //save custom field: article_lifetime
+            if (isset($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY])) {
+                $article_lifetime_value = sanitize_text_field($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY]);
+                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
+                    update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
+                } else {
+                    ringier_errorlogthis('[error] BUS: article_lifetime field value not in whitelist');
+                }
+            }
+
+            //save custom field: is_post_new | for this we do not care if it is set or nnot, it;'s a hidden field
+            update_post_meta($post_id, Enum::ACF_IS_POST_NEW_KEY, Enum::ACF_IS_POST_VALUE_EXISTED);
+        } else {
+            ringier_errorlogthis('[error] BUS: could not save custom fields');
+        }
+    }
+
+    /**
      * To cater for custom post_type only
      *
-     * @param $new_status
-     * @param $old_status
-     * @param $post
+     * @param string $new_status
+     * @param string $old_status
+     * @param \WP_Post $post
      */
-    public static function cater_for_custom_post($new_status, $old_status, $post)
+    public static function cater_for_custom_post(string $new_status, string $old_status, \WP_Post $post)
     {
         //bail if a page
         if (strcmp($post->post_type, 'page') == 0) {
@@ -81,10 +135,7 @@ class BusHelper
             return;
         }
 
-//        ringier_errorlogthis('post_type for this trigger: ' . print_r($post->post_type, true));
         add_action('rest_after_insert_' . trim($post->post_type), [self::class, 'triggerArticleEvent'], 15, 1);
-
-        return;
     }
 
     /**
@@ -110,7 +161,6 @@ class BusHelper
         $wordpress_post_status = $post->post_status;
         //we don't want to trigger the event if it is a draft, only when in public
         if (strcmp($wordpress_post_status, 'publish') == 0) {
-            ringier_infologthis('triggerArticleEvent called');
             $post_ID = $post->ID;
 
             $post_ID = Utils::getParentPostId($post_ID);
@@ -127,7 +177,6 @@ class BusHelper
                 } else {
                     $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
                 }
-                ringier_infologthis('$articleTriggerMode is: ' . $articleTriggerMode);
             }
             /*
              * we will now schedule the event after 1min instead of instantly executing it, because:
@@ -143,8 +192,6 @@ class BusHelper
             Scheduled to run in the next minute(s)
         EOF;
             Utils::l($message);
-        } else {
-            ringier_infologthis('Event not sent due to post_status being: ' . $wordpress_post_status);
         }
     }
 
@@ -161,23 +208,27 @@ class BusHelper
      */
     public static function triggerArticleDeletedEvent(\WP_Post $post)
     {
-        ringier_infologthis('publish_to_trash called');
         $post_ID = Utils::getParentPostId($post->ID);
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
+
+        //delete custom fields
+        delete_post_meta($post_ID, Enum::ACF_IS_POST_NEW_KEY);
+        delete_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY);
     }
 
     /**
      * The action to run when the hook (scheduledHookName()) is invoked
      *
-     * @param $articleTriggerMode
-     * @param $post_ID
-     * @param $countCalled
+     * @param string $articleTriggerMode
+     * @param int $post_ID
+     * @param int $countCalled
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \Monolog\Handler\MissingExtensionException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
-    public static function cronSendToBusScheduled($articleTriggerMode, $post_ID, $countCalled)
+    public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled)
     {
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
@@ -196,14 +247,12 @@ class BusHelper
     /**
      * A refactored method to be used with above triggerArticleDeletedEvent() and triggerArticleEvent()
      *
-     * @author Wasseem<wasseemk@ringier.co.za>
-     *
      * @param string $articleTriggerMode
      * @param int $post_ID
      * @param \WP_Post $post
      * @param int $countCalled to keep track of how many times this function was called by the cron
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws \GuzzleHttp\Exception\GuzzleException|\Monolog\Handler\MissingExtensionException
      */
     public static function sendToBus(string $articleTriggerMode, int $post_ID, \WP_Post $post, int $countCalled = 1): void
     {
@@ -222,13 +271,11 @@ class BusHelper
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
-                ringier_infologthis('[error] A problem with Auth Token');
                 ringier_errorlogthis('[error] A problem with Auth Token');
 
                 throw new \Exception('A problem with Auth Token');
             }
         } catch (\Exception $exception) {
-            ringier_infologthis('[warning] failed to call BUS, rescheduling');
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
@@ -237,14 +284,14 @@ class BusHelper
      * Called as part of back-off strategy
      * Will (re)queue the current task of sending request to bus for X minutes
      *
-     * @author Wasseem<wasseemk@ringier.co.za>
-     *
      * @param string $articleTriggerMode
      * @param int $post_ID
      * @param int $countCalled
      * @param mixed $run_after_minutes
+     *
+     * @throws \Monolog\Handler\MissingExtensionException
      */
-    public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, $run_after_minutes = false)
+    public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false)
     {
         if ($run_after_minutes === false) {
             $minutesToRun = getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30;

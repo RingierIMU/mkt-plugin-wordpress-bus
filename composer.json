@@ -30,11 +30,11 @@
   },
   "require": {
     "monolog/monolog": "2.8.0",
-    "timber/timber": "1.22.0",
-    "guzzlehttp/guzzle": "7.4.5",
+    "timber/timber": "1.22.1",
+    "guzzlehttp/guzzle": "7.5.0",
     "symfony/service-contracts": "3.0.2",
-    "symfony/cache": "6.0.15",
-    "ramsey/uuid": "4.6.0"
+    "symfony/cache": "6.0.16",
+    "ramsey/uuid": "4.7.0"
   },
   "repositories": [
     {

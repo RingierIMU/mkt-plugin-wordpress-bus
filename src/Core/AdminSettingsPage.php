@@ -1,6 +1,6 @@
 <?php
 /**
- * To handle everything regarding our main Admin Bus API Settings Page
+ * To handle everything regarding the main Admin Bus API Settings Page
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  * @github wkhayrattee
@@ -98,8 +98,9 @@ class AdminSettingsPage
         $this->add_field_slack_bot_name();
     }
 
-    //FIELD - bus_status
-
+    /**
+     * FIELD - bus_status
+     */
     public function add_field_bus_status()
     {
         add_settings_field(
@@ -153,8 +154,9 @@ class AdminSettingsPage
         unset($timber);
     }
 
-    //FIELD - VENTURE CONFIG
-
+    /**
+     * FIELD - VENTURE CONFIG
+     */
     public function add_field_venture_config()
     {
         add_settings_field(
@@ -182,8 +184,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_venture_config.twig');
     }
 
-    //FIELD - API Locale
-
+    /**
+     * FIELD - API Locale
+     */
     public function add_field_app_locale()
     {
         add_settings_field(
@@ -206,8 +209,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_app_locale.twig');
     }
 
-    //FIELD - APP KEY
-
+    /**
+     * FIELD - APP KEY
+     */
     public function add_field_app_key()
     {
         add_settings_field(
@@ -230,8 +234,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_app_key.twig');
     }
 
-    //FIELD - API USERNAME
-
+    /**
+     * FIELD - API USERNAME
+     */
     public function add_field_api_username()
     {
         add_settings_field(
@@ -254,8 +259,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_username.twig');
     }
 
-    //FIELD - API PASSWORD
-
+    /**
+     * FIELD - API PASSWORD
+     */
     public function add_field_api_password()
     {
         add_settings_field(
@@ -278,8 +284,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_password.twig');
     }
 
-    //FIELD - API Endpoint
-
+    /**
+     * FIELD - API Endpoint
+     */
     public function add_field_api_endpoint()
     {
         add_settings_field(
@@ -302,8 +309,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_api_endpoint.twig');
     }
 
-    //FIELD - Slack Hook URL
-
+    /**
+     * FIELD - Slack Hook URL
+     */
     public function add_field_slack_hoook_url()
     {
         add_settings_field(
@@ -326,8 +334,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_hook_url.twig');
     }
 
-    //FIELD - Slack Channel Name
-
+    /**
+     * FIELD - Slack Channel Name
+     */
     public function add_field_slack_channel_name()
     {
         add_settings_field(
@@ -350,8 +359,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_channel_name.twig');
     }
 
-    //FIELD - Slack Bot Name
-
+    /**
+     * FIELD - Slack Bot Name
+     */
     public function add_field_slack_bot_name()
     {
         add_settings_field(
@@ -374,8 +384,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_slack_bot_name.twig');
     }
 
-    //FIELD - Backoff Strategy (in Minutes)
-
+    /**
+     * FIELD - Backoff Strategy (in Minutes)
+     */
     public function add_field_backoff_duration()
     {
         add_settings_field(
@@ -398,9 +409,9 @@ class AdminSettingsPage
         self::render_field_tpl($args, 'field_backoff_duration.twig');
     }
 
-    //REFACTORED METHODS
-
     /**
+     * REFACTORED METHODS
+     *
      * @param $args
      * @param $tpl_name
      */

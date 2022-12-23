@@ -25,6 +25,7 @@
 namespace RingierBusPlugin\Bus;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use RingierBusPlugin\Enum;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
@@ -32,25 +33,22 @@ use Symfony\Contracts\Cache\ItemInterface;
 
 class Auth implements AuthenticationInterface
 {
-    private $endpoint;
-    private $ventureConfig;
-    private $username;
-    private $password;
-    private $authToken;
-
-    /** @var Client */
-    private $httpClient;
-
-    /** @var @var FilesystemAdapter */
-    private $cache;
+    private string $endpoint;
+    private string $ventureConfig;
+    private string $username;
+    private string $password;
+    private mixed $authToken;
+    private ?Client $httpClient;
+    private FilesystemAdapter $cache;
 
     public function __construct()
     {
         $this->authToken = null;
+        $this->httpClient = null;
         $this->cache = new FilesystemAdapter(Enum::CACHE_NAMESPACE, 0, RINGIER_BUS_PLUGIN_CACHE_DIR);
     }
 
-    public function setParameters($endpointUrl, $ventureConfig, $username, $password)
+    public function setParameters(string $endpointUrl, string $ventureConfig, string $username, string $password): void
     {
         $this->endpoint = $endpointUrl;
         $this->ventureConfig = $ventureConfig;
@@ -58,7 +56,12 @@ class Auth implements AuthenticationInterface
         $this->password = $password;
     }
 
-    public function getToken($regenerate = false)
+    /**
+     * @param mixed $regenerate
+     *
+     * @throws GuzzleException
+     */
+    public function getToken(mixed $regenerate = false): mixed
     {
         if ($regenerate !== false) {
             //regenerate
@@ -71,10 +74,8 @@ class Auth implements AuthenticationInterface
 
     public function flushToken()
     {
-        ringier_infologthis('[auth_api] Clearing Token: ' . $this->authToken);
         $this->authToken = null;
         $this->cache->delete(Enum::CACHE_KEY);
-        ringier_infologthis('[auth_api] token cleared done!');
     }
 
     /**
@@ -82,11 +83,11 @@ class Auth implements AuthenticationInterface
      * If the token is not in the cache, it will fetch by contacting the Login Endpoint
      * This methode should return TRUE on success
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws GuzzleException|\Psr\Cache\InvalidArgumentException
      *
-     * @return bool
+     * @return mixed
      */
-    public function acquireToken(): bool
+    public function acquireToken(): mixed
     {
         $this->authToken = $this->cache->get(Enum::CACHE_KEY, function (ItemInterface $item) {
             $this->httpClient = new Client(['base_uri' => $this->endpoint]);
@@ -134,9 +135,9 @@ class Auth implements AuthenticationInterface
     /**
      * Exposes the httpClient object
      *
-     * @return Client|mixed
+     * @return Client
      */
-    public function getHttpClient()
+    public function getHttpClient(): Client
     {
         if (!is_object($this->httpClient)) {
             return new Client(['base_uri' => $this->endpoint]);
@@ -145,7 +146,7 @@ class Auth implements AuthenticationInterface
         return $this->httpClient;
     }
 
-    public function getVentureId()
+    public function getVentureId(): string
     {
         return $this->ventureConfig;
     }
