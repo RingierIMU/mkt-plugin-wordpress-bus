@@ -206,13 +206,13 @@ class ArticleEvent
             'title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => $post->post_title,
+                    'value' => Utils::truncate($post->post_title, 255),
                 ],
             ],
             'og_title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => $this->getOgArticleOgTitle($post_ID, $post),
+                    'value' => Utils::truncate($this->getOgArticleOgTitle($post_ID, $post), 255),
                 ],
             ],
             'description' => [
