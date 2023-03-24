@@ -218,13 +218,13 @@ class ArticleEvent
             'description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => mb_substr(get_the_excerpt($post_ID), 0, 2500),
+                    'value' => Utils::truncate(get_the_excerpt($post_ID), 2500),
                 ],
             ],
             'og_description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => mb_substr($this->getOgArticleOgDescription($post_ID, $post), 0, 2500),
+                    'value' => Utils::truncate($this->getOgArticleOgDescription($post_ID, $post), 2500),
                 ],
             ],
             'body' => [
