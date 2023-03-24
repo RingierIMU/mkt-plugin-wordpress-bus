@@ -230,7 +230,7 @@ class ArticleEvent
             'teaser' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate(get_the_excerpt($post_ID), 1000),
+                    'value' => Utils::truncate(get_the_excerpt($post_ID), 300),
                 ],
             ],
             'body' => [
