@@ -227,6 +227,12 @@ class ArticleEvent
                     'value' => Utils::truncate($this->getOgArticleOgDescription($post_ID, $post), 1000),
                 ],
             ],
+            'teaser' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::truncate(get_the_excerpt($post_ID), 1000),
+                ],
+            ],
             'body' => [
                 [
                     'culture' => ringier_getLocale(),
