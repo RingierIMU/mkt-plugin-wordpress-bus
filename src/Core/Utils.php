@@ -316,4 +316,18 @@ class Utils
 
         return $immutable_date->format($format);
     }
+
+    /**
+     * To truncate a sentence or content for a specific length,
+     * performing a multi-byte safe operation
+     *
+     * @param string $content
+     * @param int $length
+     *
+     * @return string
+     */
+    public static function truncate(string $content, int $length): string
+    {
+        return mb_substr($content, 0, $length);
+    }
 }
