@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -241,7 +242,7 @@ class Utils
      */
     public static function getContentWordCount($content)
     {
-        return str_word_count(self::getRawContent($content), 0, 'éëïöçñÉËÏÖÇÑ');
+        return str_word_count($content, 0, 'éëïöçñÉËÏÖÇÑ');
     }
 
     /**
