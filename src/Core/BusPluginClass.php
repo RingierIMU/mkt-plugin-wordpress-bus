@@ -3,6 +3,7 @@
  *  Handles the Main plugin hooks
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -104,6 +105,12 @@ class BusPluginClass
             unset($screens['attachment']);
         }
         add_meta_box('event_bus_meta_box', __('Lifetime'), [self::class, 'render_meta_box_for_custom_fields'], $screens, 'side');
+        add_meta_box('event_bus_meta_box_2', __('Publication reason'), [self::class, 'render_meta_box_publication_reason'], $screens, 'side');
+    }
+
+    public static function render_meta_box_publication_reason(\WP_Post $post)
+    {
+        //todo
     }
 
     public static function render_meta_box_for_custom_fields(\WP_Post $post)
