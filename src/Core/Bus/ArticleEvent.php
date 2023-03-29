@@ -273,7 +273,7 @@ class ArticleEvent
      */
     private function fetchArticleContent(int $post_ID): string
     {
-        return Utils::getRawContent(get_the_content(null, false, get_post($post_ID)));
+        return get_the_content(null, false, get_post($post_ID));
     }
 
     /**
@@ -369,7 +369,7 @@ class ArticleEvent
         if (count($imageList) > 0) {
             foreach ($imageList as $image) {
                 foreach ($imageSizes as $size) {
-                    $primaryImageUrl = esc_url_raw($image->guid);
+                    $primaryImageSlug = sanitize_title($image->post_name);
                     /**
                      * There is an anomaly in WordPress, when an image is "removed" from a post,
                      * it is not updated in an unattached state automatically.
@@ -378,7 +378,7 @@ class ArticleEvent
                      * So I am having to check if the post content actually has that image
                      * (Wasseem)
                      */
-                    if ($this->hasImageUrl($primaryImageUrl, $this->fetchArticleContent($post_ID))) {
+                    if ($this->isImageAttachedAndStillUsed($primaryImageSlug, $this->fetchArticleContent($post_ID))) {
                         $imageId = trim($image->ID);
                         $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
                         $imageUrl = wp_get_attachment_image_url($imageId, $size);
@@ -431,14 +431,14 @@ class ArticleEvent
     /**
      * Check if article content has the specified image url
      *
-     * @param string $url
+     * @param string $post_name the main slug part of the image
      * @param string $content
      *
      * @return bool
      */
-    private function hasImageUrl(string $url, string $content)
+    private function isImageAttachedAndStillUsed(string $post_name, string $content)
     {
-        if ((mb_strpos($content, $url) !== false)) {
+        if ((mb_strpos($content, $post_name) !== false)) {
             return true;
         }
 
