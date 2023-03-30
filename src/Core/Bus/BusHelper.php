@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -102,6 +103,16 @@ class BusHelper
                 }
             }
 
+            //save custom field: publication_reason
+            if (isset($_POST[Enum::FIELD_PUBLICATION_REASON_KEY])) {
+                $publication_reason_value = sanitize_text_field($_POST[Enum::FIELD_PUBLICATION_REASON_KEY]);
+                if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
+                    update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
+                } else {
+                    ringier_errorlogthis('[error] BUS: publication_reason field value not in whitelist');
+                }
+            }
+
             //save custom field: is_post_new | for this we do not care if it is set or nnot, it;'s a hidden field
             update_post_meta($post_id, Enum::ACF_IS_POST_NEW_KEY, Enum::ACF_IS_POST_VALUE_EXISTED);
         } else {
@@ -154,6 +165,7 @@ class BusHelper
      * @throws \GuzzleHttp\Exception\GuzzleException
      *
      * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+     *
      * @github wkhayrattee
      */
     public static function triggerArticleEvent(\WP_Post $post)
