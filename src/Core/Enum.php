@@ -77,4 +77,7 @@ class Enum
     //Nonce fields for Custom Fields
     public const ACF_NONCE_ACTION = 'event_bus_meta_box_nonce_action';
     public const ACF_NONCE_FIELD = 'event_bus_meta_box_nonce_field';
+
+    public const FIELD_PUBLICATION_REASON_KEY = 'publication_reason';
+    public const FIELD_PUBLICATION_REASON_VALUES = ['editorial', 'sponsored'];
 }
