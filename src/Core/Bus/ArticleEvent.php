@@ -260,6 +260,7 @@ class ArticleEvent
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
+            'publication_reason' => Utils::getPublicationReason($post_ID),
             'primary_media_type' => $this->getPrimaryMediaType($post),
         ];
     }
