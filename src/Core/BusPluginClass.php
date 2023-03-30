@@ -67,6 +67,9 @@ class BusPluginClass
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
+        //enqueue custom editor js scripts
+        add_action('admin_enqueue_scripts', [self::class, 'add_javascript_to_article_dashboard']);
+
         /*
          * Register Bus API Mechanism
          * Note: commented out because we are now fetching values from the UI (dashboard) itself
@@ -192,5 +195,16 @@ class BusPluginClass
 
         //close parent div
         echo '</div>';
+    }
+
+    public static function add_javascript_to_article_dashboard()
+    {
+        /** @var \WP_Screen $screen */
+        $screen = get_current_screen();
+
+        // load on NEW & EDIT screens of all post types
+        if (('post' === $screen->base) && ($screen->post_type != 'page')) {
+            wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+        }
     }
 }
