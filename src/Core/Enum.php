@@ -42,6 +42,8 @@ class Enum
     const FIELD_SLACK_HOOK_URL = 'field_bus_slack_hook_url';
     const FIELD_SLACK_CHANNEL_NAME = 'field_bus_slack_channel_name';
     const FIELD_SLACK_BOT_NAME = 'field_bus_slack_bot_name';
+    const FIELD_VALIDATION_PUBLICATION_REASON = 'field_validation_publication_reason';
+    const FIELD_VALIDATION_ARTICLE_LIFETIME = 'field_validation_article_lifetime';
 
     //ADMIN LOG PAGE
     const ADMIN_LOG_PAGE_TITLE = 'Ringier Bus API Log';
