@@ -9,6 +9,7 @@
 
 namespace RingierBusPlugin;
 
+use RingierBusPlugin\Bus\Fields;
 use WP_Post;
 
 class BusPluginClass
@@ -61,6 +62,8 @@ class BusPluginClass
                     Enum::FIELD_APP_KEY => 'MUUK-STAGING',
                     Enum::FIELD_SLACK_BOT_NAME => 'MUUK-STAGING',
                     Enum::FIELD_BACKOFF_DURATION => 30,
+                    Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'on',
+                    Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'on',
                 ]
             );
         }
@@ -197,14 +200,30 @@ class BusPluginClass
         echo '</div>';
     }
 
-    public static function add_javascript_to_article_dashboard()
+    /**
+     * Add the javascript validation on Gutenberg
+     * This is a callback function invoked by `admin_enqueue_scripts` above
+     */
+    public static function add_javascript_to_article_dashboard(): void
     {
-        /** @var \WP_Screen $screen */
-        $screen = get_current_screen();
+        $fieldsObject = new Fields();
+        //Enqueue scripts ONLY IF Bus Plugin is enabled
+        if ($fieldsObject->is_bus_enabled === true) {
+            /** @var \WP_Screen $screen */
+            $screen = get_current_screen();
 
-        // load on NEW & EDIT screens of all post types
-        if (('post' === $screen->base) && ($screen->post_type != 'page')) {
-            wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+            // load on NEW & EDIT screens of all post types
+            if (('post' === $screen->base) && ($screen->post_type != 'page')) {
+                //Publication reason
+                if ($fieldsObject->field_validation_publication_reason != 'off') {
+                    wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+                }
+
+                //Article lifetime
+                if ($fieldsObject->field_validation_article_lifetime != 'off') {
+                    wp_enqueue_script('ringier-validation-article-lifetime', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-article_lifetime.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+                }
+            }
         }
     }
 }
