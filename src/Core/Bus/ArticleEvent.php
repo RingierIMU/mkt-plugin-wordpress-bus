@@ -238,7 +238,7 @@ class ArticleEvent
             'body' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => $this->fetchArticleContent($post_ID),
+                    'value' => Utils::getRawContent($this->fetchArticleContent($post_ID)),
                 ],
             ],
             'wordcount' => Utils::getContentWordCount($this->fetchArticleContent($post_ID)),
