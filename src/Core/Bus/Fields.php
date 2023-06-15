@@ -4,6 +4,7 @@
  * FYI this is related to our BUS API plugin
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -27,6 +28,8 @@ class Fields
     public string $field_bus_slack_hook_url;
     public string $field_bus_slack_channel_name;
     public string $field_bus_slack_bot_name;
+    public string $field_validation_publication_reason;
+    public string $field_validation_article_lifetime;
 
     public bool $is_bus_enabled;
     public bool $is_slack_enabled;
@@ -70,6 +73,8 @@ class Fields
         $this->field_bus_api_password = '';
         $this->field_bus_api_endpoint = '';
         $this->field_bus_backoff_duration = 0;
+        $this->field_validation_publication_reason = 'on';
+        $this->field_validation_article_lifetime = 'on';
 
         if ($this->is_bus_enabled === true) {
             if (isset($optionList[Enum::FIELD_VENTURE_CONFIG])) {
@@ -92,6 +97,13 @@ class Fields
             }
             if (isset($optionList[Enum::FIELD_APP_KEY])) {
                 $this->field_app_key = $optionList[Enum::FIELD_APP_KEY];
+            }
+
+            if (isset($optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON])) {
+                $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON];
+            }
+            if (isset($optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME])) {
+                $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME];
             }
 
             $error = '';

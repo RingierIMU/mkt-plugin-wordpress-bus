@@ -3,6 +3,7 @@
  * To handle everything regarding the main Admin Bus API Settings Page
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -96,6 +97,8 @@ class AdminSettingsPage
         $this->add_field_slack_hoook_url();
         $this->add_field_slack_channel_name();
         $this->add_field_slack_bot_name();
+        $this->add_field_validation_publication_reason();
+        $this->add_field_validation_article_lifetime();
     }
 
     /**
@@ -435,6 +438,118 @@ class AdminSettingsPage
             $context['field_value'] = esc_attr($field_value);
 
             $timber::render($field_tpl, $context);
+        }
+        unset($timber);
+    }
+
+    /**
+     * FIELD - field_validation_publication_reason
+     */
+    public function add_field_validation_publication_reason(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_VALIDATION_PUBLICATION_REASON,
+            // Use $args' label_for to populate the id inside the callback.
+            'Enable validation for "Publication reason"',
+            [self::class, 'field_validation_publication_reason_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_VALIDATION_PUBLICATION_REASON,
+                'class' => 'ringier-bus-row validation-field first',
+                'field_custom_data' => Enum::FIELD_VALIDATION_PUBLICATION_REASON,
+            ]
+        );
+    }
+
+    /**
+     * field_validation_publication_reason callback function.
+     *
+     * WordPress has magic interaction with the following keys: label_for, class.
+     * - the "label_for" key value is used for the "for" attribute of the <label>.
+     * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
+     * Note: you can add custom key value pairs to be used inside your callbacks.
+     *
+     * @param array $args
+     */
+    public static function field_validation_publication_reason_callback($args): void
+    {
+        // Get the value of the setting we've registered with register_setting()
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $timber = new Timber();
+        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_publication_reason.twig';
+
+        $bus_status_selected_on = $bus_status_selected_off = '';
+        if (isset($options[$args['label_for']])) {
+            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
+            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+        }
+
+        if (file_exists($field_bus_status_tpl)) {
+            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr($args['label_for']);
+            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
+            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
+            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+
+            $timber::render($field_bus_status_tpl, $context);
+        }
+        unset($timber);
+    }
+
+    /**
+     * FIELD - field_validation_article_lifetime
+     */
+    public function add_field_validation_article_lifetime(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_VALIDATION_ARTICLE_LIFETIME,
+            // Use $args' label_for to populate the id inside the callback.
+            'Enable validation for "Article lifetime"',
+            [self::class, 'field_validation_article_lifetime_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_VALIDATION_ARTICLE_LIFETIME,
+                'class' => 'ringier-bus-row validation-field',
+                'field_custom_data' => Enum::FIELD_VALIDATION_ARTICLE_LIFETIME,
+            ]
+        );
+    }
+
+    /**
+     * field_validation_article_lifetimes callback function.
+     *
+     * WordPress has magic interaction with the following keys: label_for, class.
+     * - the "label_for" key value is used for the "for" attribute of the <label>.
+     * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
+     * Note: you can add custom key value pairs to be used inside your callbacks.
+     *
+     * @param array $args
+     */
+    public static function field_validation_article_lifetime_callback($args): void
+    {
+        // Get the value of the setting we've registered with register_setting()
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $timber = new Timber();
+        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_article_lifetime.twig';
+
+        $bus_status_selected_on = $bus_status_selected_off = '';
+        if (isset($options[$args['label_for']])) {
+            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
+            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+        }
+
+        if (file_exists($field_bus_status_tpl)) {
+            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr($args['label_for']);
+            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
+            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
+            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+
+            $timber::render($field_bus_status_tpl, $context);
         }
         unset($timber);
     }

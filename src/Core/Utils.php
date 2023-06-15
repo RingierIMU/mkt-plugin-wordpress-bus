@@ -8,6 +8,7 @@
 namespace RingierBusPlugin;
 
 use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use RingierBusPlugin\Bus\LoggingHandler;
 
 class Utils
@@ -42,7 +43,7 @@ class Utils
      *
      * @return string
      */
-    public static function hashImage($image_url)
+    public static function hashImage($image_url): string
     {
         if (empty($image_url) || is_null($image_url)) {
             return '';
@@ -133,7 +134,7 @@ class Utils
      *
      * @return bool
      */
-    public static function isPostNew($post_ID)
+    public static function isPostNew($post_ID): bool
     {
         global $wpdb;
         try {
@@ -158,15 +159,48 @@ class Utils
     }
 
     /**
+     * "Publication reason" is a custom field attached to each article
+     *
+     * @param $post_ID
+     *
+     * @throws \Exception
+     *
+     * @return string
+     */
+    public static function getPublicationReason($post_ID): string
+    {
+        global $wpdb;
+        try {
+            $sql = $wpdb->prepare(
+                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
+            WHERE pm.post_id = %s AND pm.meta_key = %s",
+                $post_ID,
+                Enum::FIELD_PUBLICATION_REASON_KEY
+            );
+            $results = $wpdb->get_row($sql);
+
+            if (is_object($results)) {
+                if (isset($results->meta_value)) {
+                    return sanitize_text_field($results->meta_value);
+                }
+            }
+        } catch (\Exception $exception) {
+            ringier_errorlogthis($exception->errorMessage());
+        }
+
+        return 'none';
+    }
+
+    /**
      * Article_Lifetime is a custom field attached to each article
      *
      * @param $post_ID
      *
      * @throws \Exception
      *
-     * @return bool
+     * @return string
      */
-    public static function getArticleLifetime($post_ID)
+    public static function getArticleLifetime($post_ID): string
     {
         global $wpdb;
         try {
@@ -183,11 +217,11 @@ class Utils
                     return sanitize_text_field($results->meta_value);
                 }
             }
-
-            return 'none';
         } catch (\Exception $exception) {
             ringier_errorlogthis($exception->errorMessage());
         }
+
+        return 'none';
     }
 
     /**
@@ -199,7 +233,7 @@ class Utils
      *
      * @throws \Monolog\Handler\MissingExtensionException
      */
-    public static function l($message, $logLevel = 'alert', array $context = [])
+    public static function l($message, $logLevel = 'alert', array $context = []): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
@@ -212,9 +246,9 @@ class Utils
     /**
      * Fetch a uuid in the form "1ee9aa1b-6510-4105-92b9-7171bb2f3089"
      *
-     * @return \Ramsey\Uuid\UuidInterface
+     * @return UuidInterface
      */
-    public static function uuid()
+    public static function uuid(): UuidInterface
     {
         return Uuid::uuid4();
     }
@@ -227,7 +261,7 @@ class Utils
      *
      * @return string
      */
-    public static function getRawContent($content)
+    public static function getRawContent($content): string
     {
         return strip_shortcodes(wp_strip_all_tags($content));
     }
@@ -238,9 +272,9 @@ class Utils
      *
      * @param $content
      *
-     * @return int|string[]
+     * @return int
      */
-    public static function getContentWordCount($content)
+    public static function getContentWordCount($content): int
     {
         return str_word_count($content, 0, 'éëïöçñÉËÏÖÇÑ');
     }
@@ -252,7 +286,7 @@ class Utils
      *
      * @return bool
      */
-    public static function notEmptyOrNull($value)
+    public static function notEmptyOrNull($value): bool
     {
         if (is_object($value) && !is_null($value)) {
             return true;
@@ -288,7 +322,7 @@ class Utils
      *
      * @return bool
      */
-    public static function isAssociative($thatArray)
+    public static function isAssociative($thatArray): bool
     {
         foreach ($thatArray as $key => $value) {
             if ($key !== (int) $key) {
@@ -307,7 +341,7 @@ class Utils
      *
      * @return string
      */
-    public static function formatDate($date, $format = \DATE_RFC3339)
+    public static function formatDate($date, $format = \DATE_RFC3339): string
     {
         $immutable_date = \date_create_immutable_from_format('Y-m-d H:i:s', $date, new \DateTimeZone('UTC'));
 
