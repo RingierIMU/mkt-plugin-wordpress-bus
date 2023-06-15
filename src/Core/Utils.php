@@ -1,6 +1,7 @@
 <?php
 /**
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -241,7 +242,7 @@ class Utils
      */
     public static function getContentWordCount($content)
     {
-        return str_word_count(self::getRawContent($content), 0, 'éëïöçñÉËÏÖÇÑ');
+        return str_word_count($content, 0, 'éëïöçñÉËÏÖÇÑ');
     }
 
     /**
@@ -315,5 +316,19 @@ class Utils
         }
 
         return $immutable_date->format($format);
+    }
+
+    /**
+     * To truncate a sentence or content for a specific length,
+     * performing a multi-byte safe operation
+     *
+     * @param string $content
+     * @param int $length
+     *
+     * @return string
+     */
+    public static function truncate(string $content, int $length): string
+    {
+        return mb_substr($content, 0, $length);
     }
 }

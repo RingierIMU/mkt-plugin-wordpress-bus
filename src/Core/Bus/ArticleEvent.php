@@ -22,6 +22,7 @@
  *
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -161,7 +162,7 @@ class ArticleEvent
      *
      * @return array
      */
-    public function buildMainRequestBody(int $post_ID, \WP_Post $post)
+    public function buildMainRequestBody(int $post_ID, \WP_Post $post): array
     {
         return [
             'events' => [
@@ -188,7 +189,7 @@ class ArticleEvent
      *
      * @return array
      */
-    public function buildArticlePayloadData(int $post_ID, \WP_Post $post)
+    public function buildArticlePayloadData(int $post_ID, \WP_Post $post): array
     {
         return [
             'reference' => "$post_ID",
@@ -197,6 +198,7 @@ class ArticleEvent
             'published_at' => $this->getOgArticlePublishedDate($post_ID, $post),
             'updated_at' => $this->getOgArticleModifiedDate($post_ID, $post),
             'source_type' => 'original',
+            'source_detail' => $this->getAuthorName($post_ID),
             'url' => [
                 [
                     'culture' => ringier_getLocale(),
@@ -206,40 +208,41 @@ class ArticleEvent
             'title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => $post->post_title,
+                    'value' => Utils::truncate($post->post_title, 255),
                 ],
             ],
             'og_title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => $this->getOgArticleOgTitle($post_ID, $post),
+                    'value' => Utils::truncate($this->getOgArticleOgTitle($post_ID, $post), 255),
                 ],
             ],
             'description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => mb_substr(get_the_excerpt($post_ID), 0, 2500),
+                    'value' => Utils::truncate(get_the_excerpt($post_ID), 1000),
                 ],
             ],
             'og_description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => mb_substr($this->getOgArticleOgDescription($post_ID, $post), 0, 2500),
+                    'value' => Utils::truncate($this->getOgArticleOgDescription($post_ID, $post), 1000),
+                ],
+            ],
+            'teaser' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::truncate(get_the_excerpt($post_ID), 300),
                 ],
             ],
             'body' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::getRawContent(get_the_content(null, false, get_post($post_ID))),
+                    'value' => $this->fetchArticleContent($post_ID),
                 ],
             ],
-            'wordcount' => Utils::getContentWordCount(get_the_content(null, false, get_post($post_ID))),
-            'images' => [
-                BusHelper::getImageArrayForApi($post_ID, 'small_rectangle'),
-                BusHelper::getImageArrayForApi($post_ID, 'small_square'),
-                BusHelper::getImageArrayForApi($post_ID),//'large_rectangle'
-                BusHelper::getImageArrayForApi($post_ID, 'large_square'),
-            ],
+            'wordcount' => Utils::getContentWordCount($this->fetchArticleContent($post_ID)),
+            'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
             /*
              * NOTE:
@@ -261,7 +264,151 @@ class ArticleEvent
         ];
     }
 
-    private function getPrimaryMediaType(\WP_Post $post)
+    /**
+     * Fetches the main content of the post, stripping out tags that WordPress adds
+     *
+     * @param int $post_ID
+     *
+     * @return string
+     */
+    private function fetchArticleContent(int $post_ID): string
+    {
+        return get_the_content(null, false, get_post($post_ID));
+    }
+
+    /**
+     * Reconcile featured image list with the rest of the images in the article (post)
+     *
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function getImages(int $post_ID): array
+    {
+        return array_merge(
+            $this->fetchFeaturedImage($post_ID),
+            $this->fetchPostImages($post_ID)
+        );
+    }
+
+    /**
+     * List of image sizes the event is expecting
+     *
+     * @return string[]
+     */
+    private function imageSizeList(): array
+    {
+        return [
+            'small_rectangle',
+            'small_square',
+            'large_rectangle',
+            'large_square',
+        ];
+    }
+
+    /**
+     * The key/value pairs as laid down by the BUS specs
+     *
+     * @param bool|string $imageUrl
+     * @param string $size
+     * @param mixed $image_alt
+     * @param bool $isHero
+     *
+     * @return array
+     */
+    private function transformImageFieldsIntoExpectedFormat(bool|string $imageUrl, string $size, mixed $image_alt, bool $isHero = false): array
+    {
+        return [
+            'url' => Utils::returnEmptyOnNullorFalse($imageUrl),
+            'size' => $size,
+            'alt_text' => Utils::returnEmptyOnNullorFalse($image_alt),
+            'hero' => $isHero,
+            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($imageUrl)),
+        ];
+    }
+
+    /**
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function fetchFeaturedImage(int $post_ID): array
+    {
+        $imageList = [];
+        $imageSizes = $this->imageSizeList();
+
+        foreach ($imageSizes as $size) {
+            $imageId = get_post_thumbnail_id($post_ID);
+            $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
+            $imageUrl = get_the_post_thumbnail_url(get_post($post_ID), $size);
+            //$image_title = get_the_title($image_id);
+            $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true);
+        }
+
+        return $imageList;
+    }
+
+    /**
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function fetchPostImages(int $post_ID): array
+    {
+        $finalImageList = [];
+        $featuredImageId = get_post_thumbnail_id($post_ID);
+        $imageList = get_attached_media('image', $post_ID);
+        $imageSizes = $this->imageSizeList();
+
+        //Remove the featured image in the list since we are already catering for it prior to this
+        if (!empty($imageList) && (isset($imageList[$featuredImageId]))) {
+            unset($imageList[$featuredImageId]);
+        }
+
+        //now deal with the rest
+        if (count($imageList) > 0) {
+            foreach ($imageList as $image) {
+                foreach ($imageSizes as $size) {
+                    $primaryImageSlug = sanitize_title($image->post_name);
+                    /**
+                     * There is an anomaly in WordPress, when an image is "removed" from a post,
+                     * it is not updated in an unattached state automatically.
+                     * ref: https://core.trac.wordpress.org/ticket/30691#comment:12
+                     *
+                     * So I am having to check if the post content actually has that image
+                     * (Wasseem)
+                     */
+                    if ($this->isImageAttachedAndStillUsed($primaryImageSlug, $this->fetchArticleContent($post_ID))) {
+                        $imageId = trim($image->ID);
+                        $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
+                        $imageUrl = wp_get_attachment_image_url($imageId, $size);
+                        $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt);
+                    }
+                }
+            }
+        }
+
+        return $finalImageList;
+    }
+
+    /**
+     * @param int $post_id
+     *
+     * @return string|null
+     */
+    private function getAuthorName(int $post_id): ?string
+    {
+        $author_id = get_post_field('post_author', $post_id);
+
+        return get_the_author_meta('display_name', $author_id);
+    }
+
+    /**
+     * @param \WP_Post $post
+     *
+     * @return string
+     */
+    private function getPrimaryMediaType(\WP_Post $post): string
     {
         //default value
         $media_type = 'text';
@@ -279,6 +426,23 @@ class ArticleEvent
         }
 
         return $media_type;
+    }
+
+    /**
+     * Check if article content has the specified image url
+     *
+     * @param string $post_name the main slug part of the image
+     * @param string $content
+     *
+     * @return bool
+     */
+    private function isImageAttachedAndStillUsed(string $post_name, string $content)
+    {
+        if ((mb_strpos($content, $post_name) !== false)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
