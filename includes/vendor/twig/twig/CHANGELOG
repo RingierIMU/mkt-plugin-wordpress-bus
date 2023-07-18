@@ -1,6 +1,16 @@
-# 2.15.4 (2022-XX-XX)
+# 2.15.6 (2023-XX-XX)
 
  * n/a
+
+# 2.15.5 (2023-05-03)
+
+ * Make the Lexer initialize itself lazily
+
+# 2.15.4 (2022-12-27)
+
+ * Fix optimizing closures callbacks
+ * Add a better exception when getting an undefined constant via `constant`
+ * Fix `if` nodes when outside of a block and with an empty body
 
 # 2.15.3 (2022-09-28)
 

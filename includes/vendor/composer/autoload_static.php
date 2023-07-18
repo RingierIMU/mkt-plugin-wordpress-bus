@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit416a33ba6e45719ed9925ff75a360590
+class ComposerStaticInit837a0be8cd0890f111a7070dc3b1c32a
 {
     public static $files = array (
         '320cde22f66dd4f5d3fd621d3e88b98f' => __DIR__ . '/..' . '/symfony/polyfill-ctype/bootstrap.php',
@@ -209,6 +209,7 @@ class ComposerStaticInit416a33ba6e45719ed9925ff75a360590
         'Brick\\Math\\Internal\\Calculator\\GmpCalculator' => __DIR__ . '/..' . '/brick/math/src/Internal/Calculator/GmpCalculator.php',
         'Brick\\Math\\Internal\\Calculator\\NativeCalculator' => __DIR__ . '/..' . '/brick/math/src/Internal/Calculator/NativeCalculator.php',
         'Brick\\Math\\RoundingMode' => __DIR__ . '/..' . '/brick/math/src/RoundingMode.php',
+        'CURLStringFile' => __DIR__ . '/..' . '/symfony/polyfill-php81/Resources/stubs/CURLStringFile.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Composer\\Installers\\AglInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/AglInstaller.php',
         'Composer\\Installers\\AkauntingInstaller' => __DIR__ . '/..' . '/composer/installers/src/Composer/Installers/AkauntingInstaller.php',
@@ -1206,10 +1207,10 @@ class ComposerStaticInit416a33ba6e45719ed9925ff75a360590
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit416a33ba6e45719ed9925ff75a360590::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit416a33ba6e45719ed9925ff75a360590::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit416a33ba6e45719ed9925ff75a360590::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit416a33ba6e45719ed9925ff75a360590::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit837a0be8cd0890f111a7070dc3b1c32a::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit837a0be8cd0890f111a7070dc3b1c32a::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit837a0be8cd0890f111a7070dc3b1c32a::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInit837a0be8cd0890f111a7070dc3b1c32a::$classMap;
 
         }, null, ClassLoader::class);
     }
