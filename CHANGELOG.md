@@ -1,5 +1,27 @@
 # Changelog Details
 
+### 2.1.0 (Jul 18, 2023) ###
+
+* [UPDATE] General updates to the JSON structure to match the new BUS Specs (See [PR#5](https://github.com/RingierIMU/mkt-plugin-wordpress-bus/pull/5)
+
+  i) Check for the presence of the following new/updated variables:
+    - images
+    - lifetime
+    - source_detail
+    - publication_reason
+
+  ii) the following variables simply had size limit adjustments
+    - og_title
+    - description
+    - og_description
+    - teaser
+
+* [UPDATE] New widget for the new field publication reason on the Gutenberg editor
+* [UPDATE] Updated composer dependencies:
+  - guzzlehttp/guzzle to v7.5.3
+  - symfony/cache to v6.0.19
+  - ramsey/uuid to v4.7.4
+
 ### 2.0.0 (Dec 23, 2022) ###
 
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.0.2
