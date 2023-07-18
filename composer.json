@@ -31,10 +31,10 @@
   "require": {
     "monolog/monolog": "2.8.0",
     "timber/timber": "1.22.1",
-    "guzzlehttp/guzzle": "7.5.0",
+    "guzzlehttp/guzzle": "7.5.3",
     "symfony/service-contracts": "3.0.2",
-    "symfony/cache": "6.0.16",
-    "ramsey/uuid": "4.7.0"
+    "symfony/cache": "6.0.19",
+    "ramsey/uuid": "4.7.4"
   },
   "repositories": [
     {
