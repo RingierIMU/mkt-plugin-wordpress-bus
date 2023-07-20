@@ -74,10 +74,31 @@ class BusPluginClass
         add_action('admin_enqueue_scripts', [self::class, 'add_javascript_to_article_dashboard']);
 
         /*
+         * Hide the "Quick Edit" button on Post List screen (wp-admin/edit.php)
+         * Because with Quick Edit button, we can change an article from draft to publish,
+         * bypassing the checklist - which we do not want
+         */
+        add_action('post_row_actions', [self::class, 'hide_quick_edit_button'], PHP_INT_MAX);
+
+        /*
          * Register Bus API Mechanism
          * Note: commented out because we are now fetching values from the UI (dashboard) itself
          */
 //        BusHelper::load_vars_into_env();
+    }
+
+    /**
+     * Hook reference: https://developer.wordpress.org/reference/hooks/post_row_actions/
+     *
+     * @param array $actions
+     *
+     * @return array
+     */
+    public static function hide_quick_edit_button(array $actions): array
+    {
+        unset($actions['inline hide-if-no-js']);
+
+        return $actions;
     }
 
     public static function handleAdminUI()
