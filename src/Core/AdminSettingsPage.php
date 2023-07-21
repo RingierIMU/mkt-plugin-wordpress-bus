@@ -345,7 +345,7 @@ class AdminSettingsPage
         add_settings_field(
             'wp_bus_' . Enum::FIELD_SLACK_CHANNEL_NAME,
             // Use $args' label_for to populate the id inside the callback.
-            'Slack Channel Name',
+            'Slack Channel Name (or ID)',
             [self::class, 'field_slack_channel_name_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
