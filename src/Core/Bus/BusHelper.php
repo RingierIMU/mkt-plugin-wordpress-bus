@@ -7,8 +7,13 @@
 
 namespace RingierBusPlugin\Bus;
 
+use Exception;
+use GuzzleHttp\Exception\GuzzleException;
+use Monolog\Handler\MissingExtensionException;
+use Psr\Cache\InvalidArgumentException;
 use RingierBusPlugin\Enum;
 use RingierBusPlugin\Utils;
+use WP_Post;
 
 class BusHelper
 {
@@ -21,7 +26,7 @@ class BusHelper
      *
      * @return array
      */
-    public static function getImageArrayForApi(int $post_ID, string $image_size_name = 'large_rectangle', string $isHero = 'false')
+    public static function getImageArrayForApi(int $post_ID, string $image_size_name = 'large_rectangle', string $isHero = 'false'): array
     {
         $image_id = get_post_thumbnail_id($post_ID);
         $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
@@ -52,6 +57,7 @@ class BusHelper
             add_action('save_post', [self::class, 'save_custom_fields'], 10, 3);
             add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+            add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
         }
@@ -61,14 +67,13 @@ class BusHelper
      * To save our custom fields like Article Lifetime & is_post_new
      *
      * @param int $post_id
-     * @param \WP_Post $post
+     * @param WP_Post $post
      * @param bool $update
      *
-     * @throws \Exception
+     * @throws Exception
      */
-    public static function save_custom_fields(int $post_id, \WP_Post $post, bool $update)
+    public static function save_custom_fields(int $post_id, WP_Post $post, bool $update): void
     {
-        //bail if a page
         if (strcmp($post->post_type, 'page') == 0) {
             return;
         }
@@ -78,9 +83,9 @@ class BusHelper
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
-        // Bail if we're working on a draft or trashed item
+
         $wordpress_post_status = $post->post_status;
-        if (in_array($wordpress_post_status, ['auto-draft', 'draft', 'inherit', 'trash'])) {
+        if (in_array($wordpress_post_status, ['auto-draft', 'inherit', 'trash'])) {
             return;
         }
 
@@ -90,7 +95,8 @@ class BusHelper
             return;
         }
 
-        if (strcmp($wordpress_post_status, 'publish') == 0) { //save only when in publish state, no for drafts..etc
+        //MKTC-1750 - should now allow saving when 'saving draft' and 'scheduled' posting
+        if (in_array($wordpress_post_status, ['publish', 'draft', 'future'])) {
             $post_id = Utils::getParentPostId($post_id);
 
             //save custom field: article_lifetime
@@ -99,7 +105,7 @@ class BusHelper
                 if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
                 } else {
-                    ringier_errorlogthis('[error] BUS: article_lifetime field value not in whitelist');
+                    ringier_errorlogthis('[warning] BUS: article_lifetime field value not in whitelist or was empty');
                 }
             }
 
@@ -109,7 +115,7 @@ class BusHelper
                 if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
                 } else {
-                    ringier_errorlogthis('[error] BUS: publication_reason field value not in whitelist');
+                    ringier_errorlogthis('[warning] BUS: publication_reason field value not in whitelist or was empty');
                 }
             }
 
@@ -122,12 +128,13 @@ class BusHelper
 
     /**
      * To cater for custom post_type only
+     * Triggered by hook: transition_post_status
      *
      * @param string $new_status
      * @param string $old_status
-     * @param \WP_Post $post
+     * @param WP_Post $post
      */
-    public static function cater_for_custom_post(string $new_status, string $old_status, \WP_Post $post)
+    public static function cater_for_custom_post(string $new_status, string $old_status, WP_Post $post): void
     {
         //bail if a page
         if (strcmp($post->post_type, 'page') == 0) {
@@ -150,6 +157,8 @@ class BusHelper
     }
 
     /**
+     * Triggered by Hook: rest_after_insert_post
+     *
      * This action will be invoked ONLY when a post in being Created/Updated
      * (Codex for save_post: https://developer.wordpress.org/reference/hooks/save_post/)
      *
@@ -158,19 +167,19 @@ class BusHelper
      * Gutenberg now saves content directly via the WordPress API, so there is no POST data to intercept
      * hence previously hook `save_post` was of a not flexible way for us.
      *
-     * @param int $post_ID
-     * @param \WP_Post $post
-     * @param bool $update
+     * @param WP_Post $post
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws MissingExtensionException
+     * @throws Exception
      *
      * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
      *
      * @github wkhayrattee
      */
-    public static function triggerArticleEvent(\WP_Post $post)
+    public static function triggerArticleEvent(WP_Post $post): void
     {
         $wordpress_post_status = $post->post_status;
+
         //we don't want to trigger the event if it is a draft, only when in public
         if (strcmp($wordpress_post_status, 'publish') == 0) {
             $post_ID = $post->ID;
@@ -182,13 +191,11 @@ class BusHelper
              * There is no other way around this as of this date of coding (Apr 2021)
              * Hope in the future WordPress exposes a better way for us to get this context
              */
-            if (is_object($post)) {
-                $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
-                if (Utils::isPostNew($post_ID) === true) {
-                    $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
-                } else {
-                    $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
-                }
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            if (Utils::isPostNew($post_ID) === true) {
+                $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
+            } else {
+                $articleTriggerMode = Enum::EVENT_ARTICLE_EDITED;
             }
             /*
              * we will now schedule the event after 1min instead of instantly executing it, because:
@@ -199,26 +206,44 @@ class BusHelper
             self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
 
             //push to SLACK
-            $message = <<<EOF
-            $blogKey: $articleTriggerMode queued for article (ID: $post_ID)
-            Scheduled to run in the next minute(s)
-        EOF;
-            Utils::l($message);
+            self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
         }
     }
 
     /**
+     * Triggered by hook: future_to_publish
+     *
+     * @param WP_Post $post
+     *
+     * @throws MissingExtensionException
+     */
+    public static function cater_for_manually_scheduled_post(WP_Post $post): void
+    {
+        $wordpress_post_status = $post->post_status;
+        if (strcmp($wordpress_post_status, 'publish') == 0) {
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $post_ID = $post->ID;
+            $post_ID = Utils::getParentPostId($post_ID);
+            $articleTriggerMode = 'ArticleCreated';
+            self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
+            self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
+        }
+    }
+
+    /**
+     * Triggered by hook: publish_to_trash
+     *
      * This action will be invoked ONLY when a post in being Created/Updated
      * I made use of Transitions
      * (Codex for Status Transitions: https://codex.wordpress.org/Post_Status_Transitions)
      *
-     * @param \WP_Post $post
+     * @param WP_Post $post
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
-    public static function triggerArticleDeletedEvent(\WP_Post $post)
+    public static function triggerArticleDeletedEvent(WP_Post $post): void
     {
         $post_ID = Utils::getParentPostId($post->ID);
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
@@ -235,19 +260,20 @@ class BusHelper
      * @param int $post_ID
      * @param int $countCalled
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @throws \Monolog\Handler\MissingExtensionException
+     * @throws GuzzleException
+     * @throws MissingExtensionException
+     * @throws InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
-    public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled)
+    public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled): void
     {
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
-            $blogKey: Now attempting to execute Queued "Push-to-BUS" for article (ID: $post_ID)..
+            $blogKey: Now attempting to execute "Push-to-BUS" for article (ID: $post_ID).
                     
             NOTE: 
-                If no error follows, means push-to-BUS was successful
+                If no error follows, means successful push
                 (else task will be re-queued)
         EOF;
 
@@ -261,12 +287,12 @@ class BusHelper
      *
      * @param string $articleTriggerMode
      * @param int $post_ID
-     * @param \WP_Post $post
+     * @param WP_Post $post
      * @param int $countCalled to keep track of how many times this function was called by the cron
      *
-     * @throws \GuzzleHttp\Exception\GuzzleException|\Monolog\Handler\MissingExtensionException
+     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      */
-    public static function sendToBus(string $articleTriggerMode, int $post_ID, \WP_Post $post, int $countCalled = 1): void
+    public static function sendToBus(string $articleTriggerMode, int $post_ID, WP_Post $post, int $countCalled = 1): void
     {
         try {
             $authClient = new Auth();
@@ -276,6 +302,7 @@ class BusHelper
             if ($result === true) {
                 $articleEvent = new ArticleEvent($authClient);
 
+                // Internal to some of the ventures, so not all will have this object, hence the check
                 if (class_exists('Brand_settings')) {
                     $articleEvent->brandSettings = new \Brand_settings();
                 }
@@ -285,9 +312,9 @@ class BusHelper
             } else {
                 ringier_errorlogthis('[error] A problem with Auth Token');
 
-                throw new \Exception('A problem with Auth Token');
+                throw new Exception('A problem with Auth Token');
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
@@ -301,9 +328,9 @@ class BusHelper
      * @param int $countCalled
      * @param mixed $run_after_minutes
      *
-     * @throws \Monolog\Handler\MissingExtensionException
+     * @throws MissingExtensionException
      */
-    public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false)
+    public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false): void
     {
         if ($run_after_minutes === false) {
             $minutesToRun = getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30;
@@ -320,7 +347,7 @@ class BusHelper
         $hookSendToBus = self::scheduledHookName();
 
         /*
-         * timestmap of any already scheduled event with SAME args
+         * timestamp of any already scheduled event with SAME args
          *      - needs to be uniquely identified will return false if not scheduled
          */
         $alreadyScheduledTimestamp = wp_next_scheduled($hookSendToBus, $args);
@@ -338,11 +365,12 @@ class BusHelper
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
             $blogKey: [Queuing] Push-to-BUS for article (ID: $post_ID) has just been queued.
-            And will run in the next ($minutesToRun)mins..
+            And will run in the next ($minutesToRun)mins.
             
-            Args:
+            Passed Params (mode, article_id, count_for_time_invoked):
+            
         EOF;
-        Utils::l($message . print_r($args, true)); //push to SLACK
+        Utils::l($message . print_r($args, true), 'debug'); //push to SLACK
     }
 
     /**
@@ -350,8 +378,24 @@ class BusHelper
      *
      * @return string
      */
-    public static function scheduledHookName()
+    public static function scheduledHookName(): string
     {
         return Enum::HOOK_NAME_SCHEDULED_EVENTS;
+    }
+
+    /**
+     * @param mixed $blogKey
+     * @param string $articleTriggerMode
+     * @param int $post_ID
+     *
+     * @throws MissingExtensionException
+     */
+    private static function pushToSLACK(mixed $blogKey, string $articleTriggerMode, int $post_ID): void
+    {
+        $message = <<<EOF
+            $blogKey: [Confirming] $articleTriggerMode queued for article (ID: $post_ID)
+            Scheduled to run in the next minute(s)
+        EOF;
+        Utils::l($message);
     }
 }
