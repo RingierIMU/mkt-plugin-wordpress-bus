@@ -32,7 +32,7 @@ To learn more about Hexagon services, visit [https://hexagon.ringier.com/service
 The plugin automatically triggers events when articles are created, updated and deleted.  
 Event names: ArticleCreated, ArticleUpdated and ArticleDeleted.
 
-The events are scheduled to be sent to the Bus with a 2-minute delay. This is to allow WordPress to process the changes and update custom fields in the database, which is done asynchronously. You can view scheduled events by making use of the plugin "Advanced Cron Manager".
+The **events are scheduled** to be sent to the Bus **within a 1-minute delay**. This is to allow WordPress to process the changes and update custom fields in the database, which is done asynchronously. You can view scheduled events by making use of the plugin "Advanced Cron Manager".
 
 The plugin also creates two custom fields, available on the article edition page under "Event Bus".  
 - The article lifetime is required by the CDE.  
