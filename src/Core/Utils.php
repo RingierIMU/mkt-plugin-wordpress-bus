@@ -7,6 +7,7 @@
 
 namespace RingierBusPlugin;
 
+use Monolog\Handler\MissingExtensionException;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 use RingierBusPlugin\Bus\LoggingHandler;
@@ -231,15 +232,15 @@ class Utils
      * @param string $logLevel
      * @param array $context
      *
-     * @throws \Monolog\Handler\MissingExtensionException
+     * @throws MissingExtensionException
      */
-    public static function l($message, $logLevel = 'alert', array $context = []): void
+    public static function l($message, string $logLevel = 'info', array $context = []): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
             LoggingHandler::getInstance()->log($logLevel, $message, $context);
         } else {
-            ringier_errorlogthis('[info] - did not to Slack, it is probably OFF');
+            ringier_errorlogthis('[info] - did not push to Slack, it is probably OFF');
         }
     }
 

@@ -3,6 +3,7 @@
  * A some handy functions to use directly without namespace
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 use Monolog\Handler\StreamHandler;
@@ -18,7 +19,7 @@ use RingierBusPlugin\Enum;
  *
  * @throws \Exception
  */
-function ringier_infologthis($message)
+function ringier_infologthis($message): void
 {
     if (isset($_ENV['APP_ENV']) && ($_ENV['APP_ENV'] != 'prod')) {
         $log = new Logger('ringier_bus_plugin_log');
@@ -37,7 +38,7 @@ function ringier_infologthis($message)
  *
  * @throws \Exception
  */
-function ringier_errorlogthis($message)
+function ringier_errorlogthis($message): void
 {
     $log = new Logger('ringier_bus_plugin_error_log');
     $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR, Logger::ERROR);
@@ -53,7 +54,7 @@ function ringier_errorlogthis($message)
  *
  * @return mixed|string
  */
-function ringier_getLocale()
+function ringier_getLocale(): mixed
 {
     if (isset($_ENV[Enum::ENV_BUS_API_LOCALE])) {
         return $_ENV[Enum::ENV_BUS_API_LOCALE];
