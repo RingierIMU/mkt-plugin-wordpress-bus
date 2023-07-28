@@ -351,16 +351,14 @@ class BusHelper
          *      - needs to be uniquely identified will return false if not scheduled
          */
         $alreadyScheduledTimestamp = wp_next_scheduled($hookSendToBus, $args);
-        if ($alreadyScheduledTimestamp === false) { //means first time this cron is being scheduled
-            wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
-        } else { //is not on first time
+        if ($alreadyScheduledTimestamp !== false) { //is not on first time
             //unschedule current
             wp_unschedule_event($alreadyScheduledTimestamp, $hookSendToBus, $args); //we want to remove any pre existing ones
 
             //re-schedule same for another time
             $args = [$articleTriggerMode, $post_ID, ++$countCalled]; //2nd time called, need to increment count
-            wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
         }
+        wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
 
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
@@ -370,7 +368,7 @@ class BusHelper
             Passed Params (mode, article_id, count_for_time_invoked):
             
         EOF;
-        Utils::l($message . print_r($args, true), 'debug'); //push to SLACK
+        Utils::l($message . print_r($args, true)); //push to SLACK
     }
 
     /**

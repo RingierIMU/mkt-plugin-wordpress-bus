@@ -234,7 +234,7 @@ class Utils
      *
      * @throws MissingExtensionException
      */
-    public static function l($message, string $logLevel = 'info', array $context = []): void
+    public static function l($message, string $logLevel = 'alert', array $context = []): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
