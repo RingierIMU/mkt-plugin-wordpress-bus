@@ -235,12 +235,6 @@ class ArticleEvent
                     'value' => Utils::truncate(get_the_excerpt($post_ID), 300),
                 ],
             ],
-            'body' => [
-                [
-                    'culture' => ringier_getLocale(),
-                    'value' => Utils::getRawContent($this->fetchArticleContent($post_ID)),
-                ],
-            ],
             'wordcount' => Utils::getContentWordCount($this->fetchArticleContent($post_ID)),
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
@@ -262,6 +256,12 @@ class ArticleEvent
             'lifetime' => Utils::getArticleLifetime($post_ID),
             'publication_reason' => Utils::getPublicationReason($post_ID),
             'primary_media_type' => $this->getPrimaryMediaType($post),
+            'body' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::getRawContent($this->fetchArticleContent($post_ID)),
+                ],
+            ],
         ];
     }
 
