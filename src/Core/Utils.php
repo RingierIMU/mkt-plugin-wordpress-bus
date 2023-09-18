@@ -77,7 +77,6 @@ class Utils
     }
 
     /**
-     * Fetch the property of a category
      * Property is any of the following:
      * WP_Term Object
      * (
@@ -96,9 +95,11 @@ class Utils
      * @param $post_id
      * @param $property
      *
-     * @return false|mixed
+     * @throws MissingExtensionException
+     *
+     * @return mixed
      */
-    public static function getPrimaryCategoryProperty($post_id, $property)
+    public static function getPrimaryCategoryProperty($post_id, $property): mixed
     {
         //some post_ids are simply revisions, so make sure we are actually using the parent id
         $post_id = self::getParentPostId($post_id);
@@ -114,11 +115,14 @@ class Utils
         }
 
         $categories = get_the_terms($post_id, 'category');
-        if ((!is_wp_error($term)) && is_array($categories)) {
+        if ((!is_wp_error($categories)) && is_array($categories)) {
             $primaryCategory = $categories[0];
 
             return $primaryCategory->{$property};
         }
+
+        ringier_errorlogthis('Warning: Could not find a category for article with ID: ' . $post_id);
+        Utils::l('Warning: Could not find a category for article with ID: ' . $post_id);
 
         return false;
     }
