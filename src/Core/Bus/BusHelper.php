@@ -51,10 +51,15 @@ class BusHelper
      */
     public static function registerBusApiActions(): void
     {
+        /*
+         * the logic of saving custom fields like publication_reason or lifetime, etc
+         * should work as soon as the plugin is active, irrespective if the BUS sync is OFF
+         */
+        add_action('save_post', [self::class, 'save_custom_fields'], 10, 3);
+
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
-            add_action('save_post', [self::class, 'save_custom_fields'], 10, 3);
             add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
