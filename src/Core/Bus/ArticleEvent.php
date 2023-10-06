@@ -248,9 +248,7 @@ class ArticleEvent
              *
              * (wasseem | 9th Dec 2022)
              */
-            'categories' => [
-                $this->getParentCategoryArray($post_ID),
-            ],
+            'categories' => $this->getAllCategoryListArray($post_ID),
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
@@ -567,7 +565,53 @@ class ArticleEvent
         ];
     }
 
+    /**
+     * Will return the primary category array depending on whether any user defined Top level category was ENABLEBD
+     *
+     * @param int $post_ID
+     *
+     * @throws \Monolog\Handler\MissingExtensionException
+     *
+     * @return array|void
+     */
     private function getParentCategoryArray(int $post_ID)
+    {
+        //Need to check if Top level primary category ON, if yes, take that as parent category
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
+        if (strcmp($field_status_alt_category, 'on') == 0) {
+            $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY];
+
+            return [
+                'id' => 100001,
+                'title' => [
+                    [
+                        'culture' => ringier_getLocale(),
+                        'value' => Utils::returnEmptyOnNullorFalse($field_alt_category),
+                    ],
+                ],
+                'slug' => [
+                    [
+                        'culture' => ringier_getLocale(),
+                        'value' => 'internally-defined-primary-category',
+                    ],
+                ],
+            ];
+        } else {
+            $this->getBlogParentCategory($post_ID);
+        }
+    }
+
+    /**
+     * This is the actual primary category set within WordPress for this blog instance
+     *
+     * @param int $post_ID
+     *
+     * @throws \Monolog\Handler\MissingExtensionException
+     *
+     * @return array
+     */
+    private function getBlogParentCategory(int $post_ID): array
     {
         return [
             'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
@@ -584,6 +628,24 @@ class ArticleEvent
                 ],
             ],
         ];
+    }
+
+    /**
+     * To get list of all categories
+     *
+     *
+     *
+     * @param int $post_ID
+     *
+     * @throws \Monolog\Handler\MissingExtensionException
+     *
+     * @return array
+     */
+    private function getAllCategoryListArray(int $post_ID): array
+    {
+        $data_array[] = $this->getBlogParentCategory($post_ID);
+
+        return $data_array;
     }
 
     /**
