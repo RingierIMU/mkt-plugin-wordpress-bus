@@ -1,5 +1,15 @@
 # Changelog Details
 
+### 2.2.0 (Oct 9, 2023) ###
+
+* [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed
+  * Addition of two new fields on the Settings page for the below
+  * use-case: when you have several wordpress instance on the same root domain
+  * by default, it will use the full domain as the primary category when enabled, with the flexibility for you to change it on the *settings page*
+
+* [UPDATE] Refactored the logic for saving custom fields (on gutenberg) to work as soon as the plugin is active, irrespective if the BUS sync is OFF
+* [FIX] There was a bug that could prevent the primary category of an article from being fetched from the fallback method if the one from Yoast fails
+
 ### 2.1.0 (Jul 18, 2023) ###
 
 * [UPDATE] General updates to the JSON structure to match the new BUS Specs (See [PR#5](https://github.com/RingierIMU/mkt-plugin-wordpress-bus/pull/5)

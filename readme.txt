@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.2.2
-Stable tag: 2.1.0
+Tested up to: 6.3.1
+Stable tag: 2.2.0
 Requires PHP: 8.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -72,6 +72,11 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### 2.2.0 (Oct 9, 2023) ###
+* [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed | See Changelog.md
+* [UPDATE] Refactored the logic for saving custom fields (on gutenberg) to work as soon as the plugin is active, irrespective if the BUS sync is OFF
+* [FIX] There was a bug that could prevent the primary category of an article from being fetched from the fallback method if the one from Yoast fails
 
 ### 2.1.0 (Jul 18, 2023) ###
 * [UPDATE] General updates to the JSON structure to match the new BUS Specs - See Changelog.md
