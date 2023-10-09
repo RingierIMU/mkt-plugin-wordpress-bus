@@ -191,7 +191,7 @@ class ArticleEvent
      */
     public function buildArticlePayloadData(int $post_ID, \WP_Post $post): array
     {
-        return [
+        $payload_array = [
             'reference' => "$post_ID",
             'status' => $this->getFieldStatus(),
             'created_at' => $this->getOgArticlePublishedDate($post_ID, $post),
@@ -261,6 +261,12 @@ class ArticleEvent
                 ],
             ],
         ];
+
+        if ($this->isCustomTopLevelCategoryEnabled() === true) {
+            $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
+        }
+
+        return $payload_array;
     }
 
     /**
@@ -572,34 +578,59 @@ class ArticleEvent
      *
      * @throws \Monolog\Handler\MissingExtensionException
      *
-     * @return array|void
+     * @return array
      */
-    private function getParentCategoryArray(int $post_ID)
+    private function getParentCategoryArray(int $post_ID): array
     {
-        //Need to check if Top level primary category ON, if yes, take that as parent category
+        if ($this->isCustomTopLevelCategoryEnabled() === true) {
+            return $this->getCustomTopLevelCategory();
+        } else {
+            return $this->getBlogParentCategory($post_ID);
+        }
+    }
+
+    /**
+     * To check if the custom Top Level category is enabled
+     * This is done on the Settings page on the admin UI
+     *
+     * @return bool
+     */
+    private function isCustomTopLevelCategoryEnabled(): bool
+    {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
         if (strcmp($field_status_alt_category, 'on') == 0) {
-            $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY];
-
-            return [
-                'id' => 100001,
-                'title' => [
-                    [
-                        'culture' => ringier_getLocale(),
-                        'value' => Utils::returnEmptyOnNullorFalse($field_alt_category),
-                    ],
-                ],
-                'slug' => [
-                    [
-                        'culture' => ringier_getLocale(),
-                        'value' => 'internally-defined-primary-category',
-                    ],
-                ],
-            ];
-        } else {
-            $this->getBlogParentCategory($post_ID);
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * This is the array for the custom top level category
+     *
+     * @return array
+     */
+    private function getCustomTopLevelCategory(): array
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY];
+
+        return [
+            'id' => 0,
+            'title' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse($field_alt_category),
+                ],
+            ],
+            'slug' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => sanitize_title($field_alt_category),
+                ],
+            ],
+        ];
     }
 
     /**
@@ -643,6 +674,9 @@ class ArticleEvent
      */
     private function getAllCategoryListArray(int $post_ID): array
     {
+        if ($this->isCustomTopLevelCategoryEnabled() === true) {
+            $data_array[] = $this->getCustomTopLevelCategory();
+        }
         $data_array[] = $this->getBlogParentCategory($post_ID);
 
         return $data_array;
