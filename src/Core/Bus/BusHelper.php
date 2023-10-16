@@ -60,8 +60,9 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
-            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
-            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+//            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
+//            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+            add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
@@ -132,6 +133,60 @@ class BusHelper
     }
 
     /**
+     * In essence, this method is a merge of cater_for_custom_post() and triggerArticleEvent()
+     * because the rest_after_insert_post hook does not get triggered in all WordPress contexts,
+     * such as when updating a post using the Classic Editor (IMO disabled Gutenberg)
+     * or programmatically without the REST API.
+     *
+     * Thus we ensure that the desired actions are consistently executed regardless
+     * of the editing method or environment.
+     *
+     * @param string $new_status
+     * @param string $old_status
+     * @param WP_Post $post
+     *
+     * @throws MissingExtensionException
+     */
+    public static function trigger_bus_event_on_post_change(string $new_status, string $old_status, WP_Post $post): void
+    {
+        // Check if it's a page or normal post and return
+        if ($post->post_type === 'page' || empty($post->post_type)) {
+            return;
+        }
+
+        // Bail if we're working on a draft or trashed item
+        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+            return;
+        }
+
+        if ($new_status === 'publish') {
+            $post_ID = $post->ID;
+            $post_ID = Utils::getParentPostId($post_ID);
+
+            /*
+             * This conditioning helps us get context if the post is in mode NEW or EDIT
+             * There is no other way around this as of this date of coding (Apr 2021)
+             * Hope in the future WordPress exposes a better way for us to get this context
+             */
+            $articleTriggerMode = Utils::isPostNew($post_ID) ? Enum::EVENT_ARTICLE_CREATED : Enum::EVENT_ARTICLE_EDITED;
+
+            /*
+             * we will now schedule the event after 1min instead of instantly executing it, because:
+             * not all meta data of the article are updated correctly when:
+             *      - article is first created,
+             *      - when article meta are changed
+             */
+            self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
+
+            //push to SLACK
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
+        }
+    }
+
+    /**
+     * (No more used in favor of trigger_bus_event_on_post_change())
+     *
      * To cater for custom post_type only
      * Triggered by hook: transition_post_status
      *
@@ -162,6 +217,8 @@ class BusHelper
     }
 
     /**
+     * (No more used in favor of trigger_bus_event_on_post_change())
+     *
      * Triggered by Hook: rest_after_insert_post
      *
      * This action will be invoked ONLY when a post in being Created/Updated
