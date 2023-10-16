@@ -59,6 +59,15 @@ define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache'
 define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error_log');
 
 /**
+ * define a cache nonce for asset files loaded by this plugin
+ * on the admin facing UI (Gutenberg)
+ * The name was chosen since we were already using this within our legacy Ringier repos.
+ */
+if (!defined('_S_VERSION')) {
+    define('_S_VERSION', '2.2.0.001');
+}
+
+/**
  * load our main file now with composer autoloading
  */
 require_once RINGIER_BUS_PLUGIN_DIR . RINGIER_BUS_DS . 'includes/vendor/autoload.php';
