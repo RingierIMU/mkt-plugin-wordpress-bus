@@ -97,7 +97,7 @@ class ArticleEvent
      *
      * @throws \Exception
      */
-    public function sendToBus(int $post_ID, \WP_Post $post)
+    public function sendToBus(int $post_ID, \WP_Post $post): void
     {
         /*
          * TODO: As of this coding (Apr 2021) there was no use-case for Callback yet
@@ -125,7 +125,28 @@ class ArticleEvent
                 'events',
                 $requestBody
             );
-            $bodyArray = json_decode((string) $response->getBody(), true);
+            $raw_response = (string) $response->getBody();
+            $bodyArray = json_decode($raw_response, true);
+
+            // To compress string so it is not truncated on Slack
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Utils::l('JSON encoding error: ' . json_last_error_msg());
+
+                return;
+            }
+            $raw_response = json_encode($raw_response);
+
+            if (extension_loaded('zlib')) {
+                $raw_response = gzcompress($raw_response);
+            }
+
+            $message2 = <<<EOF
+            The payload seems to have been successfully delivered.
+            And the FULL json compressed with gzcompress() (to prevent truncation) was:
+            
+            EOF;
+            Utils::l($message2 . base64_encode($raw_response)); //push to SLACK
+
 //            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
