@@ -619,9 +619,12 @@ class ArticleEvent
     private function isCustomTopLevelCategoryEnabled(): bool
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
-        if (strcmp($field_status_alt_category, 'on') == 0) {
-            return true;
+        // Check if the key exists before accessing its value.
+        if (isset($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY])) {
+            $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
+            if (strcmp($field_status_alt_category, 'on') == 0) {
+                return true;
+            }
         }
 
         return false;
