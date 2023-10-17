@@ -1,5 +1,17 @@
 # Changelog Details
 
+### 2.3.0 (Oct 9, 2023) ###
+
+* [UPDATE]: Transitioned from relying on the rest_after_insert_post hook to the more universally available transition_post_status hook.
+
+*Reason*: We identified that some blogs were disabling the Gutenberg editor and as a result, not utilizing the new WordPress REST API. This meant that the rest_after_insert_post hook wasn't being triggered for those instances. To ensure consistent and robust post update handling across all blogs, regardless of their editor choice, we've shifted to the transition_post_status hook.
+
+*Impact*: This change ensures that our logic remains consistent even in environments where Gutenberg is disabled or the REST API isn't being leveraged.
+
+* [UPDATE]: Improved JSON handling and compression for Slack logging
+  * Ensured safe JSON encoding with error checks
+  * Utilized gzcompress for payload compression when available to prevent truncation in Slack notifications channel
+
 ### 2.2.0 (Oct 9, 2023) ###
 
 * [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed
