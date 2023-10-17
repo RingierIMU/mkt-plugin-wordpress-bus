@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.3.1
-Stable tag: 2.2.0
+Tested up to: 6.3.2
+Stable tag: 2.3.0
 Requires PHP: 8.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -72,6 +72,14 @@ An info log file named ringier_bus_plugin.log, currently not viewable in the adm
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### 2.3.0 (Oct 9, 2023) ###
+* [UPDATE]: Transitioned from relying on the rest_after_insert_post hook to the more universally available transition_post_status hook.
+
+*Reason*:
+We identified that some blogs were disabling the Gutenberg editor and as a result, not utilizing the new WordPress REST API. This meant that the rest_after_insert_post hook wasn't being triggered for those instances. To ensure consistent and robust post update handling across all blogs, regardless of their editor choice, we've shifted to the transition_post_status hook.
+
+* [UPDATE]: Improved JSON handling and compression for Slack logging (see Changelog.md)
 
 ### 2.2.0 (Oct 9, 2023) ###
 * [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed | See Changelog.md
