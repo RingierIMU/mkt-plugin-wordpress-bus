@@ -43,8 +43,10 @@ The plugin also creates two custom fields, available on the article edition page
 ### PHP Version
 
 This plugin requires *PHP version >= 8.0.2*.
-But no ***PHP 8.1+ support*** yet since WordPress itself is not officially supported beyond PHP 8.0 at this point in time.
 
+### WordPress Cron Requirement
+
+Before installation, ensure that your WordPress cron is functioning properly. This plugin relies on the WordPress cron system for scheduled tasks. If your cron system is not active, please refer to the WordPress Codex or consult with your web hosting provider to enable it.
 
 ### SETUP
 
