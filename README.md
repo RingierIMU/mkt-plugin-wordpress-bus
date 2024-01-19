@@ -5,7 +5,7 @@
 **Contributors:** [RingierSA](https://profiles.wordpress.org/ringier/), [wkhayrattee](https://profiles.wordpress.org/wkhayrattee/)  
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 6.0  
-**Tested up to:** 6.3.2  
+**Tested up to:** 6.4.2  
 **Stable tag:** 2.3.0  
 **Requires PHP:** 8.0.2  
 **License:** GPLv2 or later  
