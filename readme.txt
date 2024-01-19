@@ -52,16 +52,12 @@ There are many ways you can contribute:
 
 This plugin requires *PHP version >= 8.0.2*.
 
-### WordPress Cron Requirement ###
-
-Before installation, ensure that your WordPress cron is functioning properly. This plugin relies on the WordPress cron system for scheduled tasks. If your cron system is not active, please refer to the WordPress Codex or consult with your web hosting provider to enable it.
-
-
 ### SETUP ###
 
 1. The plugin is accessible from the WordPress admin via "Plugins > Add New > Search".
 2. Once you have installed the plugin, a Ringier Bus menu will appear. Please fill in the required fields to set up the plugin.
 3. In order to get an Event Bus node id, username and password, please contact the bus team via Slack or by email at bus@ringier.co.za to gain access to the Bus admin.   You will be able to add a new node onto the bus and set up your event destinations.
+4. Ensure that the WordPress cron is active. This plugin relies on the WordPress cron system for scheduled tasks. If your cron system is not active, please refer to the WordPress Codex or consult with your web hosting provider to enable it.
 
 ### LOGS ###
 
