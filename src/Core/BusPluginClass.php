@@ -237,12 +237,12 @@ class BusPluginClass
             if (('post' === $screen->base) && ($screen->post_type != 'page')) {
                 //Publication reason
                 if ($fieldsObject->field_validation_publication_reason != 'off') {
-                    wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+                    wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
 
                 //Article lifetime
                 if ($fieldsObject->field_validation_article_lifetime != 'off') {
-                    wp_enqueue_script('ringier-validation-article-lifetime', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-article_lifetime.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_VERSION);
+                    wp_enqueue_script('ringier-validation-article-lifetime', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-article_lifetime.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
             }
         }

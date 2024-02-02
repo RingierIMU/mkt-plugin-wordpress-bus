@@ -63,8 +63,8 @@ define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR
  * on the admin facing UI (Gutenberg)
  * The name was chosen since we were already using this within our legacy Ringier repos.
  */
-if (!defined('_S_VERSION')) {
-    define('_S_VERSION', '2.3.0.001');
+if (!defined('_S_CACHE_NONCE')) {
+    define('_S_CACHE_NONCE', '2.3.0.001');
 }
 
 /**
