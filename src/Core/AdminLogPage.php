@@ -3,6 +3,7 @@
  * To handle everything regarding the main Admin LOG Page
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
+ *
  * @github wkhayrattee
  */
 
@@ -34,8 +35,8 @@ class AdminLogPage
         //The "Log" sub-PAGE
         add_submenu_page(
             Enum::ADMIN_SETTINGS_MENU_SLUG,
-            Enum::ADMIN_LOG_PAGE_TITLE,
-            Enum::ADMIN_LOG_MENU_TITLE,
+            'Ringier Bus - Error Log',
+            'Log',
             'manage_options',
             Enum::ADMIN_LOG_MENU_SLUG,
             [self::class, 'renderLogPage']

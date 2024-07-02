@@ -50,9 +50,17 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_MENU_TITLE,
             'manage_options',
             Enum::ADMIN_SETTINGS_MENU_SLUG,
-            [self::class, 'renderSettingsPage'],
+            null,
             'dashicons-rest-api',
             20
+        );
+        add_submenu_page(
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            'Ringier Bus - Settings',
+            'Settings',
+            'manage_options',
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            [self::class, 'renderSettingsPage']
         );
 
         //Fields for the "Ringier Bus API Settings" main-PAGE
