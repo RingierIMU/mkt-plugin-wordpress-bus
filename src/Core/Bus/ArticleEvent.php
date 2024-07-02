@@ -101,8 +101,6 @@ class ArticleEvent
     {
         /*
          * TODO: As of this coding (Apr 2021) there was no use-case for Callback yet
-         *       So, in future if we need to handle call back, we could probably use Guzzle Promises
-         *          e.g: https://programming.vip/docs/asynchronous-requests-in-guzzle.html
          *
          * for now, we go the simple route as below.
          */
