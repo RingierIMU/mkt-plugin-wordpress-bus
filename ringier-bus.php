@@ -59,12 +59,10 @@ define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache'
 define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error_log');
 
 /**
- * define a cache nonce for asset files loaded by this plugin
- * on the admin facing UI (Gutenberg)
- * The name was chosen since we were already using this within our legacy Ringier repos.
+ * define a cache nonce for asset files loaded by this plugin on the admin facing UI (Gutenberg)
  */
 if (!defined('_S_CACHE_NONCE')) {
-    define('_S_CACHE_NONCE', '2.3.0.001');
+    define('_S_CACHE_NONCE', RINGIER_BUS_PLUGIN_VERSION);
 }
 
 /**
