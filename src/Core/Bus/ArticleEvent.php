@@ -117,7 +117,8 @@ class ArticleEvent
                     $this->buildMainRequestBody($post_ID, $post),
                 ],
             ];
-//            ringier_errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
+            //            ringier_errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
+
             $response = $this->authClient->getHttpClient()->request(
                 'POST',
                 'events',
@@ -145,7 +146,7 @@ class ArticleEvent
             EOF;
             Utils::l($message2 . base64_encode($raw_response)); //push to SLACK
 
-//            ringier_errorlogthis($bodyArray);
+            //            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
