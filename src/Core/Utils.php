@@ -50,7 +50,20 @@ class Utils
             return '';
         }
 
-        $imagelink = file_get_contents($image_url);
+        $ch = curl_init($image_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Set a timeout
+
+        $imagelink = curl_exec($ch);
+
+        if ($imagelink === false) {
+            $error = curl_error($ch);
+            error_log('Curl error: ' . $error);
+            $imagelink = ''; // or any other fallback value
+        }
+
+        curl_close($ch);
+
         if ($imagelink === false) {
             return '';
         }
