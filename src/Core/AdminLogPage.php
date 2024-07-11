@@ -64,15 +64,13 @@ class AdminLogPage
         $log_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_log.twig';
         $txtlog_value = self::fetchLogData($error_log_file);
 
-        $timber = new Timber();
         if (file_exists($log_page_tpl)) {
             $context['admin_page_title'] = $title;
             $context['error_msg'] = $error_msg;
             $context['txtlog_value'] = $txtlog_value;
 
-            $timber::render($log_page_tpl, $context);
+            Timber::render($log_page_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
