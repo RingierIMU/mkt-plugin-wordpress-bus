@@ -78,18 +78,15 @@ class AdminSettingsPage
             return;
         }
 
-        $timber = new Timber();
         $settings_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_settings.twig';
-
         if (file_exists($settings_page_tpl)) {
             $context['admin_page_title'] = $title;
             $context['settings_fields'] = new FunctionWrapper('settings_fields', [Enum::SETTINGS_PAGE_OPTION_GROUP]);
             $context['do_settings_sections'] = new FunctionWrapper('do_settings_sections', [Enum::ADMIN_SETTINGS_MENU_SLUG]);
             $context['submit_button'] = new FunctionWrapper('submit_button', ['Save Settings']);
 
-            $timber::render($settings_page_tpl, $context);
+            Timber::render($settings_page_tpl, $context);
         }
-        unset($timber);
     }
 
     public function addFieldsViaSettingsAPI()
@@ -146,9 +143,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_bus_status_dropdown.twig';
-
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
             $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
@@ -162,9 +157,8 @@ class AdminSettingsPage
             $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
             $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
 
-            $timber::render($field_bus_status_tpl, $context);
+            Timber::render($field_bus_status_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
@@ -433,9 +427,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . $tpl_name;
-
         $field_value = '';
         if (isset($options[$args['label_for']])) {
             $field_value = $options[$args['label_for']];
@@ -447,9 +439,8 @@ class AdminSettingsPage
             $context['field_custom_data'] = esc_attr($args['field_custom_data']);
             $context['field_value'] = esc_attr($field_value);
 
-            $timber::render($field_tpl, $context);
+            Timber::render($field_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
@@ -487,9 +478,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_publication_reason.twig';
-
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
             $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
@@ -503,9 +492,8 @@ class AdminSettingsPage
             $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
             $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
 
-            $timber::render($field_bus_status_tpl, $context);
+            Timber::render($field_bus_status_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
@@ -543,9 +531,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_article_lifetime.twig';
-
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
             $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
@@ -559,9 +545,8 @@ class AdminSettingsPage
             $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
             $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
 
-            $timber::render($field_bus_status_tpl, $context);
+            Timber::render($field_bus_status_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
@@ -594,9 +579,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_status_alt_category_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_selectbox.twig';
-
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
             $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
@@ -611,9 +594,8 @@ class AdminSettingsPage
             $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
             $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
 
-            $timber::render($field_status_alt_category_tpl, $context);
+            Timber::render($field_status_alt_category_tpl, $context);
         }
-        unset($timber);
     }
 
     /**
@@ -646,9 +628,7 @@ class AdminSettingsPage
         // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $timber = new Timber();
         $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_textbox.twig';
-
         $field_value = parse_url(get_site_url(), PHP_URL_HOST);
         if (isset($options[$args['label_for']])) {
             $field_value = $options[$args['label_for']];
@@ -660,8 +640,7 @@ class AdminSettingsPage
             $context['field_custom_data'] = esc_attr($args['field_custom_data']);
             $context['field_value'] = esc_attr($field_value);
 
-            $timber::render($field_tpl, $context);
+            Timber::render($field_tpl, $context);
         }
-        unset($timber);
     }
 }

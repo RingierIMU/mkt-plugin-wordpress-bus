@@ -31,7 +31,7 @@ class BusHelper
         $image_id = get_post_thumbnail_id($post_ID);
         $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
         $imageUrl = get_the_post_thumbnail_url(get_post($post_ID), $image_size_name);
-//        $image_title = get_the_title($image_id);
+        //        $image_title = get_the_title($image_id);
 
         if ($image_size_name == 'large_rectangle') {
             $isHero = 'true';
@@ -60,8 +60,8 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
-//            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
-//            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
+            //            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
+            //            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
@@ -159,9 +159,15 @@ class BusHelper
             return;
         }
 
+        // Bail if this is an autosave
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
         if ($new_status === 'publish') {
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
 
             /*
              * This conditioning helps us get context if the post is in mode NEW or EDIT
@@ -170,16 +176,36 @@ class BusHelper
              */
             $articleTriggerMode = Utils::isPostNew($post_ID) ? Enum::EVENT_ARTICLE_CREATED : Enum::EVENT_ARTICLE_EDITED;
 
+            /**
+             * This is a workaround to prevent the function from running more than once
+             * In our testing, this function is called at least 2 times for the same post update
+             * Only the first call has the correct custom meta data, the successive calls do not
+             */
+            // Check if this hook has already been run for this same post update
+            if (get_transient('triggered_bus_event_' . $post->ID)) {
+                return;
+            }
+            // Set a transient to mark this hook has been run for this same post update
+            set_transient('triggered_bus_event_' . $post->ID, true, 25);
+
+            //for CIET purposes we need to push event fast on new article creation
+            if (($articleTriggerMode == Enum::EVENT_ARTICLE_CREATED)) {
+                //Attempt to send the event immediately, queue it if it fails
+                self::sendToBus($articleTriggerMode, $post_ID, get_post($post_ID), 0);
+                //push to SLACK
+                $message = <<<EOF
+                    $blogKey: An instant event push has been done for article (ID: $post_ID)
+                EOF;
+                Utils::l($message);
+            }
+
             /*
-             * we will now schedule the event after 1min instead of instantly executing it, because:
+             * we will now schedule the event push as well, because:
              * not all meta data of the article are updated correctly when:
              *      - article is first created,
              *      - when article meta are changed
              */
-            self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
-
-            //push to SLACK
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            self::scheduleSendToBus(Enum::EVENT_ARTICLE_EDITED, $post_ID, 0, 1);
             self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
         }
     }
@@ -332,7 +358,7 @@ class BusHelper
     {
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $message = <<<EOF
-            $blogKey: Now attempting to execute "Push-to-BUS" for article (ID: $post_ID).
+            $blogKey: Now attempting push events for article (ID: $post_ID).
                     
             NOTE: 
                 If no error follows, means successful push
@@ -453,7 +479,7 @@ class BusHelper
     private static function pushToSLACK(mixed $blogKey, string $articleTriggerMode, int $post_ID): void
     {
         $message = <<<EOF
-            $blogKey: [Confirming] $articleTriggerMode queued for article (ID: $post_ID)
+            $blogKey: Event push queued for article (ID: $post_ID | Mode: $articleTriggerMode)
             Scheduled to run in the next minute(s)
         EOF;
         Utils::l($message);
