@@ -31,27 +31,25 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
      */
     private array $instances = [];
 
-    public function addInstance(string $name, TraceableAdapter $instance)
+    public function addInstance(string $name, TraceableAdapter $instance): void
     {
         $this->instances[$name] = $instance;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
+    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
     {
-        $empty = ['calls' => [], 'config' => [], 'options' => [], 'statistics' => []];
+        $empty = ['calls' => [], 'adapters' => [], 'config' => [], 'options' => [], 'statistics' => []];
         $this->data = ['instances' => $empty, 'total' => $empty];
         foreach ($this->instances as $name => $instance) {
             $this->data['instances']['calls'][$name] = $instance->getCalls();
+            $this->data['instances']['adapters'][$name] = get_debug_type($instance->getPool());
         }
 
         $this->data['instances']['statistics'] = $this->calculateStatistics();
         $this->data['total']['statistics'] = $this->calculateTotalStatistics();
     }
 
-    public function reset()
+    public function reset(): void
     {
         $this->data = [];
         foreach ($this->instances as $instance) {
@@ -59,14 +57,11 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
         }
     }
 
-    public function lateCollect()
+    public function lateCollect(): void
     {
         $this->data['instances']['calls'] = $this->cloneVar($this->data['instances']['calls']);
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getName(): string
     {
         return 'cache';
@@ -94,6 +89,14 @@ class CacheDataCollector extends DataCollector implements LateDataCollectorInter
     public function getCalls(): mixed
     {
         return $this->data['instances']['calls'];
+    }
+
+    /**
+     * Method returns all logged Cache adapter classes.
+     */
+    public function getAdapters(): array
+    {
+        return $this->data['instances']['adapters'];
     }
 
     private function calculateStatistics(): array

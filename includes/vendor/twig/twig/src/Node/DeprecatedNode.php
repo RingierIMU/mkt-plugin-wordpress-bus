@@ -11,6 +11,7 @@
 
 namespace Twig\Node;
 
+use Twig\Attribute\YieldReady;
 use Twig\Compiler;
 use Twig\Node\Expression\AbstractExpression;
 use Twig\Node\Expression\ConstantExpression;
@@ -20,14 +21,15 @@ use Twig\Node\Expression\ConstantExpression;
  *
  * @author Yonel Ceruto <yonelceruto@gmail.com>
  */
+#[YieldReady]
 class DeprecatedNode extends Node
 {
-    public function __construct(AbstractExpression $expr, int $lineno, string $tag = null)
+    public function __construct(AbstractExpression $expr, int $lineno, ?string $tag = null)
     {
         parent::__construct(['expr' => $expr], [], $lineno, $tag);
     }
 
-    public function compile(Compiler $compiler)
+    public function compile(Compiler $compiler): void
     {
         $compiler->addDebugInfo($this);
 
@@ -38,18 +40,16 @@ class DeprecatedNode extends Node
                 ->subcompile($expr);
         } else {
             $varName = $compiler->getVarName();
-            $compiler->write(sprintf('$%s = ', $varName))
+            $compiler->write(\sprintf('$%s = ', $varName))
                 ->subcompile($expr)
                 ->raw(";\n")
-                ->write(sprintf('@trigger_error($%s', $varName));
+                ->write(\sprintf('@trigger_error($%s', $varName));
         }
 
         $compiler
             ->raw('.')
-            ->string(sprintf(' ("%s" at line %d).', $this->getTemplateName(), $this->getTemplateLine()))
+            ->string(\sprintf(' ("%s" at line %d).', $this->getTemplateName(), $this->getTemplateLine()))
             ->raw(", E_USER_DEPRECATED);\n")
         ;
     }
 }
-
-class_alias('Twig\Node\DeprecatedNode', 'Twig_Node_Deprecated');
