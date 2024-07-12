@@ -1,5 +1,20 @@
 # Changelog Details
 
+### 3.0.0 (Jul 12, 2024) ###
+
+* [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.1+
+* [NEW] Added three new custom filters to allow for more flexibility in the plugin's behavior (see readme file):
+    - `ringier_bus_get_publication_reason` - allows you to filter the publication reason before it is sent to the BUS API
+    - `ringier_bus_get_article_lifetimez` - allows you to filter the article lifetime before it is sent to the BUS API
+    - `ringier_build_article_payload` - allows you to filter the entire article payload before it is sent to the BUS API
+* [UPDATE]: Changed the way events are sent:
+    - on new article creation, an event will now be immediately sent (this is a requirement for internal CIET)
+    - the event will still be queued to run or re-run (in the case of an article update) after the default 1 minute
+* [UPDATE]: Harmonised page title and menu
+* [UPDATE]: Updated composer dependencies
+* [UPDATE]: Cache nonce now defaults to the plugin version number for consistency
+* [UPDATE]: Add more intuitive prompts to guide user, for e.g provide the STAGING and PROD endpoints right there in the UI to be handy for them
+
 ### 2.3.0 (Oct 9, 2023) ###
 
 * [UPDATE]: Transitioned from relying on the rest_after_insert_post hook to the more universally available transition_post_status hook.

@@ -61,7 +61,7 @@ This plugin requires *PHP version >= 8.1*.
 
 ## LOGS
 
-This plugin creates a log file, saved inside the wp-content/ folder:  
+This plugin creates a log file (**ringier_bus_plugin_error_log**), saved inside the wp-content/ folder:  
 The error messages are viewable via the admin UI by clicking on the submenu "LOG".
 You also have the flexibility to clear the log file via the UI itself.
 
