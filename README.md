@@ -99,7 +99,7 @@ add_filter('ringier_bus_get_article_lifetime', 'custom_article_lifetime', 10, 2)
 
 ### 3. Modifying the Article Payload Data ###
 
-You can customize the payload data for an article by using the **ringier_build_article_payload** filter. This filter allows you to modify the payload data before it is sent to the Ringier Event Bus.
+You can customize the payload data for an article by using the **ringier_bus_build_article_payload** filter. This filter allows you to modify the payload data before it is sent to the Ringier Event Bus.
 
 Example:
 ```php
@@ -110,7 +110,7 @@ function custom_build_article_payload(array $payload_array, int $post_ID, WP_Pos
     
     return $payload_array;
 }
-add_filter('ringier_build_article_payload', 'custom_build_article_payload', 10, 3);
+add_filter('ringier_bus_build_article_payload', 'custom_build_article_payload', 10, 3);
 ```
 
 ## Contributing ##
