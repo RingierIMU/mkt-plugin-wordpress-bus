@@ -199,7 +199,19 @@ class Utils
 
             if (is_object($results)) {
                 if (isset($results->meta_value)) {
-                    return sanitize_text_field($results->meta_value);
+                    $publication_reason = sanitize_text_field($results->meta_value);
+
+                    /**
+                     * Gets the publication reason for a post.
+                     *
+                     * @hook ringier_bus_get_publication_reason
+                     *
+                     * @param string $publication_reason The publication reason.
+                     * @param int $post_ID The ID of the post.
+                     *
+                     * @return string The publication reason.
+                     */
+                    return apply_filters('ringier_bus_get_publication_reason', $publication_reason, $post_ID);
                 }
             }
         } catch (\Exception $exception) {
@@ -232,7 +244,19 @@ class Utils
 
             if (is_object($results)) {
                 if (isset($results->meta_value)) {
-                    return sanitize_text_field($results->meta_value);
+                    $article_lifetime = sanitize_text_field($results->meta_value);
+
+                    /**
+                     * Gets the article lifetime for a post.
+                     *
+                     * @hook ringier_bus_get_article_lifetime
+                     *
+                     * @param string $article_lifetime The article lifetime.
+                     * @param int $post_ID The ID of the post.
+                     *
+                     * @return string The article lifetime.
+                     */
+                    return apply_filters('ringier_bus_get_article_lifetime', $article_lifetime, $post_ID);
                 }
             }
         } catch (\Exception $exception) {
