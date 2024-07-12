@@ -57,6 +57,54 @@ This plugin exposes two log files, saved inside the wp-content/ folder:
 An error log file named ringier_bus_plugin_error.log, viewable in the admin by clicking on the submenu "Bus API LOG".  
 An info log file named ringier_bus_plugin.log, currently not viewable in the admin but accessible on the server.
 
+## CUSTOM FILTERS ##
+
+The plugin exposes three custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
+
+### 1. Modifying the Publication Reason ###
+
+You can customize the publication reason for an article by using the **ringier_bus_get_publication_reason** filter. This filter allows you to modify the publication reason before it is sent to the Ringier Event Bus.
+
+Example:
+```php
+function custom_publication_reason(string $publication_reason, int $post_ID): string
+{
+    // Your custom logic goes here
+    return 'Custom Publication Reason';
+}
+add_filter('ringier_bus_get_publication_reason', 'custom_publication_reason', 10, 2);
+```
+
+### 2. Modifying the Article Lifetime Payload ###
+
+You can customize the article lifetime for an article by using the **ringier_bus_get_article_lifetime** filter. This filter allows you to modify the article lifetime before it is sent to the Ringier Event Bus.
+
+Example:
+```php
+function custom_article_lifetime(string $article_lifetime, int $post_ID): string
+{
+    // Your custom logic goes here
+    return 'Custom Article Lifetime';
+}
+add_filter('ringier_bus_get_article_lifetime', 'custom_article_lifetime', 10, 2);
+```
+
+### 3. Modifying the JArticle Payload Data ###
+
+You can customize the payload data for an article by using the **ringier_build_article_payload** filter. This filter allows you to modify the payload data before it is sent to the Ringier Event Bus.
+
+Example:
+```php
+function custom_build_article_payload(array $payload_array, int $post_ID, WP_Post $post): array
+{
+    // Add a custom field to the payload for example
+    $payload_array['custom_field'] = 'Custom Value';
+    
+    return $payload_array;
+}
+add_filter('ringier_build_article_payload', 'custom_build_article_payload', 10, 3);
+```
+
 ## Contributing ##
 
 There are many ways you can contribute:  
