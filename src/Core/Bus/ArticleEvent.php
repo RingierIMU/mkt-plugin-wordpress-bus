@@ -286,7 +286,18 @@ class ArticleEvent
             $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
         }
 
-        return $payload_array;
+        /**
+         * Builds the payload data for an article.
+         *
+         * @hook ringier_bus_build_article_payload
+         *
+         * @param array $payload_array The payload data array.
+         * @param int $post_ID The ID of the post.s
+         * @param \WP_Post $post The post object.
+         *
+         * @return array The payload data array.
+         */
+        return apply_filters('ringier_bus_build_article_payload', $payload_array, $post_ID, $post);
     }
 
     /**
