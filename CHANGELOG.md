@@ -1,6 +1,6 @@
 # Changelog Details
 
-### 3.0.0 (Jul 12, 2024) ###
+### 3.0.0 (Jul 15, 2024) ###
 
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.1+
 * [NEW] Added three new custom filters to allow for more flexibility in the plugin's behavior (see readme file):
