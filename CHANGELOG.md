@@ -5,7 +5,7 @@
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.1+
 * [NEW] Added three new custom filters to allow for more flexibility in the plugin's behavior (see readme file):
     - `ringier_bus_get_publication_reason` - allows you to filter the publication reason before it is sent to the BUS API
-    - `ringier_bus_get_article_lifetimez` - allows you to filter the article lifetime before it is sent to the BUS API
+    - `ringier_bus_get_article_lifetime` - allows you to filter the article lifetime before it is sent to the BUS API
     - `ringier_build_article_payload` - allows you to filter the entire article payload before it is sent to the BUS API
 * [UPDATE]: Changed the way events are sent:
     - on new article creation, an event will now be immediately sent (this is a requirement for internal CIET)
