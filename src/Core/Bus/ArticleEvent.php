@@ -199,6 +199,7 @@ class ArticleEvent
             'published_at' => $this->getOgArticlePublishedDate($post_ID, $post),
             'updated_at' => $this->getOgArticleModifiedDate($post_ID, $post),
             'source_type' => 'original',
+            'source_detail' => $this->getAuthorName($post_ID),
             'url' => [
                 [
                     'culture' => ringier_getLocale(),
@@ -249,6 +250,13 @@ class ArticleEvent
             'lifetime' => Utils::getArticleLifetime($post_ID),
             'primary_media_type' => $this->getPrimaryMediaType($post),
         ];
+    }
+
+    private function getAuthorName(int $post_id)
+    {
+        $author_id = get_post_field('post_author', $post_id);
+
+        return get_the_author_meta('display_name', $author_id);
     }
 
     private function getPrimaryMediaType(\WP_Post $post)
