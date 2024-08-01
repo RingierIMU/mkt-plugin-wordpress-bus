@@ -243,6 +243,7 @@ class ArticleEvent
                 BusHelper::getImageArrayForApi($post_ID, 'large_square'),
             ],
             'parent_category' => $this->getParentCategoryArray($post_ID),
+            'categories' => $this->getAllCategoryListArray($post_ID),
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
@@ -388,6 +389,71 @@ class ArticleEvent
             'locale' => ringier_getLocale(),
             'user_type' => $user_type_list,
             'user_status' => $user_status_list,
+        ];
+    }
+
+    private function getAllCategoryListArray($post_ID)
+    {
+        if ($this->isCustomTopLevelCategoryEnabled() === true) {
+            $data_array[] = $this->getCustomTopLevelCategory();
+        }
+        $data_array[] = $this->getBlogParentCategory($post_ID);
+
+        return $data_array;
+    }
+
+    private function isCustomTopLevelCategoryEnabled()
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        // Check if the key exists before accessing its value.
+        if (isset($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY])) {
+            $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
+            if (strcmp($field_status_alt_category, 'on') == 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getCustomTopLevelCategory()
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY];
+
+        return [
+            'id' => 0,
+            'title' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse($field_alt_category),
+                ],
+            ],
+            'slug' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => sanitize_title($field_alt_category),
+                ],
+            ],
+        ];
+    }
+
+    private function getBlogParentCategory(int $post_ID)
+    {
+        return [
+            'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
+            'title' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
+                ],
+            ],
+            'slug' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
+                ],
+            ],
         ];
     }
 
