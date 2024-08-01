@@ -1,0 +1,14 @@
+<style type="text/css">
+    .alt-category-field.first {}
+    .alt-category-field {}
+    .alt-category-field th {padding-left: 10px;}
+    tr.alt-category-field.first {border-top: 1px solid #252424;}
+</style>
+<select id="{{ label_for_selectbox }}" data-custom="{{ field_custom_data_selectbox }}" name="{{ field_bus_status_name }}" style="width: 22rem;">
+    <option value="off" {{ field_custom_data_selected_off }}>
+        OFF
+    </option>
+    <option value="on" {{ field_custom_data_selected_on }}>
+        ON
+    </option>
+</select>
