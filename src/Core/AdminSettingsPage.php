@@ -96,7 +96,97 @@ class AdminSettingsPage
         $this->add_field_slack_hoook_url();
         $this->add_field_slack_channel_name();
         $this->add_field_slack_bot_name();
+        $this->add_alternate_primary_category_selectbox();
+        $this->add_alternate_primary_category_textbox();
     }
+
+    /**
+     * FIELD - field_alt_primary_category_selectbox
+     */
+    public function add_alternate_primary_category_selectbox()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY,
+            // Use $args' label_for to populate the id inside the callback.
+            'Enable custom Top level Primary category',
+            [self::class, 'field_alt_primary_category_selectbox_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY,
+                'class' => 'ringier-bus-row alt-category-field first',
+                'field_custom_data' => Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY,
+            ]
+        );
+    }
+
+    public static function field_alt_primary_category_selectbox_callback($args)
+    {
+        // Get the value of the setting we've registered with register_setting()
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $field_status_alt_category_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_selectbox.twig';
+        $bus_status_selected_on = $bus_status_selected_off = '';
+        if (isset($options[$args['label_for']])) {
+            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
+            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+        }
+
+        if (file_exists($field_status_alt_category_tpl)) {
+            //handle select box
+            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr($args['label_for']);
+            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
+            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
+            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+
+            $timber = new Timber();
+            $timber::render($field_status_alt_category_tpl, $context);
+        }
+    }
+
+    /**
+     * FIELD - field_text_alt_primary_category
+     */
+    public function add_alternate_primary_category_textbox()
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY,
+            // Use $args' label_for to populate the id inside the callback.
+            'Primary category',
+            [self::class, 'field_alt_primary_category_textbox_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY,
+                'class' => 'ringier-bus-row alt-category-field',
+                'field_custom_data' => Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY,
+            ]
+        );
+    }
+
+    public static function field_alt_primary_category_textbox_callback($args)
+    {
+        // Get the value of the setting we've registered with register_setting()
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_textbox.twig';
+        $field_value = parse_url(get_site_url(), PHP_URL_HOST);
+        if (isset($options[$args['label_for']])) {
+            $field_value = $options[$args['label_for']];
+        }
+
+        if (file_exists($field_tpl)) {
+            $context['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
+            $context['label_for'] = esc_attr($args['label_for']);
+            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
+            $context['field_value'] = esc_attr($field_value);
+
+            $timber = new Timber();
+            $timber::render($field_tpl, $context);
+        }
+    }
+
 
     //FIELD - bus_status
 
