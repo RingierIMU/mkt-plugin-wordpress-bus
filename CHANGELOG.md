@@ -1,5 +1,14 @@
 # Changelog Details
 
+### 1.4.0 (Aug 1, 2024) ###
+* [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed
+  * Addition of two new fields on the Settings page for the below
+  * use-case: when you have several wordpress instance on the same root domain
+  * by default, it will use the full domain as the primary category when enabled, with the flexibility for you to change it on the *settings page*
+* [NEW] added source_detail in json payload
+* [UPDATE] Updated composer dependencies to their latest stable version supporting PHP 7.4
+* [FIX] There was a bug that could prevent the primary category of an article from being fetched from the fallback method if the one from Yoast fails
+
 ### 1.3.1 (Oct 18, 2022) ###
 * [UPDATE] JSON | change page_type to content_type for sailthru vars
 
