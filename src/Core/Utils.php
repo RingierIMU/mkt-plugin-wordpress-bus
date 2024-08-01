@@ -107,7 +107,7 @@ class Utils
         }
 
         $categories = get_the_terms($post_id, 'category');
-        if ((!is_wp_error($term)) && is_array($categories)) {
+        if ((!is_wp_error($categories)) && is_array($categories)) {
             $primaryCategory = $categories[0];
 
             return $primaryCategory->{$property};
