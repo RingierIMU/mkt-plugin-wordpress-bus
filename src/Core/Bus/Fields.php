@@ -33,6 +33,7 @@ class Fields
 
     public bool $is_bus_enabled;
     public bool $is_slack_enabled;
+    public string $field_google_youtube_api_key;
 
     public function __construct()
     {
@@ -75,6 +76,7 @@ class Fields
         $this->field_bus_backoff_duration = 0;
         $this->field_validation_publication_reason = 'on';
         $this->field_validation_article_lifetime = 'on';
+        $this->field_google_youtube_api_key = '';
 
         if ($this->is_bus_enabled === true) {
             if (isset($optionList[Enum::FIELD_VENTURE_CONFIG])) {
@@ -104,6 +106,10 @@ class Fields
             }
             if (isset($optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME])) {
                 $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME];
+            }
+
+            if (isset($optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY])) {
+                $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY];
             }
 
             $error = '';
@@ -208,6 +214,7 @@ class Fields
             $_ENV[Enum::ENV_BUS_API_PASSWORD] = $this->field_bus_api_password;
             $_ENV[Enum::ENV_BUS_API_LOCALE] = $this->field_bus_locale;
             $_ENV[Enum::ENV_BUS_APP_KEY] = $this->field_app_key;
+            $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] = $this->field_google_youtube_api_key;
         }
 
         if ($this->is_slack_enabled === true) {

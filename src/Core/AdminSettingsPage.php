@@ -106,6 +106,7 @@ class AdminSettingsPage
         $this->add_field_validation_article_lifetime();
         $this->add_alternate_primary_category_selectbox();
         $this->add_alternate_primary_category_textbox();
+        $this->add_field_google_youtube_api_key_textbox();
     }
 
     /**
@@ -642,5 +643,35 @@ class AdminSettingsPage
 
             Timber::render($field_tpl, $context);
         }
+    }
+
+    /**
+     * FIELD - field_google_youtube_api_key
+     */
+    public function add_field_google_youtube_api_key_textbox(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_GOOGLE_YOUTUBE_API_KEY,
+            // Use $args' label_for to populate the id inside the callback.
+            'Youtube API Key',
+            [self::class, 'field_google_youtube_api_key_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_GOOGLE_YOUTUBE_API_KEY,
+                'class' => 'ringier-bus-row alt-category-field first',
+                'field_custom_data' => Enum::FIELD_GOOGLE_YOUTUBE_API_KEY,
+            ]
+        );
+    }
+
+    /**
+     * field field_google_youtube_api_key callback
+     *
+     * @param $args
+     */
+    public static function field_google_youtube_api_key_callback($args): void
+    {
+        self::render_field_tpl($args, 'field_google_youtube_api_key.twig');
     }
 }
