@@ -7,6 +7,7 @@
 
 namespace RingierBusPlugin;
 
+use DateInterval;
 use Monolog\Handler\MissingExtensionException;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
@@ -406,5 +407,117 @@ class Utils
     public static function truncate(string $content, int $length): string
     {
         return mb_substr($content, 0, $length);
+    }
+
+    /**
+     * @param string $video_id
+     * @param string $api_key
+     *
+     * @throws \Exception
+     *
+     * @return array
+     */
+    public static function fetch_youtube_video_details(string $video_id, string $api_key): array
+    {
+        $cache_key = 'ringier_bus_youtube_video_' . $video_id;
+        // Check if data in cached
+        $cached_data = get_transient($cache_key);
+        if ($cached_data !== false) {
+            return $cached_data;
+        }
+
+        // If no cached data, proceed to fetching data via API request
+        $url = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id={$video_id}&key={$api_key}";
+
+        $response = wp_remote_get($url);
+        if (is_wp_error($response)) {
+            //log error to our custom log file - viewable via Admin UI
+            ringier_errorlogthis('[Youtube API] ERROR occurred, below error thrown:');
+            ringier_errorlogthis($response);
+
+            return [];
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if (empty($data['items'])) {
+            ringier_errorlogthis('[Youtube API] Warning - data was empty, below details:');
+            ringier_errorlogthis($response);
+
+            return [];
+        }
+
+        $video = $data['items'][0];
+
+        // Prepare video array
+        $video_details = [
+            'reference' => $video_id,
+            'content_url' => "https://www.youtube.com/watch?v={$video_id}",
+            'embed_url' => "https://www.youtube.com/embed/{$video_id}",
+            'thumbnail' => $video['snippet']['thumbnails']['standard']['url'],
+            'title' => $video['snippet']['title'],
+            'description' => $video['snippet']['description'],
+            'duration' => self::convert_youtube_duration($video['contentDetails']['duration']),
+        ];
+
+        // Cache data for 24 hours (86400 seconds)
+        set_transient($cache_key, $video_details, 86400);
+
+        return $video_details;
+    }
+
+    /**
+     * @param string $duration
+     *
+     * @throws \Exception
+     *
+     * @return float|int
+     */
+    public static function convert_youtube_duration(string $duration): float|int
+    {
+        // YouTube duration is in ISO 8601 format, e.g., PT1M30S
+        $interval = new DateInterval($duration);
+
+        return ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+    }
+
+    /**
+     * @param string $content
+     *
+     * @return array
+     */
+    public static function extract_youtube_video_urls(string $content): array
+    {
+        // Regex pattern to match YouTube URLs
+        $pattern = '/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/i';
+        preg_match_all($pattern, $content, $matches);
+
+        // no matches found
+        if (empty($matches[1])) {
+            return []; // Return an empty array if
+        }
+
+        // Return all matched video IDs
+        return $matches[1]; // 2nd element in $matches is the video IDs
+    }
+
+    /**
+     * @param array $urls
+     *
+     * @return array
+     */
+    public static function get_youtube_ids_from_urls(array $urls): array
+    {
+        $video_ids = [];
+
+        foreach ($urls as $url) {
+            parse_str(parse_url($url, PHP_URL_QUERY), $query);
+            if (isset($query['v'])) {
+                $video_ids[] = $query['v'];
+            }
+        }
+
+        return $video_ids;
     }
 }
