@@ -487,10 +487,10 @@ class Utils
      *
      * @return array
      */
-    public static function extract_youtube_video_urls(string $content): array
+    public static function extract_youtube_video_ids(string $content): array
     {
-        // Regex pattern to match YouTube URLs
-        $pattern = '/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/i';
+        // Pattern will match both standard youtube URLs and shortened youtu.be URLs
+        $pattern = '/https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/i';
         preg_match_all($pattern, $content, $matches);
 
         // no matches found
@@ -498,8 +498,10 @@ class Utils
             return []; // Return an empty array if
         }
 
-        // Return all matched video IDs
-        return $matches[1]; // 2nd element in $matches is the video IDs
+        // Remove any duplicate IDs
+        $video_ids = array_unique($matches[1]); // 2nd element in $matches is the video IDs
+
+        return $video_ids;
     }
 
     /**
@@ -512,9 +514,11 @@ class Utils
         $video_ids = [];
 
         foreach ($urls as $url) {
-            parse_str(parse_url($url, PHP_URL_QUERY), $query);
-            if (isset($query['v'])) {
-                $video_ids[] = $query['v'];
+            if (!empty($url)) {
+                parse_str(parse_url($url, PHP_URL_QUERY), $query);
+                if (isset($query['v'])) {
+                    $video_ids[] = $query['v'];
+                }
             }
         }
 
