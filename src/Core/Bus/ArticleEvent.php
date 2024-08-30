@@ -287,6 +287,23 @@ class ArticleEvent
         }
 
         /**
+         * Handle any YouTube videos
+         */
+        $raw_content = Utils::getRawContent($this->fetchArticleContent($post_ID));
+        $video_id_list = Utils::extract_youtube_video_ids($raw_content);
+        $youtube_api_key = $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY];
+        // Check if URLs were found
+        if (!empty($video_id_list) && !empty($youtube_api_key)) {
+            $video_data_list = [];
+            foreach ($video_id_list as $video_id) {
+                $video_data_list[] = Utils::fetch_youtube_video_details($video_id, $youtube_api_key);
+            }
+            if (!empty($video_data_list)) {
+                $payload_array['videos'] = $video_data_list;
+            }
+        }
+
+        /**
          * Builds the payload data for an article.
          *
          * @hook ringier_bus_build_article_payload
