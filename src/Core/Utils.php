@@ -429,7 +429,14 @@ class Utils
         // If no cached data, proceed to fetching data via API request
         $url = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id={$video_id}&key={$api_key}";
 
-        $response = wp_remote_get($url);
+        // Add headers to the request since somehow a blank referer is being forwarded to the API - we restrict in referer for security reasons
+        $args = [
+            'headers' => [
+                'Referer' => get_site_url(),
+            ],
+        ];
+
+        $response = wp_remote_get($url, $args);
         if (is_wp_error($response)) {
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[Youtube API] ERROR occurred, below error thrown:');
