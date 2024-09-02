@@ -433,7 +433,13 @@ class Utils
         if (is_wp_error($response)) {
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[Youtube API] ERROR occurred, below error thrown:');
-            ringier_errorlogthis($response);
+
+            // Convert WP_Error to string
+            $error_message = $response->get_error_message();
+            ringier_errorlogthis($error_message);
+
+            $request_headers = wp_remote_retrieve_headers($response);
+            ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
 
             return [];
         }
@@ -443,7 +449,22 @@ class Utils
 
         if (empty($data['items'])) {
             ringier_errorlogthis('[Youtube API] Warning - data was empty, below details:');
-            ringier_errorlogthis($response);
+
+            // Decode the response body to extract the error message
+            $body = wp_remote_retrieve_body($response);
+            $decoded_body = json_decode($body, true);
+
+            if (isset($decoded_body['error'])) {
+                $error_message = $decoded_body['error']['message'];
+                $error_details = isset($decoded_body['error']['errors']) ? json_encode($decoded_body['error']['errors']) : 'No further error details';
+                ringier_errorlogthis('Error Message: ' . $error_message);
+                ringier_errorlogthis('Error Details: ' . $error_details);
+
+                $request_headers = wp_remote_retrieve_headers($response);
+                ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
+            } else {
+                ringier_errorlogthis('No error details available in response body.');
+            }
 
             return [];
         }
