@@ -228,34 +228,34 @@ class ArticleEvent
             'title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate($post->post_title, 255),
+                    'value' => Utils::truncate(Utils::getDecodedContent($post->post_title), 255),
                 ],
             ],
             'og_title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate($this->getOgArticleOgTitle($post_ID, $post), 255),
+                    'value' => Utils::truncate(Utils::getDecodedContent($this->getOgArticleOgTitle($post_ID, $post)), 255),
                 ],
             ],
             'description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate(get_the_excerpt($post_ID), 1000),
+                    'value' => Utils::truncate(Utils::getDecodedContent(get_the_excerpt($post_ID)), 1000),
                 ],
             ],
             'og_description' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate($this->getOgArticleOgDescription($post_ID, $post), 1000),
+                    'value' => Utils::truncate(Utils::getDecodedContent($this->getOgArticleOgDescription($post_ID, $post)), 1000),
                 ],
             ],
             'teaser' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::truncate(get_the_excerpt($post_ID), 300),
+                    'value' => Utils::truncate(Utils::getDecodedContent(get_the_excerpt($post_ID)), 300),
                 ],
             ],
-            'wordcount' => Utils::getContentWordCount($this->fetchArticleContent($post_ID)),
+            'wordcount' => Utils::getContentWordCount(Utils::getRawContent($this->fetchArticleContent($post_ID))),
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
             /*
