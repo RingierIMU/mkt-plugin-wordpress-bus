@@ -311,7 +311,7 @@ class Utils
 
     /**
      * Strip all HTML tags and shortcodes using getRawContent(),
-     * and then decode HTML entities (e.g., &hellip; becomes '...')
+     * decode HTML entities, and remove ellipsis or truncated indicators like […]
      *
      * @param string $content
      *
@@ -319,11 +319,14 @@ class Utils
      */
     public static function getDecodedContent(string $content): string
     {
-        // strip shortcodes and HTML tags
+        // Strip shortcodes and HTML tags
         $raw_content = self::getRawContent($content);
 
         // Decode HTML entities (e.g: &hellip; becomes '...')
-        return html_entity_decode($raw_content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded_content = html_entity_decode($raw_content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // Remove ellipsis and truncation indicators like […] or (...)
+        return preg_replace('/\[\&?hellip\;\]|\[…\]|\(\.\.\.\)/', '', $decoded_content);
     }
 
     /**
