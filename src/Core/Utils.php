@@ -300,13 +300,30 @@ class Utils
      * Strip all html tags includind scripts
      * And also strip all wordpress shortcodes
      *
-     * @param $content
+     * @param string $content
      *
      * @return string
      */
-    public static function getRawContent($content): string
+    public static function getRawContent(string $content): string
     {
         return strip_shortcodes(wp_strip_all_tags($content));
+    }
+
+    /**
+     * Strip all HTML tags and shortcodes using getRawContent(),
+     * and then decode HTML entities (e.g., &hellip; becomes '...')
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    public static function getDecodedContent(string $content): string
+    {
+        // strip shortcodes and HTML tags
+        $raw_content = self::getRawContent($content);
+
+        // Decode HTML entities (e.g: &hellip; becomes '...')
+        return html_entity_decode($raw_content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**
