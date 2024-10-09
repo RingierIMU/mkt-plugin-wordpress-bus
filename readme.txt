@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.5.5
-Stable tag: 3.0.0
+Tested up to: 6.6.2
+Stable tag: 3.1.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -127,6 +127,11 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### 3.1.0 (Oct 9, 2024) ###
+* [NEW] Added Youtube videos to the event payload if there's any as part of the article
+    - see PR#8 for more details
+* [UPDATE] When description is not set by author, it defaulted to the excerpt. As a consequence hellip was being added to the description. This has been fixed to remove the hellip, as well as any other html entities/tags that might be present in the excerpt.
 
 ### 3.0.0 (Jul 12, 2024) ###
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.1+

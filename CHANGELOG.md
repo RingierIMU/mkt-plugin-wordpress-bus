@@ -1,5 +1,10 @@
 # Changelog Details
 
+### 3.1.0 (Oct 9, 2024) ###
+* [NEW] Added Youtube videos to the event payload if there's any as part of the article
+  * see PR#8 for more details
+* [UPDATE] When description is not set by author, it defaulted to the excerpt. As a consequence hellip was being added to the description. This has been fixed to remove the hellip, as well as any other html entities/tags that might be present in the excerpt.
+
 ### 3.0.0 (Jul 15, 2024) ###
 
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.1+
