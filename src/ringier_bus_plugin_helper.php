@@ -7,6 +7,7 @@
  * @github wkhayrattee
  */
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use RingierBusPlugin\Enum;
 
@@ -34,18 +35,24 @@ function ringier_infologthis($message): void
 /**
  * Wrapper to log Error Messages in a custom log file
  *
- * @param $message
- *
- * @throws \Exception
+ * @param string $message Error message to log.
  */
-function ringier_errorlogthis($message): void
+function ringier_errorlogthis(string $message): void
 {
-    $log = new Logger('ringier_bus_plugin_error_log');
-    $stream = new StreamHandler(WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR, Logger::ERROR);
-    $log->pushHandler($stream);
-    $log->error($message);
-    unset($log);
-    unset($stream);
+    try {
+        $log = new Logger('ringier_bus_plugin_error_log');
+        $log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
+
+        if (!file_exists(dirname($log_file))) {
+            wp_mkdir_p(dirname($log_file));
+        }
+
+        $stream = new StreamHandler($log_file, Level::Error);
+        $log->pushHandler($stream);
+        $log->error($message);
+    } catch (Throwable $e) { // Optional fallback if logging fails
+        error_log('BUS_PLUGIN:: Logging failure in ringier_errorlogthis(): ' . $e->getMessage());
+    }
 }
 
 /**
