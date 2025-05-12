@@ -107,6 +107,7 @@ class AdminSettingsPage
         $this->add_alternate_primary_category_selectbox();
         $this->add_alternate_primary_category_textbox();
         $this->add_field_google_youtube_api_key_textbox();
+        $this->add_field_enable_quick_edit();
     }
 
     /**
@@ -673,5 +674,40 @@ class AdminSettingsPage
     public static function field_google_youtube_api_key_callback($args): void
     {
         self::render_field_tpl($args, 'field_google_youtube_api_key.twig');
+    }
+
+    /**
+     * Adds the "Enable Quick Edit" checkbox field.
+     */
+    public function add_field_enable_quick_edit(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_ENABLE_QUICK_EDIT, // setting id
+            'Enable Quick Edit button',
+            [self::class, 'field_enable_quick_edit_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_ENABLE_QUICK_EDIT,
+                'class' => 'ringier-bus-row first',
+                'field_custom_data' => Enum::FIELD_ENABLE_QUICK_EDIT,
+            ]
+        );
+    }
+
+    /**
+     * Callback to render "Enable Quick Edit" checkbox.
+     *
+     * @param array $args Arguments passed from the settings field.
+     */
+    public static function field_enable_quick_edit_callback(array $args): void
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-enable-quick-edit.php',
+            $args
+        );
     }
 }
