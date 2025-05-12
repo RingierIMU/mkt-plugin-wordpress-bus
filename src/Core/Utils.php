@@ -572,4 +572,22 @@ class Utils
 
         return $video_ids;
     }
+
+    /**
+     * Loads a PHP template file safely with extracted arguments.
+     *
+     * @param string $template_path Absolute path to the template file.
+     * @param array $args Variables to extract into the template's local scope.
+     * @param bool $require_once Whether to require_once or require. Default true.
+     *
+     * @throws \Exception
+     */
+    public static function load_tpl(string $template_path, array $args = [], bool $require_once = true): void
+    {
+        if (!file_exists($template_path)) {
+            ringier_errorlogthis("[Template] Warning - template file not found: {$template_path}");
+        }
+
+        load_template($template_path, $require_once, $args);
+    }
 }
