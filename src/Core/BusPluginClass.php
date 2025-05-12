@@ -77,14 +77,21 @@ class BusPluginClass
          * Hide the "Quick Edit" button on Post List screen (wp-admin/edit.php)
          * Because with Quick Edit button, we can change an article from draft to publish,
          * bypassing the checklist - which we do not want
+         *
+         * UPDATED | 12th May 2025 | (SOL-1708)
+         * Now we do check if "Enable Quick Edit" setting before disabling Quick Edit
          */
-        add_action('post_row_actions', [self::class, 'hide_quick_edit_button'], PHP_INT_MAX);
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $show_quick_edit = isset($options[Enum::FIELD_ENABLE_QUICK_EDIT]) && $options[Enum::FIELD_ENABLE_QUICK_EDIT] === 'on';
+        if (!$show_quick_edit) {
+            add_action('post_row_actions', [self::class, 'hide_quick_edit_button'], PHP_INT_MAX);
+        }
 
         /*
          * Register Bus API Mechanism
          * Note: commented out because we are now fetching values from the UI (dashboard) itself
          */
-//        BusHelper::load_vars_into_env();
+        //        BusHelper::load_vars_into_env();
     }
 
     /**
