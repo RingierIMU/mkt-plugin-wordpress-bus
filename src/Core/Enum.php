@@ -47,6 +47,7 @@ class Enum
     const FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY = 'field_status_alt_primary_category';
     const FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY = 'field_text_alt_primary_category';
     const FIELD_GOOGLE_YOUTUBE_API_KEY = 'field_google_youtube_api_key';
+    const FIELD_ENABLE_QUICK_EDIT = 'field_enable_quick_edit';
 
     //ADMIN LOG PAGE
     const ADMIN_LOG_PAGE_TITLE = 'Ringier Bus API Log';
