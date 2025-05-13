@@ -154,6 +154,11 @@ class BusHelper
             return;
         }
 
+        // Bail on custom post types if events for them are not enabled (via settings page - choice of user)
+        if (!Utils::isBusEventEnabledForPostType($post->post_type)) {
+            return;
+        }
+
         // Bail if we're working on a draft or trashed item
         if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
             return;
