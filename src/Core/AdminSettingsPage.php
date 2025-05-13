@@ -108,6 +108,7 @@ class AdminSettingsPage
         $this->add_alternate_primary_category_textbox();
         $this->add_field_google_youtube_api_key_textbox();
         $this->add_field_enable_quick_edit();
+        $this->add_field_enable_custom_post_type_events();
     }
 
     /**
@@ -707,6 +708,39 @@ class AdminSettingsPage
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-enable-quick-edit.php',
+            $args
+        );
+    }
+
+    /**
+     * field field_enable_custom_post_type_events
+     */
+    public function add_field_enable_custom_post_type_events(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_ALLOW_CUSTOM_POST_TYPES,
+            'Enable events for custom post types',
+            [self::class, 'field_enable_custom_post_type_events_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_ALLOW_CUSTOM_POST_TYPES,
+                'class' => 'ringier-bus-row',
+                'field_custom_data' => Enum::FIELD_ALLOW_CUSTOM_POST_TYPES,
+            ]
+        );
+    }
+
+    public static function field_enable_custom_post_type_events_callback($args): void
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $args['master_checked'] = !empty($options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES]) && $options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES] === 'on';
+        $args['allowed_post_types'] = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
+
+        load_template(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-custom-post-type-events.php',
+            false,
             $args
         );
     }
