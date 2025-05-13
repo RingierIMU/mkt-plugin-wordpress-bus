@@ -338,6 +338,11 @@ class BusHelper
      */
     public static function triggerArticleDeletedEvent(WP_Post $post): void
     {
+        // Bail on custom post types if events for them are not enabled (via settings page - choice of user)
+        if (!Utils::isBusEventEnabledForPostType($post->post_type)) {
+            return;
+        }
+
         $post_ID = Utils::getParentPostId($post->ID);
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
 
