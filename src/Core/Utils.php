@@ -590,4 +590,30 @@ class Utils
 
         load_template($template_path, $require_once, $args);
     }
+
+    /**
+     * Checks whether Bus Events are enabled for a given post type.
+     *
+     * Core post types like 'post' are always enabled.
+     * For custom post types, this checks whether:
+     *   1. The global toggle for allowing custom post types is enabled.
+     *   2. The specific post type is explicitly allowed in the settings.
+     *
+     * @param string $post_type The post type to check (e.g. 'post', 'event', 'interview').
+     *
+     * @return bool True if Bus Events are enabled for the given post type, false otherwise.
+     */
+    public static function isBusEventEnabledForPostType(string $post_type): bool
+    {
+        if ($post_type === 'post') {
+            return true;
+        }
+
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+
+        $custom_enabled = !empty($options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES]) && $options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES] === 'on';
+        $allowed_list = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
+
+        return $custom_enabled && !empty($allowed_list[$post_type]) && $allowed_list[$post_type] === 'on';
+    }
 }
