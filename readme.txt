@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.6.2
-Stable tag: 3.1.0
+Tested up to: 6.8.1
+Stable tag: 3.2.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -127,6 +127,12 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### 3.2.0 (May 15, 2024) ###
+* [NEW] UI + Logic: Added a checkbox (in settings page) to allow users to enable/disable the Quick Edit button
+* [NEW] UI + Logic: Added a checkbox to let users select which custom post_type should be sent as Events
+  * By default, only the default `post` post_type is sent as Events, unless custom types are explicitly enabled
+* [UPDATE] Logic: Improved the event logging mechanism
 
 ### 3.1.0 (Oct 9, 2024) ###
 * [NEW] Added Youtube videos to the event payload if there's any as part of the article

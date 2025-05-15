@@ -1,5 +1,11 @@
 # Changelog Details
 
+### 3.2.0 (May 15, 2024) ###
+* [NEW] UI + Logic: Added a checkbox (in settings page) to allow users to enable/disable the Quick Edit button
+* [NEW] UI + Logic: Added a checkbox to let users select which custom post_type should be sent as Events
+  * By default, only the default `post` post_type is sent as Events, unless custom types are explicitly enabled
+* [UPDATE] Logic: Improved the event logging mechanism
+
 ### 3.1.0 (Oct 9, 2024) ###
 * [NEW] Added Youtube videos to the event payload if there's any as part of the article
   * see PR#8 for more details
