@@ -66,6 +66,10 @@ class Enum
     const EVENT_ARTICLE_EDITED = 'ArticleUpdated';
     const EVENT_ARTICLE_DELETED = 'ArticleDeleted';
 
+    const EVENT_AUTHOR_CREATED = 'AuthorCreated';
+    const EVENT_AUTHOR_UPDATED = 'AuthorUpdated';
+    const EVENT_AUTHOR_DELETED = 'AuthorDeleted';
+
     public const JSON_FIELD_STATUS_ONLINE = 'online';
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
