@@ -109,6 +109,7 @@ class AdminSettingsPage
         $this->add_field_google_youtube_api_key_textbox();
         $this->add_field_enable_quick_edit();
         $this->add_field_enable_custom_post_type_events();
+        $this->add_field_author_base();
     }
 
     /**
@@ -740,6 +741,44 @@ class AdminSettingsPage
 
         load_template(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-custom-post-type-events.php',
+            false,
+            $args
+        );
+    }
+
+    /**
+     * FIELD - field_author_base
+     */
+    public function add_field_author_base(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_AUTHOR_BASE,
+            // Use $args' label_for to populate the id inside the callback.
+            'Author Base Slug',
+            [self::class, 'field_author_base_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_AUTHOR_BASE,
+                'class' => 'ringier-bus-row',
+                'field_custom_data' => Enum::FIELD_AUTHOR_BASE,
+            ]
+        );
+    }
+
+    /**
+     * field field_author_base callback function.
+     *
+     * @param array $args
+     */
+    public static function field_author_base_callback($args): void
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $value = $options[Enum::FIELD_AUTHOR_BASE] ?? 'author';
+        $args['value'] = esc_attr($value);
+
+        load_template(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-author-base.php',
             false,
             $args
         );

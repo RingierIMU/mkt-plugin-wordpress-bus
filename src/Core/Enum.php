@@ -50,6 +50,7 @@ class Enum
     const FIELD_ENABLE_QUICK_EDIT = 'field_enable_quick_edit';
     public const FIELD_ALLOW_CUSTOM_POST_TYPES = 'allow_custom_post_types'; // master toggle
     public const FIELD_ENABLED_CUSTOM_POST_TYPE_LIST = 'enable_custom_post_type_events'; // specific post types
+    public const FIELD_AUTHOR_BASE = 'field_author_base';
 
     //ADMIN LOG PAGE
     const ADMIN_LOG_PAGE_TITLE = 'Ringier Bus API Log';
