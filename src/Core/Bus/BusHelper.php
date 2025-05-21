@@ -60,13 +60,138 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
+            /**
+             * Article events
+             */
             //            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             //            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
+
+            /**
+             * User events
+             */
+            // ref: https://developer.wordpress.org/reference/hooks/user_register/
+            add_action('user_register', [self::class, 'triggerUserCreatedEvent'], 10, 2);
+            // ref: https://developer.wordpress.org/reference/hooks/profile_update/
+            add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], 10, 3);
+            // ref: https://developer.wordpress.org/reference/hooks/delete_user/
+            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], 10, 3);
         }
+    }
+
+    /**
+     * Triggered by hook: user_register
+     *
+     * @param int $user_id
+     * @param array $userdata
+     */
+    public static function triggerUserCreatedEvent(int $user_id, array $userdata): void
+    {
+        // Bail if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // todo
+    }
+
+    /**
+     * Triggered by hook: profile_update
+     *
+     * @param int $user_id
+     * @param \WP_User $old_user_data
+     * @param array $userdata
+     */
+    public static function triggerUserUpdatedEvent(int $user_id, \WP_User $old_user_data, array $userdata): void
+    {
+        // Bail if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Bail out if the user does not have the role: 'author', 'editor' or 'administrator'
+        $user = get_userdata($user_id);
+        if (!user_can($user, 'author') && !user_can($user, 'editor') && !user_can($user, 'administrator')) {
+            return;
+        }
+
+        // Prevent duplicate execution using a transient
+        if (get_transient('triggered_user_update_' . $user_id)) {
+            return;
+        }
+        // Set a transient to mark this hook as processed for this user
+        set_transient('triggered_user_update_' . $user_id, true, 10); // 10 seconds validity
+
+        // Update the last modified date
+        update_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, current_time('mysql'));
+
+        /**
+         * Retrieve the user meta for the key Enum::META_SHOW_PROFILE_PAGE_KEY if present
+         * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
+         */
+        $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
+        // Default to offline
+        $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
+        // Check the value of $show_profile_page
+        if ($show_profile_page === 'on') {
+            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        } elseif (empty($show_profile_page)) {
+            // If empty or not set, assume the site is not using the AuthorAddon plugin
+            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        }
+
+        /**
+         * Get Author professional Name
+         */
+        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
+        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
+        $professional_name = trim($first_name . ' ' . $last_name);
+
+        /**
+         * Get Author page URL
+         */
+        $author_url = get_author_posts_url($user_id);
+
+        /**
+         * Get author creation date
+         */
+        $created_at = Utils::formatDate($old_user_data->user_registered);
+
+        /**
+         * Get author updated date
+         */
+        $last_update = Utils::formatDate(
+            get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
+        );
+
+        /**
+         * Author Avatar URL
+         */
+        $new_email = $newData['user_email'] ?? $old_user_data->user_email;
+        $newAvatar = get_avatar_url($new_email);
+
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $articleTriggerMode = Enum::EVENT_AUTHOR_UPDATED;
+    }
+
+    /**
+     * Triggered by hook: delete_user
+     *
+     * @param int $user_id
+     * @param \WP_User $old_user_data
+     * @param array $userdata
+     */
+    public static function triggerUserDeletedEvent(int $user_id, \WP_User $old_user_data, array $userdata): void
+    {
+        // Bail if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // todo
     }
 
     /**
