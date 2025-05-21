@@ -66,6 +66,11 @@ class Enum
     const EVENT_ARTICLE_EDITED = 'ArticleUpdated';
     const EVENT_ARTICLE_DELETED = 'ArticleDeleted';
 
+    const EVENT_AUTHOR_CREATED = 'AuthorCreated';
+    const EVENT_AUTHOR_UPDATED = 'AuthorUpdated';
+    const EVENT_AUTHOR_DELETED = 'AuthorDeleted';
+    const META_SHOW_PROFILE_PAGE_KEY = 'ringier_show_author_profile_page';
+
     public const JSON_FIELD_STATUS_ONLINE = 'online';
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
@@ -88,4 +93,6 @@ class Enum
 
     public const FIELD_PUBLICATION_REASON_KEY = 'publication_reason';
     public const FIELD_PUBLICATION_REASON_VALUES = ['editorial', 'sponsored'];
+
+    public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
 }
