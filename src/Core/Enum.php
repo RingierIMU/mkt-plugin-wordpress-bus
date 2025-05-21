@@ -94,5 +94,9 @@ class Enum
     public const FIELD_PUBLICATION_REASON_KEY = 'publication_reason';
     public const FIELD_PUBLICATION_REASON_VALUES = ['editorial', 'sponsored'];
 
+    // DB-only FIELDS
     public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
+
+    // General Strings
+    public const WRITER_TYPE = 'staff writer';
 }
