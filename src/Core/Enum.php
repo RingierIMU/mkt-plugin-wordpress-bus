@@ -99,4 +99,10 @@ class Enum
 
     // General Strings
     public const WRITER_TYPE = 'staff writer';
+    public const LOG_INFO = '[info]';
+    public const LOG_ERROR = '[error]';
+    public const LOG_ALERT = '[alert]';
+    public const LOG_WARNING = '[warning]';
+    public const LOG_API = '[api]';
+
 }

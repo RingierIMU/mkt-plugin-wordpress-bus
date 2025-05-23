@@ -1,0 +1,110 @@
+<?php
+
+namespace RingierBusPlugin\Bus;
+
+use RingierBusPlugin\Enum;
+use RingierBusPlugin\Utils;
+
+class AuthorEvent
+{
+    private BusTokenManager $authClient;
+    private string $eventType;
+    private string $endpointUrl;
+
+    public function __construct(BusTokenManager $authClient, string $endpointUrl)
+    {
+        $this->authClient = $authClient;
+        $this->eventType = Enum::EVENT_AUTHOR_CREATED;
+        $this->endpointUrl = rtrim($endpointUrl, '/');
+    }
+
+    public function setEventType(string $type): void
+    {
+        $this->eventType = $type;
+    }
+
+    public function sendToBus(array $author_data): void
+    {
+        $author_ID = $author_data['id'];
+        try {
+            $authToken = $this->authClient->getToken();
+            if (!$authToken) {
+                ringier_errorlogthis('[error] AuthorEvent: Failed to retrieve authentication token.');
+            }
+
+            $requestBody = [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                    'charset' => 'utf-8',
+                    'x-api-key' => $authToken,
+                ],
+                'body' => wp_json_encode($this->buildMainRequestBody($author_data)),
+                'timeout' => 15,
+            ];
+
+            $response = wp_remote_post(
+                trailingslashit($this->endpointUrl) . 'events',
+                $requestBody
+            );
+
+            if (is_wp_error($response)) {
+                ringier_errorlogthis('[error] AuthorEvent: Could not send request to BUS: ' . $response->get_error_message());
+            }
+
+            $responseCode = wp_remote_retrieve_response_code($response);
+            $responseBody = wp_remote_retrieve_body($response);
+
+            if (!in_array($responseCode, [200, 201], true)) {
+                ringier_errorlogthis('[api] Invalid response from BUS: ' . $responseBody);
+            }
+
+            Utils::pushToSlack('The payload was successfully delivered to BUS.', 'info');
+        } catch (\Exception $exception) {
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $message = <<<EOF
+                $blogKey: [ALERT] AuthorEvent: An error occurred for author (ID: $author_ID)
+
+                Error message below:
+            EOF;
+
+            ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
+            ringier_errorlogthis($exception->getMessage());
+            Utils::l($message . $exception->getMessage());
+
+            $this->authClient->flushToken();
+        }
+    }
+
+    private function buildMainRequestBody(array $author_data): array
+    {
+        $author_ID = $author_data['id'];
+
+        return [[
+            'events' => [
+                $this->eventType,
+            ],
+            'from' => $this->authClient->getVentureId(),
+            'reference' => "$author_ID",
+            'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
+            'version' => Enum::BUS_API_VERSION,
+            'payload' => [
+                'author' => $this->buildAuthorPayloadData($author_data),
+            ],
+        ]];
+    }
+
+    private function buildAuthorPayloadData(array $author_data): array
+    {
+        return [
+            'reference' => $author_data['reference'],
+            'url' => $author_data['url'],
+            'name' => $author_data['name'],
+            'writer_type' => $author_data['writer_type'],
+            'status' => $author_data['status'],
+            'created_at' => $author_data['created_at'],
+            'updated_at' => $author_data['updated_at'],
+            'image' => $author_data['image'],
+        ];
+    }
+}

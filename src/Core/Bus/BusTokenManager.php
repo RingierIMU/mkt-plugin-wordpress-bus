@@ -97,14 +97,6 @@ class BusTokenManager
             $code = wp_remote_retrieve_response_code($response);
             $bodyArray = json_decode(wp_remote_retrieve_body($response), true);
 
-            if ($code !== 200 || empty($data['token'])) {
-                $this->flushToken();
-                ringier_errorlogthis('[auth_api] ERROR - Invalid response from BUS Login Endpoint');
-                ringier_errorlogthis('[auth_api] Response body: ' . wp_remote_retrieve_body($response));
-
-                return false;
-            }
-
             if (isset($bodyArray['token'])) {
                 $this->authToken = $bodyArray['token'];
                 set_transient(Enum::CACHE_KEY, $this->authToken, DAY_IN_SECONDS);

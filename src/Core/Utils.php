@@ -287,6 +287,65 @@ class Utils
     }
 
     /**
+     * Sends a message to Slack using a webhook URL.
+     *
+     * @param string|array $message The message to send. Can be a string or an array of strings.
+     * @param string       $level   The log level (e.g., 'info', 'error', 'warning'). Default is 'info'.
+     */
+    public static function pushToSlack(string|array $message, string $level = Enum::LOG_INFO): void
+    {
+        $webhook = $_ENV[Enum::ENV_SLACK_HOOK_URL] ?? null;
+        $channel = $_ENV[Enum::ENV_SLACK_CHANNEL_NAME] ?? null;
+        $botName = $_ENV[Enum::ENV_SLACK_BOT_NAME] ?? 'MyPluginBot';
+
+        if (empty($webhook) || empty($message)) {
+            return;
+        }
+
+        // Convert array to multi-line string
+        if (is_array($message)) {
+            $message = implode("\n", $message);
+        }
+
+        // Capture caller file:line using debug_backtrace
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1] ?? null;
+        $location = $trace ? basename($trace['file']) . ':' . $trace['line'] : 'unknown location';
+
+        // Build the formatted message
+        $slackMessage = sprintf(
+            "*%s* (%s):\n```%s```",
+            mb_strtoupper($level),
+            $location,
+            $message
+        );
+
+        try {
+            $payload = json_encode([
+                'text' => $slackMessage,
+                'username' => $botName,
+                'channel' => $channel,
+                'icon_emoji' => ':warning:',
+            ], JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            error_log('[Slack JSON Encode Error] ' . $e->getMessage());
+
+            return;
+        }
+
+        $response = wp_remote_post($webhook, [
+            'headers' => [
+                'Content-Type' => 'application/json',
+            ],
+            'body' => $payload,
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[Slack Error] ' . $response->get_error_message());
+        }
+    }
+
+    /**
      * Fetch a uuid in the form "1ee9aa1b-6510-4105-92b9-7171bb2f3089"
      *
      * @return UuidInterface
@@ -615,5 +674,72 @@ class Utils
         $allowed_list = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
 
         return $custom_enabled && !empty($allowed_list[$post_type]) && $allowed_list[$post_type] === 'on';
+    }
+
+    /**
+     * @param int $user_id
+     * @param array $userdata
+     *
+     * @return array
+     */
+    public static function buildAuthorInfo(int $user_id, array $userdata): array
+    {
+        /**
+         * Retrieve the user meta for the key Enum::META_SHOW_PROFILE_PAGE_KEY if present
+         * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
+         */
+        $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
+        // Default to offline
+        $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
+        // Check the value of $show_profile_page
+        if ($show_profile_page === 'on') {
+            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        } elseif (empty($show_profile_page)) {
+            // If empty or not set, assume the site is not using the AuthorAddon plugin
+            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        }
+
+        /**
+         * Get Author professional Name
+         */
+        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
+        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
+        $professional_name = trim($first_name . ' ' . $last_name);
+
+        /**
+         * Get Author page URL
+         */
+        $author_url = get_author_posts_url($user_id);
+
+        /**
+         * Get author creation date
+         */
+        $created_at = Utils::formatDate($userdata['user_registered']);
+
+        /**
+         * Get author updated date
+         */
+        $last_updated = Utils::formatDate(
+            get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
+        );
+
+        /**
+         * Author Avatar URL
+         */
+        $author_email = $userdata['user_email'];
+        $author_avatar = get_avatar_url($author_email);
+        // todo: to fetch High res image from AuthorAddon plugin
+
+        return [
+            'id' => $user_id,
+            'reference' => $user_id,
+            'url' => $author_url,
+            'name' => $professional_name,
+            'writer_type' => Enum::WRITER_TYPE,
+            'status' => $author_page_status,
+            'created_at' => $created_at,
+            'updated_at' => $last_updated,
+            'image' => $author_avatar,
+        ];
     }
 }

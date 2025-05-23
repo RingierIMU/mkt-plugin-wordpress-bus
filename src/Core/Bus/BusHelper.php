@@ -128,53 +128,37 @@ class BusHelper
         // Update the last modified date
         update_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, current_time('mysql'));
 
-        /**
-         * Retrieve the user meta for the key Enum::META_SHOW_PROFILE_PAGE_KEY if present
-         * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
-         */
-        $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
-        // Default to offline
-        $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
-        // Check the value of $show_profile_page
-        if ($show_profile_page === 'on') {
-            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        } elseif (empty($show_profile_page)) {
-            // If empty or not set, assume the site is not using the AuthorAddon plugin
-            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        // Check of the new user data has the email
+        if (empty($userdata['user_email'])) {
+            $userdata['user_email'] = $old_user_data->user_email;
         }
 
-        /**
-         * Get Author professional Name
-         */
-        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
-        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
-        $professional_name = trim($first_name . ' ' . $last_name);
-
-        /**
-         * Get Author page URL
-         */
-        $author_url = get_author_posts_url($user_id);
-
-        /**
-         * Get author creation date
-         */
-        $created_at = Utils::formatDate($old_user_data->user_registered);
-
-        /**
-         * Get author updated date
-         */
-        $last_update = Utils::formatDate(
-            get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
-        );
-
-        /**
-         * Author Avatar URL
-         */
-        $new_email = $newData['user_email'] ?? $old_user_data->user_email;
-        $newAvatar = get_avatar_url($new_email);
+        // Now let's build the required author info for the BUS
+        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
 
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
-        $articleTriggerMode = Enum::EVENT_AUTHOR_UPDATED;
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+
+        if (empty($endpointUrl)) {
+            ringier_errorlogthis('[error] AuthorUpdated: endpointUrl is empty');
+            Utils::pushToSlack('[error] AuthorUpdated: endpointUrl is empty', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+
+        $result = $busToken->acquireToken();
+        if (!$result) {
+            ringier_errorlogthis('[error] AuthorUpdated: a problem with Bus Token');
+
+            return;
+        }
+
+        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
+        $authorEvent->setEventType(Enum::EVENT_AUTHOR_UPDATED);
+        $authorEvent->sendToBus($author_data);
     }
 
     /**
