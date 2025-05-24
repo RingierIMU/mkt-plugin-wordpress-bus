@@ -148,6 +148,10 @@ class ArticleEvent
 
             //            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
+            //log error to our custom log file - viewable via Admin UI
+            ringier_errorlogthis('[api] Could not send request to BUS because: ');
+            ringier_errorlogthis($exception->getMessage()); //push to SLACK
+
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
@@ -156,12 +160,6 @@ class ArticleEvent
                             Error message below:
                             
                         EOF;
-
-            //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
-            ringier_errorlogthis($exception->getMessage()); //push to SLACK
-
-            //send to slack
             Utils::slackthat($message . $exception->getMessage()); //push to SLACK
 
             //clear Auth token on any error
