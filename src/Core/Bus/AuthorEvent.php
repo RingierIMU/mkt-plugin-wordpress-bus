@@ -26,12 +26,15 @@ class AuthorEvent
     public function sendToBus(array $author_data): void
     {
         $author_ID = $author_data['id'];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+
         try {
             $authToken = $this->authClient->getToken();
             if (!$authToken) {
-                ringier_errorlogthis('[error] AuthorEvent: Failed to retrieve authentication token.');
+                ringier_errorlogthis('AuthorEvent: Failed to retrieve authentication token.');
             }
 
+            $jsonBody = wp_json_encode($this->buildMainRequestBody($author_data));
             $requestBody = [
                 'headers' => [
                     'Accept' => 'application/json',
@@ -39,7 +42,7 @@ class AuthorEvent
                     'charset' => 'utf-8',
                     'x-api-key' => $authToken,
                 ],
-                'body' => wp_json_encode($this->buildMainRequestBody($author_data)),
+                'body' => $jsonBody,
                 'timeout' => 15,
             ];
 
@@ -49,28 +52,38 @@ class AuthorEvent
             );
 
             if (is_wp_error($response)) {
-                ringier_errorlogthis('[error] AuthorEvent: Could not send request to BUS: ' . $response->get_error_message());
+                ringier_errorlogthis('AuthorEvent: Could not send request to BUS: ' . $response->get_error_message());
             }
 
             $responseCode = wp_remote_retrieve_response_code($response);
             $responseBody = wp_remote_retrieve_body($response);
 
             if (!in_array($responseCode, [200, 201], true)) {
-                ringier_errorlogthis('[api] Invalid response from BUS: ' . $responseBody);
+                $error_msg = '(API|AuthorEvent) Invalid response from BUS: ' . $responseBody;
+                ringier_errorlogthis($error_msg);
+                Utils::pushToSlack($error_msg, Enum::LOG_ERROR);
+
+                return;
             }
 
-            Utils::pushToSlack('The payload was successfully delivered to BUS.', 'info');
+            $message = <<<EOF
+                $blogKey: The event was successfully delivered to BUS,
+
+                for payload:
+                
+            EOF;
+            Utils::pushToSlack($message . $jsonBody);
         } catch (\Exception $exception) {
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+
             $message = <<<EOF
                 $blogKey: [ALERT] AuthorEvent: An error occurred for author (ID: $author_ID)
 
                 Error message below:
             EOF;
 
-            ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
+            ringier_errorlogthis('(api) the following error was thrown:');
             ringier_errorlogthis($exception->getMessage());
-            Utils::l($message . $exception->getMessage());
+            Utils::pushToSlack($message . $exception->getMessage(), Enum::LOG_ERROR);
 
             $this->authClient->flushToken();
         }
