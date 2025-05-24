@@ -11,9 +11,10 @@ use RingierBusPlugin\Enum;
 /**
  * Wrapper to log Error Messages in a custom log file
  *
- * @param string $message Error message to log.
+ * @param string $message
+ * @param string $level
  */
-function ringier_errorlogthis(string $message): void
+function ringier_errorlogthis(string $message, string $level = 'ERROR'): void
 {
     try {
         $log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
@@ -26,6 +27,10 @@ function ringier_errorlogthis(string $message): void
         // Append the error message to the log file
         $timestamp = date('Y-m-d H:i:s');
         $formatted_message = "[{$timestamp}] ERROR: {$message}" . PHP_EOL;
+        if ($level !== 'ERROR') {
+            $formatted_message = "[{$timestamp}] {$level}: {$message}" . PHP_EOL;
+        }
+
         file_put_contents($log_file, $formatted_message, FILE_APPEND | LOCK_EX);
     } catch (Throwable $e) { // fallback
         error_log('BUS_PLUGIN:: Logging failure in ringier_errorlogthis(): ' . $e->getMessage());
