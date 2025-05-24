@@ -97,12 +97,13 @@ class Enum
     // DB-only FIELDS
     public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
 
-    // General Strings
+    // General Strings or Integer Values
     public const WRITER_TYPE = 'staff writer';
     public const LOG_INFO = '[info]';
     public const LOG_ERROR = '[error]';
     public const LOG_ALERT = '[alert]';
     public const LOG_WARNING = '[warning]';
     public const LOG_API = '[api]';
+    public const RUN_LAST = PHP_INT_MAX;
 
 }
