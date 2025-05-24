@@ -107,16 +107,17 @@ class BusHelper
      */
     public static function triggerUserUpdatedEvent(int $user_id, \WP_User $old_user_data, array $userdata): void
     {
-        // Bail if we're working on a draft or trashed item
+        // Bail out if we're working on a draft or trashed item
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
 
+        // Bail out if BUS events for user are not considered as an Author
         if (!Utils::user_has_any_role($user_id, ['editor', 'author', 'administrator'])) {
-            return; // Bail if BUS events for user are not considered as an Author
+            return;
         }
 
-        // Prevent duplicate execution using a transient
+        // Bail out if Prevent duplicate execution using a transient
         if (get_transient('triggered_user_update_' . $user_id)) {
             return;
         }
@@ -134,9 +135,7 @@ class BusHelper
         // Now let's build the required author info for the BUS
         $author_data = Utils::buildAuthorInfo($user_id, $userdata);
 
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
-
         if (empty($endpointUrl)) {
             ringier_errorlogthis('[error] AuthorUpdated: endpointUrl is empty');
             Utils::pushToSlack('[error] AuthorUpdated: endpointUrl is empty', Enum::LOG_ERROR);
