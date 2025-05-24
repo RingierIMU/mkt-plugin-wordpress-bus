@@ -307,7 +307,7 @@ class BusHelper
                 $message = <<<EOF
                     $blogKey: An instant event push has been done for article (ID: $post_ID)
                 EOF;
-                Utils::l($message);
+                Utils::slackthat($message);
             }
 
             /*
@@ -481,7 +481,7 @@ class BusHelper
                 (else task will be re-queued)
         EOF;
 
-        Utils::l($message); //push to SLACK
+        Utils::slackthat($message); //push to SLACK
 
         self::sendToBus($articleTriggerMode, $post_ID, get_post($post_ID), $countCalled);
     }
@@ -572,7 +572,7 @@ class BusHelper
             Passed Params (mode, article_id, count_for_time_invoked):
             
         EOF;
-        Utils::l($message . print_r($args, true)); //push to SLACK
+        Utils::slackthat($message . print_r($args, true)); //push to SLACK
     }
 
     /**
@@ -596,6 +596,6 @@ class BusHelper
             $blogKey: Event push queued for article (ID: $post_ID | Mode: $articleTriggerMode)
             Scheduled to run in the next minute(s)
         EOF;
-        Utils::l($message);
+        Utils::slackthat($message);
     }
 }

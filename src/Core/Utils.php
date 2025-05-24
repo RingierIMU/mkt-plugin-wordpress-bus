@@ -130,7 +130,7 @@ class Utils
         }
 
         ringier_errorlogthis('Warning: Could not find a category for article with ID: ' . $post_id);
-        Utils::l('Warning: Could not find a category for article with ID: ' . $post_id);
+        Utils::slackthat('Warning: Could not find a category for article with ID: ' . $post_id);
 
         return false;
     }
@@ -268,13 +268,11 @@ class Utils
      * @param string $logLevel
      * @param array $context
      */
-    public static function l($message, string $logLevel = 'alert', array $context = []): void
+    public static function slackthat($message, string $logLevel = 'alert', array $context = []): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
             self::pushToSlack($message, $logLevel);
-        } else {
-            ringier_errorlogthis('Could not push to Slack, is it OFF?');
         }
     }
 
