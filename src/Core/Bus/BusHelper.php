@@ -74,11 +74,11 @@ class BusHelper
              * User events
              */
             // ref: https://developer.wordpress.org/reference/hooks/user_register/
-            add_action('user_register', [self::class, 'triggerUserCreatedEvent'], 10, 2);
+            add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
             // ref: https://developer.wordpress.org/reference/hooks/profile_update/
-            add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], 10, 3);
+            add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
             // ref: https://developer.wordpress.org/reference/hooks/delete_user/
-            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], 10, 3);
+            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 3);
         }
     }
 
@@ -112,10 +112,8 @@ class BusHelper
             return;
         }
 
-        // Bail out if the user does not have the role: 'author', 'editor' or 'administrator'
-        $user = get_userdata($user_id);
-        if (!user_can($user, 'author') && !user_can($user, 'editor') && !user_can($user, 'administrator')) {
-            return;
+        if (!Utils::user_has_any_role($user_id, ['editor', 'author', 'administrator'])) {
+            return; // Bail if BUS events for user are not considered as an Author
         }
 
         // Prevent duplicate execution using a transient
