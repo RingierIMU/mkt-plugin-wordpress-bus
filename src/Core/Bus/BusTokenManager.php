@@ -87,8 +87,7 @@ class BusTokenManager
 
             if (is_wp_error($response)) {
                 $this->flushToken();
-                ringier_errorlogthis('[auth_api] ERROR - could not get a token from BUS Login Endpoint');
-                ringier_errorlogthis('[auth_api] error thrown below:');
+                ringier_errorlogthis('[auth_api] could not get a token from BUS Login Endpoint: ');
                 ringier_errorlogthis($response->get_error_message());
 
                 return false;
