@@ -742,4 +742,20 @@ class Utils
             'image' => $author_avatar,
         ];
     }
+
+    /**
+     * Determines if a user has at least one of the specified roles.
+     *
+     * Iterates through the provided roles and checks if the user has any of them
+     * using the native WordPress `user_can()` function.
+     *
+     * @param int $user The user ID to check.
+     * @param array $roles An array of role slugs (e.g., 'editor', 'author', etc.).
+     *
+     * @return bool True if the user has at least one of the roles; false otherwise.
+     */
+    public static function user_has_any_role(int $user, array $roles): bool
+    {
+        return (bool) array_filter($roles, fn ($role) => user_can($user, $role));
+    }
 }
