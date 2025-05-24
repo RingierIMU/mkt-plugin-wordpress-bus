@@ -738,9 +738,8 @@ class AdminSettingsPage
         $args['master_checked'] = !empty($options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES]) && $options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES] === 'on';
         $args['allowed_post_types'] = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
 
-        load_template(
+        Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-custom-post-type-events.php',
-            false,
             $args
         );
     }
