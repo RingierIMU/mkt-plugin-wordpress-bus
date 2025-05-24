@@ -8,10 +8,8 @@
 namespace RingierBusPlugin;
 
 use DateInterval;
-use Monolog\Handler\MissingExtensionException;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
-use RingierBusPlugin\Bus\LoggingHandler;
 
 class Utils
 {
@@ -108,8 +106,6 @@ class Utils
      *
      * @param $post_id
      * @param $property
-     *
-     * @throws MissingExtensionException
      *
      * @return mixed
      */
@@ -273,16 +269,14 @@ class Utils
      * @param $message
      * @param string $logLevel
      * @param array $context
-     *
-     * @throws MissingExtensionException
      */
     public static function l($message, string $logLevel = 'alert', array $context = []): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
-            LoggingHandler::getInstance()->log($logLevel, $message, $context);
+            self::pushToSlack($message, $logLevel);
         } else {
-            ringier_errorlogthis('[info] - did not push to Slack, it is probably OFF');
+            ringier_errorlogthis('Could not push to Slack, is it OFF?');
         }
     }
 
@@ -327,7 +321,7 @@ class Utils
                 'icon_emoji' => ':warning:',
             ], JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            error_log('[Slack JSON Encode Error] ' . $e->getMessage());
+            ringier_errorlogthis('(Slack JSON Encode Error) ' . $e->getMessage());
 
             return;
         }
@@ -341,7 +335,7 @@ class Utils
         ]);
 
         if (is_wp_error($response)) {
-            error_log('[Slack Error] ' . $response->get_error_message());
+            ringier_errorlogthis('(Slack Error) ' . $response->get_error_message());
         }
     }
 
