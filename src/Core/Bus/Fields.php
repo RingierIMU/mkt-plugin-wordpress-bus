@@ -128,7 +128,7 @@ class Fields
 
             if (mb_strlen($error) > 0) {
                 $this->is_bus_enabled = false;
-                ringier_errorlogthis('[API] - Turning BUS Process OFF because of the following error:');
+                ringier_errorlogthis('[API] - Turning BUS Process OFF because:');
                 ringier_errorlogthis($error);
 
                 return false;
@@ -183,8 +183,6 @@ class Fields
 
             if (mb_strlen($error) > 0) {
                 $this->is_slack_enabled = false;
-                ringier_errorlogthis('[Slack Fields] - The following appear to be empty:');
-                ringier_errorlogthis($error);
 
                 return false;
             }
