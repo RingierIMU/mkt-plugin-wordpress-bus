@@ -266,9 +266,8 @@ class Utils
      *
      * @param $message
      * @param string $logLevel
-     * @param array $context
      */
-    public static function slackthat($message, string $logLevel = 'alert', array $context = []): void
+    public static function slackthat($message, string $logLevel = 'alert'): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
