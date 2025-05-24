@@ -137,8 +137,8 @@ class BusHelper
 
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
         if (empty($endpointUrl)) {
-            ringier_errorlogthis('[error] AuthorUpdated: endpointUrl is empty');
-            Utils::pushToSlack('[error] AuthorUpdated: endpointUrl is empty', Enum::LOG_ERROR);
+            ringier_errorlogthis('AuthorUpdated: endpointUrl is empty');
+            Utils::pushToSlack('AuthorUpdated: endpointUrl is empty', Enum::LOG_ERROR);
 
             return;
         }
@@ -148,7 +148,8 @@ class BusHelper
 
         $result = $busToken->acquireToken();
         if (!$result) {
-            ringier_errorlogthis('[error] AuthorUpdated: a problem with Bus Token');
+            ringier_errorlogthis('AuthorUpdated: a problem with Bus Token');
+            Utils::pushToSlack('AuthorUpdated: a problem with Bus Token', Enum::LOG_ERROR);
 
             return;
         }
@@ -217,7 +218,7 @@ class BusHelper
                 if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
                 } else {
-                    ringier_errorlogthis('[warning] BUS: article_lifetime field value not in whitelist or was empty');
+                    ringier_errorlogthis('BUS: article_lifetime field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
@@ -227,14 +228,14 @@ class BusHelper
                 if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
                 } else {
-                    ringier_errorlogthis('[warning] BUS: publication_reason field value not in whitelist or was empty');
+                    ringier_errorlogthis('[warning] BUS: publication_reason field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
             //save custom field: is_post_new | for this we do not care if it is set or nnot, it;'s a hidden field
             update_post_meta($post_id, Enum::ACF_IS_POST_NEW_KEY, Enum::ACF_IS_POST_VALUE_EXISTED);
         } else {
-            ringier_errorlogthis('[error] BUS: could not save custom fields');
+            ringier_errorlogthis('BUS: could not save custom fields for post ID: ' . $post_id, 'WARNING');
         }
     }
 
@@ -250,8 +251,6 @@ class BusHelper
      * @param string $new_status
      * @param string $old_status
      * @param WP_Post $post
-     *
-     * @throws MissingExtensionException
      */
     public static function trigger_bus_event_on_post_change(string $new_status, string $old_status, WP_Post $post): void
     {
@@ -368,7 +367,6 @@ class BusHelper
      *
      * @param WP_Post $post
      *
-     * @throws MissingExtensionException
      * @throws Exception
      *
      * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
@@ -413,8 +411,6 @@ class BusHelper
      * Triggered by hook: future_to_publish
      *
      * @param WP_Post $post
-     *
-     * @throws MissingExtensionException
      */
     public static function cater_for_manually_scheduled_post(WP_Post $post): void
     {
@@ -437,8 +433,6 @@ class BusHelper
      * (Codex for Status Transitions: https://codex.wordpress.org/Post_Status_Transitions)
      *
      * @param WP_Post $post
-     *
-     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
@@ -465,7 +459,6 @@ class BusHelper
      * @param int $countCalled
      *
      * @throws GuzzleException
-     * @throws MissingExtensionException
      * @throws InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
@@ -514,7 +507,7 @@ class BusHelper
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
-                ringier_errorlogthis('[error] A problem with Auth Token');
+                ringier_errorlogthis('A problem with Auth Token');
 
                 throw new Exception('A problem with Auth Token');
             }
