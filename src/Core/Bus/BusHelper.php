@@ -589,8 +589,6 @@ class BusHelper
      * @param mixed $blogKey
      * @param string $articleTriggerMode
      * @param int $post_ID
-     *
-     * @throws MissingExtensionException
      */
     private static function pushToSLACK(mixed $blogKey, string $articleTriggerMode, int $post_ID): void
     {
