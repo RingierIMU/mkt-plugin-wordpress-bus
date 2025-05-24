@@ -1,5 +1,5 @@
 <?php
-/**
+/**p
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  *
  * @github wkhayrattee
@@ -8,8 +8,6 @@
 namespace RingierBusPlugin;
 
 use DateInterval;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
 
 class Utils
 {
@@ -337,16 +335,6 @@ class Utils
         if (is_wp_error($response)) {
             ringier_errorlogthis('(Slack Error) ' . $response->get_error_message());
         }
-    }
-
-    /**
-     * Fetch a uuid in the form "1ee9aa1b-6510-4105-92b9-7171bb2f3089"
-     *
-     * @return UuidInterface
-     */
-    public static function uuid(): UuidInterface
-    {
-        return Uuid::uuid4();
     }
 
     /**
