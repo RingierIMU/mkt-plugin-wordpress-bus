@@ -61,7 +61,7 @@ class AuthorEvent
             if (!in_array($responseCode, [200, 201], true)) {
                 $error_msg = '(API|AuthorEvent) Invalid response from BUS: ' . $responseBody;
                 ringier_errorlogthis($error_msg);
-                Utils::pushToSlack($error_msg, Enum::LOG_ERROR);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
 
                 return;
             }
@@ -72,7 +72,7 @@ class AuthorEvent
                 for payload:
                 
             EOF;
-            Utils::pushToSlack($message . $jsonBody);
+            Utils::slackthat($message . $jsonBody);
         } catch (\Exception $exception) {
 
             $message = <<<EOF
@@ -83,7 +83,7 @@ class AuthorEvent
 
             ringier_errorlogthis('(api) the following error was thrown:');
             ringier_errorlogthis($exception->getMessage());
-            Utils::pushToSlack($message . $exception->getMessage(), Enum::LOG_ERROR);
+            Utils::slackthat($message . $exception->getMessage(), Enum::LOG_ERROR);
 
             $this->authClient->flushToken();
         }
