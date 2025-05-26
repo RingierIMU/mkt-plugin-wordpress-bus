@@ -110,12 +110,17 @@ class AuthorEvent
 
     private function buildAuthorPayloadData(array $author_data): array
     {
+        $author_page_status = $author_data['status'];
+        if ($this->eventType === Enum::EVENT_AUTHOR_DELETED) {
+            $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
+        }
+
         return [
             'reference' => $author_data['reference'],
             'url' => $author_data['url'],
             'name' => $author_data['name'],
             'writer_type' => $author_data['writer_type'],
-            'status' => $author_data['status'],
+            'status' => $author_page_status,
             'created_at' => $author_data['created_at'],
             'updated_at' => $author_data['updated_at'],
             'image' => $author_data['image'],
