@@ -170,7 +170,7 @@ class BusHelper
             return;
         }
         // Set a transient to mark this hook as processed for this user
-        set_transient('bus_user_update_' . $user_id, true, 10); // 10 seconds validity
+        set_transient('bus_user_update_' . $user_id, true, 5); // 5 seconds validity
 
         // Update the last modified date
         update_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, current_time('mysql'));
