@@ -10,6 +10,12 @@ class Enum
     const SETTINGS_PAGE_OPTION_NAME = 'ringier_bus_settingspage_options';
     const RINGIER_LOG_FILE_MESSAGE = 'ringier_bus_plugin.log';
     const RINGIER_LOG_FILE_ERROR = 'ringier_bus_plugin_error.log';
+    const AUTHOR_ROLE_LIST = [
+        'administrator',
+        'editor',
+        'author',
+        'contributor',
+    ];
 
     //Global ENV - use RBP to prevent name class, RBA as in Ringier Bus Plugin
     const ENV_BACKOFF_FOR_MINUTES = 'RBP_BACKOFF_FOR_MINUTES';
@@ -66,6 +72,11 @@ class Enum
     const EVENT_ARTICLE_EDITED = 'ArticleUpdated';
     const EVENT_ARTICLE_DELETED = 'ArticleDeleted';
 
+    const EVENT_AUTHOR_CREATED = 'AuthorCreated';
+    const EVENT_AUTHOR_UPDATED = 'AuthorUpdated';
+    const EVENT_AUTHOR_DELETED = 'AuthorDeleted';
+    const META_SHOW_PROFILE_PAGE_KEY = 'ringier_show_author_profile_page';
+
     public const JSON_FIELD_STATUS_ONLINE = 'online';
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
@@ -88,4 +99,17 @@ class Enum
 
     public const FIELD_PUBLICATION_REASON_KEY = 'publication_reason';
     public const FIELD_PUBLICATION_REASON_VALUES = ['editorial', 'sponsored'];
+
+    // DB-only FIELDS
+    public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
+
+    // General Strings or Integer Values
+    public const WRITER_TYPE = 'staff writer';
+    public const LOG_INFO = '[info]';
+    public const LOG_ERROR = '[error]';
+    public const LOG_ALERT = '[alert]';
+    public const LOG_WARNING = '[warning]';
+    public const LOG_API = '[api]';
+    public const RUN_LAST = PHP_INT_MAX;
+
 }

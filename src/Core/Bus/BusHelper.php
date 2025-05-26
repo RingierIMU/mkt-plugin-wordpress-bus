@@ -60,13 +60,140 @@ class BusHelper
         $fieldsObject = new Fields();
         //Register Bus Events ONLY IF it is enabled
         if ($fieldsObject->is_bus_enabled === true) {
+            /**
+             * Article events
+             */
             //            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
             //            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
+
+            /**
+             * Author events
+             */
+            add_filter('insert_user_meta', function (array $meta, \WP_User $user, bool $update, array $userdata) {
+                /**
+                 * This is used to help us determine if the user was just created
+                 * when the hook profile_update gets called in the hook user_register
+                 * (wordpress being wordpress calls profile_update a bazillion times)
+                 */
+                if (!$update) {
+                    // Set transient to mark that this user was just created
+                    set_transient("user_just_created_{$user->ID}", true, 5);
+                }
+
+                return $meta;
+            }, 10, 4);
+            // ref: https://developer.wordpress.org/reference/hooks/user_register/
+            add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
+            // ref: https://developer.wordpress.org/reference/hooks/profile_update/
+            add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
+            // ref: https://developer.wordpress.org/reference/hooks/delete_user/
+            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 1);
         }
+    }
+
+    /**
+     * Triggered by hook: user_register
+     *
+     * @param int $user_id
+     * @param array $userdata
+     */
+    public static function triggerUserCreatedEvent(int $user_id, array $userdata): void
+    {
+        // Bail out if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Bail out if BUS events for user are not considered as an Author
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
+            return;
+        }
+
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_CREATED);
+    }
+
+    /**
+     * Triggered by hook: profile_update
+     *
+     * @param int $user_id
+     * @param \WP_User $old_user_data
+     * @param array $userdata
+     */
+    public static function triggerUserUpdatedEvent(int $user_id, \WP_User $old_user_data, array $userdata): void
+    {
+        // Bail out if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Bail out if BUS events for user are not considered as an Author
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
+            return;
+        }
+
+        // Bail if this user was just created during this request
+        if (Utils::wasRecentlyCreated($user_id)) {
+            // This is a new user, so we don't want to trigger an update event
+            return;
+        }
+
+        // Bail out to prevent duplicate execution
+        if (get_transient('bus_user_update_' . $user_id)) {
+            return;
+        }
+        // Set a transient to mark this hook as processed for this user
+        set_transient('bus_user_update_' . $user_id, true, 5); // 5 seconds validity
+
+        // Update the last modified date
+        update_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, current_time('mysql'));
+
+        // Check of the new user data has the email
+        if (empty($userdata['user_email'])) {
+            $userdata['user_email'] = $old_user_data->user_email;
+        }
+
+        // Now let's build the required author info for the BUS
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_UPDATED);
+    }
+
+    /**
+     * Triggered by hook: delete_user
+     *
+     * @param int $user_id
+     * @param \WP_User $old_user_data
+     * @param array $userdata
+     */
+    public static function triggerUserDeletedEvent(int $user_id): void
+    {
+        // Bail out if we're working on a draft or trashed item
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        // Bail out if BUS events for user are not considered as an Author
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
+            return;
+        }
+
+        // Now let's build the required author info for the BUS
+        $user = get_userdata($user_id);
+        if (!$user) {
+            ringier_errorlogthis("AuthorDeleted: User with ID $user_id not found", Enum::LOG_WARNING);
+
+            return;
+        }
+        $userdata = [
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'first_name' => get_user_meta($user_id, 'first_name', true),
+            'last_name' => get_user_meta($user_id, 'last_name', true),
+            'user_registered' => $user->user_registered,
+        ];
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_DELETED);
     }
 
     /**
@@ -111,7 +238,7 @@ class BusHelper
                 if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
                 } else {
-                    ringier_errorlogthis('[warning] BUS: article_lifetime field value not in whitelist or was empty');
+                    ringier_errorlogthis('BUS: article_lifetime field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
@@ -121,14 +248,14 @@ class BusHelper
                 if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
                 } else {
-                    ringier_errorlogthis('[warning] BUS: publication_reason field value not in whitelist or was empty');
+                    ringier_errorlogthis('[warning] BUS: publication_reason field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
             //save custom field: is_post_new | for this we do not care if it is set or nnot, it;'s a hidden field
             update_post_meta($post_id, Enum::ACF_IS_POST_NEW_KEY, Enum::ACF_IS_POST_VALUE_EXISTED);
         } else {
-            ringier_errorlogthis('[error] BUS: could not save custom fields');
+            ringier_errorlogthis('BUS: could not save custom fields for post ID: ' . $post_id, 'WARNING');
         }
     }
 
@@ -144,8 +271,6 @@ class BusHelper
      * @param string $new_status
      * @param string $old_status
      * @param WP_Post $post
-     *
-     * @throws MissingExtensionException
      */
     public static function trigger_bus_event_on_post_change(string $new_status, string $old_status, WP_Post $post): void
     {
@@ -201,7 +326,7 @@ class BusHelper
                 $message = <<<EOF
                     $blogKey: An instant event push has been done for article (ID: $post_ID)
                 EOF;
-                Utils::l($message);
+                Utils::slackthat($message);
             }
 
             /*
@@ -262,7 +387,6 @@ class BusHelper
      *
      * @param WP_Post $post
      *
-     * @throws MissingExtensionException
      * @throws Exception
      *
      * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
@@ -307,8 +431,6 @@ class BusHelper
      * Triggered by hook: future_to_publish
      *
      * @param WP_Post $post
-     *
-     * @throws MissingExtensionException
      */
     public static function cater_for_manually_scheduled_post(WP_Post $post): void
     {
@@ -331,8 +453,6 @@ class BusHelper
      * (Codex for Status Transitions: https://codex.wordpress.org/Post_Status_Transitions)
      *
      * @param WP_Post $post
-     *
-     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
@@ -359,7 +479,6 @@ class BusHelper
      * @param int $countCalled
      *
      * @throws GuzzleException
-     * @throws MissingExtensionException
      * @throws InvalidArgumentException
      *
      * @author Wasseem<wasseemk@ringier.co.za>
@@ -375,7 +494,7 @@ class BusHelper
                 (else task will be re-queued)
         EOF;
 
-        Utils::l($message); //push to SLACK
+        Utils::slackthat($message); //push to SLACK
 
         self::sendToBus($articleTriggerMode, $post_ID, get_post($post_ID), $countCalled);
     }
@@ -408,7 +527,7 @@ class BusHelper
                 $articleEvent->setEventType($articleTriggerMode);
                 $articleEvent->sendToBus($post_ID, $post);
             } else {
-                ringier_errorlogthis('[error] A problem with Auth Token');
+                ringier_errorlogthis('A problem with Auth Token');
 
                 throw new Exception('A problem with Auth Token');
             }
@@ -466,7 +585,7 @@ class BusHelper
             Passed Params (mode, article_id, count_for_time_invoked):
             
         EOF;
-        Utils::l($message . print_r($args, true)); //push to SLACK
+        Utils::slackthat($message . print_r($args, true)); //push to SLACK
     }
 
     /**
@@ -483,8 +602,6 @@ class BusHelper
      * @param mixed $blogKey
      * @param string $articleTriggerMode
      * @param int $post_ID
-     *
-     * @throws MissingExtensionException
      */
     private static function pushToSLACK(mixed $blogKey, string $articleTriggerMode, int $post_ID): void
     {
@@ -492,6 +609,39 @@ class BusHelper
             $blogKey: Event push queued for article (ID: $post_ID | Mode: $articleTriggerMode)
             Scheduled to run in the next minute(s)
         EOF;
-        Utils::l($message);
+        Utils::slackthat($message);
+    }
+
+    /**
+     * @param int $user_id
+     * @param array $userdata
+     * @param string $event_type
+     */
+    private static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
+    {
+        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
+
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        if (empty($endpointUrl)) {
+            ringier_errorlogthis($event_type . ': endpointUrl is empty');
+            Utils::pushToSlack($event_type . ': endpointUrl is empty', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+
+        $result = $busToken->acquireToken();
+        if (!$result) {
+            ringier_errorlogthis($event_type . ': a problem with Bus Token');
+            Utils::pushToSlack($event_type . ': a problem with Bus Token', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
+        $authorEvent->setEventType($event_type);
+        $authorEvent->sendToBus($author_data);
     }
 }

@@ -1,5 +1,5 @@
 <?php
-/**
+/**p
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  *
  * @github wkhayrattee
@@ -8,10 +8,6 @@
 namespace RingierBusPlugin;
 
 use DateInterval;
-use Monolog\Handler\MissingExtensionException;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
-use RingierBusPlugin\Bus\LoggingHandler;
 
 class Utils
 {
@@ -109,8 +105,6 @@ class Utils
      * @param $post_id
      * @param $property
      *
-     * @throws MissingExtensionException
-     *
      * @return mixed
      */
     public static function getPrimaryCategoryProperty($post_id, $property): mixed
@@ -136,7 +130,7 @@ class Utils
         }
 
         ringier_errorlogthis('Warning: Could not find a category for article with ID: ' . $post_id);
-        Utils::l('Warning: Could not find a category for article with ID: ' . $post_id);
+        Utils::slackthat('Warning: Could not find a category for article with ID: ' . $post_id);
 
         return false;
     }
@@ -272,28 +266,72 @@ class Utils
      *
      * @param $message
      * @param string $logLevel
-     * @param array $context
-     *
-     * @throws MissingExtensionException
      */
-    public static function l($message, string $logLevel = 'alert', array $context = []): void
+    public static function slackthat($message, string $logLevel = 'alert'): void
     {
         //Enable logging to Slack ONLY IF it was enabled
         if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
-            LoggingHandler::getInstance()->log($logLevel, $message, $context);
-        } else {
-            ringier_errorlogthis('[info] - did not push to Slack, it is probably OFF');
+            self::pushToSlack($message, $logLevel);
         }
     }
 
     /**
-     * Fetch a uuid in the form "1ee9aa1b-6510-4105-92b9-7171bb2f3089"
+     * Sends a message to Slack using a webhook URL.
      *
-     * @return UuidInterface
+     * @param string|array $message The message to send. Can be a string or an array of strings.
+     * @param string       $level   The log level (e.g., 'info', 'error', 'warning'). Default is 'info'.
      */
-    public static function uuid(): UuidInterface
+    public static function pushToSlack(string|array $message, string $level = Enum::LOG_INFO): void
     {
-        return Uuid::uuid4();
+        $webhook = $_ENV[Enum::ENV_SLACK_HOOK_URL] ?? null;
+        $channel = $_ENV[Enum::ENV_SLACK_CHANNEL_NAME] ?? null;
+        $botName = $_ENV[Enum::ENV_SLACK_BOT_NAME] ?? 'MyPluginBot';
+
+        if (empty($webhook) || empty($message)) {
+            return;
+        }
+
+        // Convert array to multi-line string
+        if (is_array($message)) {
+            $message = implode("\n", $message);
+        }
+
+        // Capture caller file:line using debug_backtrace
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1] ?? null;
+        $location = $trace ? basename($trace['file']) . ':' . $trace['line'] : 'unknown location';
+
+        // Build the formatted message
+        $slackMessage = sprintf(
+            "*%s* (%s):\n```%s```",
+            mb_strtoupper($level),
+            $location,
+            $message
+        );
+
+        try {
+            $payload = json_encode([
+                'text' => $slackMessage,
+                'username' => $botName,
+                'channel' => $channel,
+                'icon_emoji' => ':warning:',
+            ], JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            ringier_errorlogthis('(Slack JSON Encode Error) ' . $e->getMessage());
+
+            return;
+        }
+
+        $response = wp_remote_post($webhook, [
+            'headers' => [
+                'Content-Type' => 'application/json',
+            ],
+            'body' => $payload,
+            'timeout' => 10,
+        ]);
+
+        if (is_wp_error($response)) {
+            ringier_errorlogthis('(Slack Error) ' . $response->get_error_message());
+        }
     }
 
     /**
@@ -615,5 +653,103 @@ class Utils
         $allowed_list = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
 
         return $custom_enabled && !empty($allowed_list[$post_type]) && $allowed_list[$post_type] === 'on';
+    }
+
+    /**
+     * @param int $user_id
+     * @param array $userdata
+     *
+     * @return array
+     */
+    public static function buildAuthorInfo(int $user_id, array $userdata): array
+    {
+        /**
+         * Retrieve the user meta for the key Enum::META_SHOW_PROFILE_PAGE_KEY if present
+         * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
+         */
+        $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
+        $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        if (strcmp($show_profile_page, 'off') === 0) {
+            $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
+        }
+
+        /**
+         * Get Author professional Name
+         */
+        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
+        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
+        $professional_name = trim($first_name . ' ' . $last_name);
+
+        /**
+         * Get Author page URL
+         */
+        $author_url = get_author_posts_url($user_id);
+
+        /**
+         * Get author creation date
+         */
+        $created_at = 'todo';
+        if (isset($userdata['user_registered'])) {
+            $created_at = Utils::formatDate($userdata['user_registered']);
+        } else {
+            $user = get_userdata($user_id);
+            $created_at = $user->user_registered;
+        }
+
+        /**
+         * Get author updated date
+         */
+        $last_updated = Utils::formatDate(
+            get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
+        );
+
+        /**
+         * Author Avatar URL
+         */
+        $author_email = $userdata['user_email'];
+        $author_avatar = get_avatar_url($author_email);
+        // todo: to fetch High res image from AuthorAddon plugin
+
+        return [
+            'id' => $user_id,
+            'reference' => $user_id,
+            'url' => $author_url,
+            'name' => $professional_name,
+            'writer_type' => Enum::WRITER_TYPE,
+            'status' => $author_page_status,
+            'created_at' => $created_at,
+            'updated_at' => $last_updated,
+            'image' => $author_avatar,
+        ];
+    }
+
+    /**
+     * Determines if a user has at least one of the specified roles.
+     *
+     * Iterates through the provided roles and checks if the user has any of them
+     * using the native WordPress `user_can()` function.
+     *
+     * @param int $user The user ID to check.
+     * @param array $roles An array of role slugs (e.g., 'editor', 'author', etc.).
+     *
+     * @return bool True if the user has at least one of the roles; false otherwise.
+     */
+    public static function user_has_any_role(int $user, array $roles): bool
+    {
+        return (bool) array_filter($roles, fn ($role) => user_can($user, $role));
+    }
+
+    /**
+     * Checks if a user was recently created.
+     * This is determined by checking a transient set when the user was created.
+     * This is useful to prevent duplicate events being sent to the BUS API during AuthorCreated
+     *
+     * @param int $user_id
+     *
+     * @return bool
+     */
+    public static function wasRecentlyCreated(int $user_id): bool
+    {
+        return get_transient("user_just_created_{$user_id}") === true;
     }
 }

@@ -129,7 +129,7 @@ class ArticleEvent
 
             // To compress string so it is not truncated on Slack
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Utils::l('JSON encoding error: ' . json_last_error_msg());
+                Utils::slackthat('JSON encoding error: ' . json_last_error_msg());
 
                 return;
             }
@@ -144,10 +144,14 @@ class ArticleEvent
             And the FULL json compressed with gzcompress() (to prevent truncation) was:
             
             EOF;
-            Utils::l($message2 . base64_encode($raw_response)); //push to SLACK
+            Utils::slackthat($message2 . base64_encode($raw_response)); //push to SLACK
 
             //            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
+            //log error to our custom log file - viewable via Admin UI
+            ringier_errorlogthis('[api] Could not send request to BUS because: ');
+            ringier_errorlogthis($exception->getMessage()); //push to SLACK
+
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
@@ -156,13 +160,7 @@ class ArticleEvent
                             Error message below:
                             
                         EOF;
-
-            //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[api] ERROR occurred, below error thrown:');
-            ringier_errorlogthis($exception->getMessage()); //push to SLACK
-
-            //send to slack
-            Utils::l($message . $exception->getMessage()); //push to SLACK
+            Utils::slackthat($message . $exception->getMessage()); //push to SLACK
 
             //clear Auth token on any error
             $this->authClient->flushToken();

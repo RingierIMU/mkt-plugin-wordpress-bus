@@ -59,6 +59,34 @@ define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache'
 define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error_log');
 
 /**
+ * Register a shutdown handler for fatal error logging
+ */
+register_shutdown_function(function () {
+    $error = error_get_last();
+
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        $message = sprintf(
+            '[Fatal Error] %s in %s on line %d',
+            $error['message'],
+            $error['file'],
+            $error['line']
+        );
+
+        // Log to PHP error log
+        error_log($message);
+
+        // Also log to our custom log file
+        if (defined('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE')) {
+            @file_put_contents(
+                RINGIER_BUS_PLUGIN_ERROR_LOG_FILE,
+                date('c') . ' ' . $message . PHP_EOL,
+                FILE_APPEND
+            );
+        }
+    }
+});
+
+/**
  * define a cache nonce for asset files loaded by this plugin on the admin facing UI (Gutenberg)
  */
 if (!defined('_S_CACHE_NONCE')) {
@@ -75,8 +103,6 @@ require_once RINGIER_BUS_PLUGIN_DIR . RINGIER_BUS_DS . 'includes/vendor/autoload
  */
 register_activation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_activation']);
 register_deactivation_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_deactivation']);
-//the below will be handled by uninstall.php
-//register_uninstall_hook(__FILE__, ['RingierBusPlugin\\BusPluginClass', 'plugin_uninstall']);
 
 /**
  * Load our custom Meta Box & its related custom fields
