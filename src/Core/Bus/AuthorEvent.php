@@ -67,12 +67,13 @@ class AuthorEvent
             }
 
             $message = <<<EOF
-                $blogKey: The event was successfully delivered to BUS,
+                $blogKey: The event was successfully delivered to the BUS.
 
-                for payload:
+                Payload details:
+                
                 
             EOF;
-            Utils::slackthat($message . $jsonBody);
+            Utils::slackthat($message . $jsonBody, Enum::LOG_INFO);
         } catch (\Exception $exception) {
 
             $message = <<<EOF
