@@ -73,6 +73,19 @@ class BusHelper
             /**
              * Author events
              */
+            add_filter('insert_user_meta', function (array $meta, \WP_User $user, bool $update, array $userdata) {
+                /**
+                 * This is used to help us determine if the user was just created
+                 * when the hook profile_update gets called in the hook user_register
+                 * (wordpress being wordpress calls profile_update a bazillion times)
+                 */
+                if (!$update) {
+                    // Set transient to mark that this user was just created
+                    set_transient("user_just_created_{$user->ID}", true, 5);
+                }
+
+                return $meta;
+            }, 10, 4);
             // ref: https://developer.wordpress.org/reference/hooks/user_register/
             add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
             // ref: https://developer.wordpress.org/reference/hooks/profile_update/
@@ -90,12 +103,41 @@ class BusHelper
      */
     public static function triggerUserCreatedEvent(int $user_id, array $userdata): void
     {
-        // Bail if we're working on a draft or trashed item
+        // Bail out if we're working on a draft or trashed item
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
 
-        // todo
+        // Bail out if BUS events for user are not considered as an Author
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
+            return;
+        }
+
+        // Now let's build the required author info for the BUS
+        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
+
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        if (empty($endpointUrl)) {
+            ringier_errorlogthis('AuthorCreated: endpointUrl is empty');
+            Utils::pushToSlack('AuthorCreated: endpointUrl is empty', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+
+        $result = $busToken->acquireToken();
+        if (!$result) {
+            ringier_errorlogthis('AuthorCreated: a problem with Bus Token');
+            Utils::pushToSlack('AuthorCreated: a problem with Bus Token', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
+        $authorEvent->setEventType(Enum::EVENT_AUTHOR_CREATED);
+        $authorEvent->sendToBus($author_data);
     }
 
     /**
@@ -117,12 +159,18 @@ class BusHelper
             return;
         }
 
-        // Bail out if Prevent duplicate execution using a transient
-        if (get_transient('triggered_user_update_' . $user_id)) {
+        // Bail if this user was just created during this request
+        if (Utils::wasRecentlyCreated($user_id)) {
+            // This is a new user, so we don't want to trigger an update event
+            return;
+        }
+
+        // Bail out to prevent duplicate execution
+        if (get_transient('bus_user_update_' . $user_id)) {
             return;
         }
         // Set a transient to mark this hook as processed for this user
-        set_transient('triggered_user_update_' . $user_id, true, 10); // 10 seconds validity
+        set_transient('bus_user_update_' . $user_id, true, 10); // 10 seconds validity
 
         // Update the last modified date
         update_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, current_time('mysql'));
