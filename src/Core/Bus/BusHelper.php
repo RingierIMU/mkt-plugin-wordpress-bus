@@ -92,7 +92,147 @@ class BusHelper
             add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
             // ref: https://developer.wordpress.org/reference/hooks/delete_user/
             add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 1);
+
+            /**
+             * Category & Tag events
+             */
+            // ref: https://developer.wordpress.org/reference/hooks/create_term/
+            add_action('create_term', [self::class, 'triggerTermCreatedEvent'], Enum::RUN_LAST, 4);
+            // ref: https://developer.wordpress.org/reference/hooks/edited_term/
+            add_action('edited_term', [self::class, 'triggerTermUpdatedEvent'], Enum::RUN_LAST, 4);
+            // ref: https://developer.wordpress.org/reference/hooks/delete_term/
+            add_action('delete_term', [self::class, 'triggerTermDeletedEvent'], Enum::RUN_LAST, 1);
         }
+    }
+
+    /**
+     * Triggered by hook: create_category
+     *
+     * @param int $term_id
+     * @param int $tt_id
+     * @param string $taxonomy
+     * @param array $args
+     */
+    public static function triggerTermCreatedEvent(int $term_id, int $tt_id, string $taxonomy, array $args): void
+    {
+        // Bail out if term is not a category or tag
+        if (!in_array($taxonomy, ['category', 'post_tag'], true)) {
+            return;
+        }
+
+        update_term_meta($term_id, Enum::DB_CREATED_AT, current_time('mysql'));
+        update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
+
+        $term = get_term($term_id, $taxonomy);
+        if (!($term instanceof \WP_Term) || is_wp_error($term)) {
+            return;
+        }
+
+        $term_type = match (mb_strtolower($taxonomy)) {
+            Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
+            Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
+            default => mb_strtolower($term->taxonomy),
+        };
+
+        self::dispatchTermEvent($term, $term_type, Enum::EVENT_TOPIC_CREATED);
+    }
+
+    /**
+     * Triggered by hook: edited_category
+     *
+     * @param int $term_id
+     * @param int $tt_id
+     * @param string $taxonomy
+     * @param array $args
+     */
+    public static function triggerTermUpdatedEvent(int $term_id, int $tt_id, string $taxonomy, array $args): void
+    {
+        // Bail out if term is not a category or tag
+        if (!in_array($taxonomy, ['category', 'post_tag'], true)) {
+            return;
+        }
+
+        update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
+
+        $term = get_term($term_id, $taxonomy);
+        if (!($term instanceof \WP_Term) || is_wp_error($term)) {
+            return;
+        }
+
+        $term_type = match (mb_strtolower($taxonomy)) {
+            Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
+            Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
+            'post_tag' => Enum::TERM_TYPE_TAG,
+            default => mb_strtolower($term->taxonomy),
+        };
+
+        self::dispatchTermEvent($term, $term_type, Enum::EVENT_TOPIC_UPDATED);
+    }
+
+    /**
+     * Triggered by hook: delete_category
+     *
+     * @param int $term_id
+     */
+    public static function triggerTermDeletedEvent(int $term_id): void
+    {
+        // Bail out if we're working on a draft or trashed item
+        //        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        //            return;
+        //        }
+        plover_log("CategoryDeleted: Term with ID $term_id is being deleted", Enum::LOG_INFO);
+        // Now let's build the required category info for the BUS
+        //        $term = get_term($term_id);
+        //        if (!$term) {
+        //            ringier_errorlogthis("CategoryDeleted: Term with ID $term_id not found", Enum::LOG_WARNING);
+        //
+        //            return;
+        //        }
+        //        $category_data = [
+        //            'term_id' => $term->term_id,
+        //            'name' => $term->name,
+        //            'slug' => $term->slug,
+        //            'description' => $term->description,
+        //            'taxonomy' => $term->taxonomy,
+        //            'count' => $term->count,
+        //        ];
+        //        self::dispatchCategoryEvent($category_data, Enum::EVENT_CATEGORY_DELETED);
+    }
+
+    protected static function dispatchTermEvent(\WP_Term $term, string $term_type, string $event_type): void
+    {
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        if (empty($endpointUrl)) {
+            ringier_errorlogthis($term_type . '-Event: endpointUrl is empty');
+            Utils::pushToSlack($term_type . '-Event: endpointUrl is empty', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $result = $busToken->acquireToken();
+        if (!$result) {
+            ringier_errorlogthis($term_type . '-Event: a problem with Bus Token');
+            Utils::pushToSlack($term_type . '-Event: a problem with Bus Token', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $topic_data = [
+            'id' => $term->term_id,
+            'status' => Enum::JSON_FIELD_STATUS_ONLINE,
+            'created_at' => get_term_meta($term->term_id, Enum::DB_CREATED_AT, true),
+            'updated_at' => get_term_meta($term->term_id, Enum::DB_UPDATED_AT, true),
+            'url' => get_term_link($term),
+            'title' => $term->name,
+            'slug' => $term->slug,
+            'page_type' => $term_type,
+        ];
+
+        $term_event = new TermEvent($busToken, $endpointUrl, $term_type);
+        $term_event->setEventType($event_type);
+        $term_event->sendToBus($topic_data);
     }
 
     /**
