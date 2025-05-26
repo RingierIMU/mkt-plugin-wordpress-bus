@@ -75,6 +75,9 @@ class Enum
     const EVENT_AUTHOR_CREATED = 'AuthorCreated';
     const EVENT_AUTHOR_UPDATED = 'AuthorUpdated';
     const EVENT_AUTHOR_DELETED = 'AuthorDeleted';
+    const EVENT_TOPIC_CREATED = 'TopicCreated';
+    const EVENT_TOPIC_UPDATED = 'TopicUpdated';
+    const EVENT_TOPIC_DELETED = 'TopicDeleted';
     const META_SHOW_PROFILE_PAGE_KEY = 'ringier_show_author_profile_page';
 
     public const JSON_FIELD_STATUS_ONLINE = 'online';
@@ -111,5 +114,6 @@ class Enum
     public const LOG_WARNING = '[warning]';
     public const LOG_API = '[api]';
     public const RUN_LAST = PHP_INT_MAX;
-
+    public const TERM_TYPE_CATEGORY = 'category';
+    public const TERM_TYPE_TAG = 'tag';
 }
