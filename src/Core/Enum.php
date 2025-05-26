@@ -16,6 +16,10 @@ class Enum
         'author',
         'contributor',
     ];
+    const TOPIC_TERM_LIST = [
+        'category',
+        'post_tag',
+    ];
 
     //Global ENV - use RBP to prevent name class, RBA as in Ringier Bus Plugin
     const ENV_BACKOFF_FOR_MINUTES = 'RBP_BACKOFF_FOR_MINUTES';
