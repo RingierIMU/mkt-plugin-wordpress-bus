@@ -105,6 +105,8 @@ class Enum
 
     // DB-only FIELDS
     public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
+    public const DB_CREATED_AT = '_created_at';
+    public const DB_UPDATED_AT = '_updated_at';
 
     // General Strings or Integer Values
     public const WRITER_TYPE = 'staff writer';
