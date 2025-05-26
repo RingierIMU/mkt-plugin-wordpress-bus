@@ -91,7 +91,7 @@ class BusHelper
             // ref: https://developer.wordpress.org/reference/hooks/profile_update/
             add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
             // ref: https://developer.wordpress.org/reference/hooks/delete_user/
-            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 3);
+            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 1);
         }
     }
 
@@ -113,31 +113,7 @@ class BusHelper
             return;
         }
 
-        // Now let's build the required author info for the BUS
-        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
-
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
-        if (empty($endpointUrl)) {
-            ringier_errorlogthis('AuthorCreated: endpointUrl is empty');
-            Utils::pushToSlack('AuthorCreated: endpointUrl is empty', Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $busToken = new BusTokenManager();
-        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
-
-        $result = $busToken->acquireToken();
-        if (!$result) {
-            ringier_errorlogthis('AuthorCreated: a problem with Bus Token');
-            Utils::pushToSlack('AuthorCreated: a problem with Bus Token', Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
-        $authorEvent->setEventType(Enum::EVENT_AUTHOR_CREATED);
-        $authorEvent->sendToBus($author_data);
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_CREATED);
     }
 
     /**
@@ -181,30 +157,7 @@ class BusHelper
         }
 
         // Now let's build the required author info for the BUS
-        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
-
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
-        if (empty($endpointUrl)) {
-            ringier_errorlogthis('AuthorUpdated: endpointUrl is empty');
-            Utils::pushToSlack('AuthorUpdated: endpointUrl is empty', Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $busToken = new BusTokenManager();
-        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
-
-        $result = $busToken->acquireToken();
-        if (!$result) {
-            ringier_errorlogthis('AuthorUpdated: a problem with Bus Token');
-            Utils::pushToSlack('AuthorUpdated: a problem with Bus Token', Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
-        $authorEvent->setEventType(Enum::EVENT_AUTHOR_UPDATED);
-        $authorEvent->sendToBus($author_data);
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_UPDATED);
     }
 
     /**
@@ -214,14 +167,33 @@ class BusHelper
      * @param \WP_User $old_user_data
      * @param array $userdata
      */
-    public static function triggerUserDeletedEvent(int $user_id, \WP_User $old_user_data, array $userdata): void
+    public static function triggerUserDeletedEvent(int $user_id): void
     {
-        // Bail if we're working on a draft or trashed item
+        // Bail out if we're working on a draft or trashed item
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
 
-        // todo
+        // Bail out if BUS events for user are not considered as an Author
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
+            return;
+        }
+
+        // Now let's build the required author info for the BUS
+        $user = get_userdata($user_id);
+        if (!$user) {
+            ringier_errorlogthis("AuthorDeleted: User with ID $user_id not found", Enum::LOG_WARNING);
+
+            return;
+        }
+        $userdata = [
+            'user_login' => $user->user_login,
+            'user_email' => $user->user_email,
+            'first_name' => get_user_meta($user_id, 'first_name', true),
+            'last_name' => get_user_meta($user_id, 'last_name', true),
+            'user_registered' => $user->user_registered,
+        ];
+        self::dispatchAuthorEvent($user_id, $userdata, Enum::EVENT_AUTHOR_DELETED);
     }
 
     /**
@@ -638,5 +610,38 @@ class BusHelper
             Scheduled to run in the next minute(s)
         EOF;
         Utils::slackthat($message);
+    }
+
+    /**
+     * @param int $user_id
+     * @param array $userdata
+     * @param string $event_type
+     */
+    private static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
+    {
+        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
+
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        if (empty($endpointUrl)) {
+            ringier_errorlogthis($event_type . ': endpointUrl is empty');
+            Utils::pushToSlack($event_type . ': endpointUrl is empty', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+
+        $result = $busToken->acquireToken();
+        if (!$result) {
+            ringier_errorlogthis($event_type . ': a problem with Bus Token');
+            Utils::pushToSlack($event_type . ': a problem with Bus Token', Enum::LOG_ERROR);
+
+            return;
+        }
+
+        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
+        $authorEvent->setEventType($event_type);
+        $authorEvent->sendToBus($author_data);
     }
 }
