@@ -71,7 +71,7 @@ class BusHelper
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
 
             /**
-             * User events
+             * Author events
              */
             // ref: https://developer.wordpress.org/reference/hooks/user_register/
             add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
@@ -113,7 +113,7 @@ class BusHelper
         }
 
         // Bail out if BUS events for user are not considered as an Author
-        if (!Utils::user_has_any_role($user_id, ['editor', 'author', 'administrator'])) {
+        if (!Utils::user_has_any_role($user_id, Enum::AUTHOR_ROLE_LIST)) {
             return;
         }
 
