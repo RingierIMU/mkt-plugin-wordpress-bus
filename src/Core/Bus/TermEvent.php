@@ -112,14 +112,9 @@ class TermEvent
 
     private function buildTopicPayloadData(array $topic_data): array
     {
-        $page_status = $topic_data['status'];
-        if ($this->eventType === Enum::EVENT_TOPIC_DELETED) {
-            $page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
-        }
-
         return [
             'reference' => $topic_data['id'],
-            'status' => $page_status,
+            'status' => $topic_data['status'],
             'created_at' => Utils::formatDate($topic_data['created_at']),
             'updated_at' => Utils::formatDate($topic_data['updated_at']),
             'url' => [
