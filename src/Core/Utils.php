@@ -668,14 +668,9 @@ class Utils
          * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
          */
         $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
-        // Default to offline
-        $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
-        // Check the value of $show_profile_page
-        if ($show_profile_page === 'on') {
-            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        } elseif (empty($show_profile_page)) {
-            // If empty or not set, assume the site is not using the AuthorAddon plugin
-            $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        if (strcmp($show_profile_page, 'off') === 0) {
+            $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
         }
 
         /**
@@ -693,7 +688,13 @@ class Utils
         /**
          * Get author creation date
          */
-        $created_at = Utils::formatDate($userdata['user_registered']);
+        $created_at = 'todo';
+        if (isset($userdata['user_registered'])) {
+            $created_at = Utils::formatDate($userdata['user_registered']);
+        } else {
+            $user = get_userdata($user_id);
+            $created_at = $user->user_registered;
+        }
 
         /**
          * Get author updated date
@@ -736,5 +737,19 @@ class Utils
     public static function user_has_any_role(int $user, array $roles): bool
     {
         return (bool) array_filter($roles, fn ($role) => user_can($user, $role));
+    }
+
+    /**
+     * Checks if a user was recently created.
+     * This is determined by checking a transient set when the user was created.
+     * This is useful to prevent duplicate events being sent to the BUS API during AuthorCreated
+     *
+     * @param int $user_id
+     *
+     * @return bool
+     */
+    public static function wasRecentlyCreated(int $user_id): bool
+    {
+        return get_transient("user_just_created_{$user_id}") === true;
     }
 }
