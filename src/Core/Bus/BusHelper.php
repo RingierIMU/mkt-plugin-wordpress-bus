@@ -101,7 +101,7 @@ class BusHelper
             // ref: https://developer.wordpress.org/reference/hooks/edited_term/
             add_action('edited_term', [self::class, 'triggerTermUpdatedEvent'], Enum::RUN_LAST, 4);
             // ref: https://developer.wordpress.org/reference/hooks/delete_term/
-            add_action('delete_term', [self::class, 'triggerTermDeletedEvent'], Enum::RUN_LAST, 1);
+            add_action('delete_term', [self::class, 'triggerTermDeletedEvent'], Enum::RUN_LAST, 5);
         }
     }
 
@@ -116,7 +116,7 @@ class BusHelper
     public static function triggerTermCreatedEvent(int $term_id, int $tt_id, string $taxonomy, array $args): void
     {
         // Bail out if term is not a category or tag
-        if (!in_array($taxonomy, ['category', 'post_tag'], true)) {
+        if (!in_array($taxonomy, Enum::TOPIC_TERM_LIST, true)) {
             return;
         }
 
@@ -148,7 +148,7 @@ class BusHelper
     public static function triggerTermUpdatedEvent(int $term_id, int $tt_id, string $taxonomy, array $args): void
     {
         // Bail out if term is not a category or tag
-        if (!in_array($taxonomy, ['category', 'post_tag'], true)) {
+        if (!in_array($taxonomy, Enum::TOPIC_TERM_LIST, true)) {
             return;
         }
 
@@ -173,30 +173,33 @@ class BusHelper
      * Triggered by hook: delete_category
      *
      * @param int $term_id
+     * @param int $tt_id
+     * @param string $taxonomy
+     * @param \WP_Term $deleted_term
+     * @param array $object_ids
      */
-    public static function triggerTermDeletedEvent(int $term_id): void
+    public static function triggerTermDeletedEvent(int $term_id, int $tt_id, string $taxonomy, \WP_Term $deleted_term, array $object_ids): void
     {
-        // Bail out if we're working on a draft or trashed item
-        //        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
-        //            return;
-        //        }
-        plover_log("CategoryDeleted: Term with ID $term_id is being deleted", Enum::LOG_INFO);
-        // Now let's build the required category info for the BUS
-        //        $term = get_term($term_id);
-        //        if (!$term) {
-        //            ringier_errorlogthis("CategoryDeleted: Term with ID $term_id not found", Enum::LOG_WARNING);
-        //
-        //            return;
-        //        }
-        //        $category_data = [
-        //            'term_id' => $term->term_id,
-        //            'name' => $term->name,
-        //            'slug' => $term->slug,
-        //            'description' => $term->description,
-        //            'taxonomy' => $term->taxonomy,
-        //            'count' => $term->count,
-        //        ];
-        //        self::dispatchCategoryEvent($category_data, Enum::EVENT_CATEGORY_DELETED);
+        // Bail out if term is not a category or tag
+        if (!in_array($taxonomy, Enum::TOPIC_TERM_LIST, true)) {
+            return;
+        }
+
+        update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
+
+        $term = $deleted_term;
+        if (!($term instanceof \WP_Term) || is_wp_error($term)) {
+            return;
+        }
+
+        $term_type = match (mb_strtolower($taxonomy)) {
+            Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
+            Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
+            'post_tag' => Enum::TERM_TYPE_TAG,
+            default => mb_strtolower($term->taxonomy),
+        };
+
+        self::dispatchTermEvent($term, $term_type, Enum::EVENT_TOPIC_DELETED);
     }
 
     protected static function dispatchTermEvent(\WP_Term $term, string $term_type, string $event_type): void
@@ -219,9 +222,14 @@ class BusHelper
             return;
         }
 
+        $page_status = Enum::JSON_FIELD_STATUS_ONLINE;
+        if (strcmp($event_type, Enum::EVENT_TOPIC_DELETED) === 0) {
+            $page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
+        }
+
         $topic_data = [
             'id' => $term->term_id,
-            'status' => Enum::JSON_FIELD_STATUS_ONLINE,
+            'status' => $page_status,
             'created_at' => get_term_meta($term->term_id, Enum::DB_CREATED_AT, true),
             'updated_at' => get_term_meta($term->term_id, Enum::DB_UPDATED_AT, true),
             'url' => get_term_link($term),
