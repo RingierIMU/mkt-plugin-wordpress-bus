@@ -185,4 +185,48 @@ class AdminSyncPage
         }
     }
 
+    public static function handleTagsSync(): void
+    {
+        $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
+
+        $all_terms = get_terms([
+            'taxonomy' => 'post_tag',
+            'hide_empty' => false,
+            'orderby' => 'term_id',
+            'order' => 'ASC',
+            'fields' => 'all',
+        ]);
+
+        $next_term = null;
+        foreach ($all_terms as $term) {
+            if ($term->term_id > $last_id) {
+                $next_term = $term;
+                break;
+            }
+        }
+
+        if (!$next_term) {
+            wp_send_json_success([
+                'message' => 'All tags have been synced.',
+                'done' => true,
+            ]);
+        }
+
+        try {
+            \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
+                $next_term->term_id,
+                $next_term->term_taxonomy_id,
+                $next_term->taxonomy,
+                (array) $next_term
+            );
+
+            wp_send_json_success([
+                'message' => "Synced Tag (ID {$next_term->term_id}) – {$next_term->name}",
+                'done' => false,
+                'last_id' => $next_term->term_id,
+            ]);
+        } catch (\Throwable $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
 }

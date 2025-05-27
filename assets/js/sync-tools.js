@@ -1,5 +1,7 @@
 jQuery(document).ready(function ($) {
     const progressDiv = $('#sync-progress');
+    const progressDivCat = $('#sync-progress-cat');
+    const progressDivTag = $('#sync-progress-tag');
 
     function syncAuthors() {
         let offset = 0;
@@ -55,7 +57,11 @@ jQuery(document).ready(function ($) {
     }
 
     function syncCategories(lastId = 0) {
-        $('#sync-progress').append('<h3>Starting category sync...</h3>');
+        progressDivCat.html(`
+            <h3>Starting category sync...</h3>
+            <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
+            <hr />
+        `);
 
         function syncNextCategory(currentId) {
             $.post(SyncAuthorsAjax.ajax_url, {
@@ -64,20 +70,50 @@ jQuery(document).ready(function ($) {
             }, function (response) {
                 if (response.success && response.data) {
                     const { message, done, last_id } = response.data;
-                    $('#sync-progress').append('<div style="color: teal;">[Category] ' + message + '</div>');
+                    progressDivCat.append('<div style="color: teal;">[Category] ' + message + '</div>');
 
                     if (!done) {
                         syncNextCategory(last_id);
                     } else {
-                        $('#sync-progress').append('<strong style="color: green;">All categories have been synced.</strong>');
+                        progressDivCat.append('<strong style="color: green;">All categories have been synced.</strong>');
                     }
                 } else {
-                    $('#sync-progress').append('<div style="color:red;">Error syncing category: ' + response.data + '</div>');
+                    progressDivCat.append('<div style="color:red;">Error syncing category: ' + response.data + '</div>');
                 }
             });
         }
 
         syncNextCategory(lastId);
+    }
+
+    function syncTags(lastId = 0) {
+        progressDivTag.html(`
+            <h3>Starting tag sync...</h3>
+            <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
+            <hr />
+        `);
+
+        function syncNextTag(currentId) {
+            $.post(SyncAuthorsAjax.ajax_url, {
+                action: 'sync_tags',
+                last_id: currentId
+            }, function (response) {
+                if (response.success && response.data) {
+                    const { message, done, last_id } = response.data;
+                    progressDivTag.append('<div style="color: purple;">[Tag] ' + message + '</div>');
+
+                    if (!done) {
+                        syncNextTag(last_id);
+                    } else {
+                        progressDivTag.append('<strong style="color: green;">All tags have been synced.</strong>');
+                    }
+                } else {
+                    progressDivTag.append('<div style="color:red;">Error syncing tag: ' + response.data + '</div>');
+                }
+            });
+        }
+
+        syncNextTag(lastId);
     }
 
     $('#sync-authors-button').on('click', function () {
@@ -86,5 +122,9 @@ jQuery(document).ready(function ($) {
 
     $('#sync-categories-button').on('click', function () {
         syncCategories();
+    });
+
+    $('#sync-tags-button').on('click', function () {
+        syncTags();
     });
 });
