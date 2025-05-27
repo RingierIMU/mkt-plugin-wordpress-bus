@@ -702,6 +702,9 @@ class Utils
         $last_updated = Utils::formatDate(
             get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
         );
+        if (empty($last_updated)) {
+            $last_updated = $created_at;
+        }
 
         /**
          * Author Avatar URL
