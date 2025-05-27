@@ -60,11 +60,7 @@ class AdminSyncPage
 
     public static function renderPage(): void
     {
-        echo '<div class="wrap">';
-        echo '<h1>Sync All Authors</h1>';
-        echo '<button id="sync-authors-button" class="button button-primary">Sync All Authors</button>';
-        echo '<div id="sync-progress" style="margin-top:20px;"></div>';
-        echo '</div>';
+        Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/admin-sync-page.php');
     }
 
     public static function handleAjax(): void
