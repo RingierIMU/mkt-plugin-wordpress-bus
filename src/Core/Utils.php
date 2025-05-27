@@ -702,13 +702,19 @@ class Utils
         $last_updated = Utils::formatDate(
             get_user_meta($user_id, Enum::DB_FIELD_AUTHOR_LAST_MODIFIED_DATE, true)
         );
+        if (empty($last_updated)) {
+            $last_updated = $created_at;
+        }
 
         /**
          * Author Avatar URL
          */
-        $author_email = $userdata['user_email'];
-        $author_avatar = get_avatar_url($author_email);
-        // todo: to fetch High res image from AuthorAddon plugin
+        // fetch High res image from AuthorAddon plugin first - applies for Ringier's inhouse tatc only
+        $author_avatar = get_user_meta($user_id, Enum::META_HIGH_RES_IMAGE_URL, true);
+        if (empty($author_avatar)) {
+            $author_email = $userdata['user_email'];
+            $author_avatar = get_avatar_url($author_email);
+        }
 
         return [
             'id' => $user_id,

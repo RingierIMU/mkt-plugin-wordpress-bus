@@ -67,6 +67,12 @@ class BusPluginClass
                 ]
             );
         }
+
+        //AJAX - Register within init as they need to be called BEFORE admin_menu action
+        add_action('wp_ajax_sync_authors', [AdminSyncPage::class, 'handleAjax']);
+        add_action('wp_ajax_sync_categories', [AdminSyncPage::class, 'handleCategoriesSync']);
+        add_action('wp_ajax_sync_tags', [AdminSyncPage::class, 'handleTagsSync']);
+
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
@@ -110,11 +116,14 @@ class BusPluginClass
 
     public static function handleAdminUI()
     {
-        //The "Ringier Bus API Settings" main-PAGE
+        // The "Ringier Bus API Settings" main-PAGE
         $adminSettingsPage = new AdminSettingsPage();
         $adminSettingsPage->handleAdminUI();
 
-        //The "Log" sub-PAGE
+        // The "Sync Page"
+        AdminSyncPage::register();
+
+        // The "Log" sub-PAGE
         $adminLogPage = new AdminLogPage();
         $adminLogPage->handleAdminUI();
     }

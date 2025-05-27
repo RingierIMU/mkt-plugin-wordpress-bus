@@ -16,6 +16,10 @@ class Enum
         'author',
         'contributor',
     ];
+    const TOPIC_TERM_LIST = [
+        'category',
+        'post_tag',
+    ];
 
     //Global ENV - use RBP to prevent name class, RBA as in Ringier Bus Plugin
     const ENV_BACKOFF_FOR_MINUTES = 'RBP_BACKOFF_FOR_MINUTES';
@@ -63,6 +67,7 @@ class Enum
     const ADMIN_LOG_MENU_SLUG = 'ringier-bus-api-log';
     const ADMIN_LOG_SECTION_1 = 'ringier-bus-api-log-section01';
 
+    const ADMIN_SYNC_EVENTS_MENU_SLUG = 'ringier-bus-sync-page';
     //BUS API Related
     const HOOK_NAME_SCHEDULED_EVENTS = 'hookSendToBusScheduled';
     public const CACHE_NAMESPACE = 'RingierBusWordpressPlugin';
@@ -75,7 +80,11 @@ class Enum
     const EVENT_AUTHOR_CREATED = 'AuthorCreated';
     const EVENT_AUTHOR_UPDATED = 'AuthorUpdated';
     const EVENT_AUTHOR_DELETED = 'AuthorDeleted';
+    const EVENT_TOPIC_CREATED = 'TopicCreated';
+    const EVENT_TOPIC_UPDATED = 'TopicUpdated';
+    const EVENT_TOPIC_DELETED = 'TopicDeleted';
     const META_SHOW_PROFILE_PAGE_KEY = 'ringier_show_author_profile_page';
+    const META_HIGH_RES_IMAGE_URL = 'ringier_high_res_image_url';
 
     public const JSON_FIELD_STATUS_ONLINE = 'online';
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
@@ -102,6 +111,8 @@ class Enum
 
     // DB-only FIELDS
     public const DB_FIELD_AUTHOR_LAST_MODIFIED_DATE = 'author_last_modified_date';
+    public const DB_CREATED_AT = '_created_at';
+    public const DB_UPDATED_AT = '_updated_at';
 
     // General Strings or Integer Values
     public const WRITER_TYPE = 'staff writer';
@@ -111,5 +122,6 @@ class Enum
     public const LOG_WARNING = '[warning]';
     public const LOG_API = '[api]';
     public const RUN_LAST = PHP_INT_MAX;
-
+    public const TERM_TYPE_CATEGORY = 'category';
+    public const TERM_TYPE_TAG = 'tag';
 }
