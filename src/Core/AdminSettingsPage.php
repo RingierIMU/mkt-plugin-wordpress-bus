@@ -50,7 +50,7 @@ class AdminSettingsPage
             Enum::ADMIN_SETTINGS_MENU_TITLE,
             'manage_options',
             Enum::ADMIN_SETTINGS_MENU_SLUG,
-            null,
+            [self::class, 'renderParentPage'],
             'dashicons-rest-api',
             20
         );
@@ -65,6 +65,20 @@ class AdminSettingsPage
 
         //Fields for the "Ringier Bus API Settings" main-PAGE
         $this->addFieldsViaSettingsAPI();
+    }
+
+    /**
+     * We’re using the renderSettingsPage() callback in add_menu_page() to explicitly define a render method
+     * for the top-level admin menu. This prevents WordPress from falling back to a slug derived from the menu
+     * title (e.g., toplevel_page_ringier-bus) and ensures consistent, predictable hook suffixes
+     * (like ringier-bus-api_page_ringier-bus-sync-page). Even if the method outputs nothing,
+     * it anchors the menu page to a stable, named callback — improving control and maintainability.
+     *
+     * @return void
+     */
+    public static function renderParentPage(): void
+    {
+        echo '<div class="wrap"><h1>Ringier BUS Settings</h1><p>Select a section from the submenu.</p></div>';
     }
 
     /**

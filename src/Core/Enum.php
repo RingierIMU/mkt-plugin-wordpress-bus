@@ -67,6 +67,7 @@ class Enum
     const ADMIN_LOG_MENU_SLUG = 'ringier-bus-api-log';
     const ADMIN_LOG_SECTION_1 = 'ringier-bus-api-log-section01';
 
+    const ADMIN_SYNC_EVENTS_MENU_SLUG = 'ringier-bus-sync-page';
     //BUS API Related
     const HOOK_NAME_SCHEDULED_EVENTS = 'hookSendToBusScheduled';
     public const CACHE_NAMESPACE = 'RingierBusWordpressPlugin';
