@@ -7,8 +7,6 @@
  * for terms (categories, tags), media, or other data types.
  *
  * Loaded via Utils::load_tpl() from AdminSyncPage::renderPage().
- *
- * @package RingierBusPlugin
  */
 ?>
 
@@ -33,7 +31,13 @@
     </p>
     <button id="sync-authors-button" class="button button-primary">Sync All Authors</button>
 
-    <div id="sync-progress" style="margin-top: 20px;"></div>
+    <hr />
 
-    <!-- Future: Add term sync buttons here -->
+    <h2>Category Sync</h2>
+    <p>This will sync all WordPress categories as <code>TopicCreated</code> events to the BUS API.</p>
+    <button id="sync-categories-button" class="button button-secondary">Sync All Categories</button>
+
+
+    <!-- Placeholder for AJAX process -->
+    <div id="sync-progress" style="margin-top: 20px;"></div>
 </div>

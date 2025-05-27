@@ -68,8 +68,9 @@ class BusPluginClass
             );
         }
 
-        //Register AJAX as they need to be called BEFORE admin_menu action
+        //AJAX - Register within init as they need to be called BEFORE admin_menu action
         add_action('wp_ajax_sync_authors', [AdminSyncPage::class, 'handleAjax']);
+        add_action('wp_ajax_sync_categories', [AdminSyncPage::class, 'handleCategoriesSync']);
 
         //Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);

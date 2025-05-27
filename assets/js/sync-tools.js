@@ -1,6 +1,7 @@
 jQuery(document).ready(function ($) {
-    $('#sync-authors-button').on('click', function () {
-        const progressDiv = $('#sync-progress');
+    const progressDiv = $('#sync-progress');
+
+    function syncAuthors() {
         let offset = 0;
         let successCount = 0;
         let skippedCount = 0;
@@ -12,7 +13,7 @@ jQuery(document).ready(function ($) {
             <hr />
         `);
 
-        function syncAuthors() {
+        function syncNextAuthor() {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_authors',
                 offset: offset
@@ -30,7 +31,7 @@ jQuery(document).ready(function ($) {
 
                     if (!done) {
                         offset++;
-                        syncAuthors();
+                        syncNextAuthor();
                     } else {
                         progressDiv.append(`
                             <hr />
@@ -45,11 +46,45 @@ jQuery(document).ready(function ($) {
                 } else {
                     progressDiv.append(`<div style="color: red;">Error: ${response.data}</div>`);
                 }
-            }).fail(function (xhr, status, error) {
+            }).fail(function (xhr) {
                 progressDiv.append(`<div style="color:red;">AJAX Error: ${xhr.status} - ${xhr.statusText}</div>`);
             });
         }
 
+        syncNextAuthor();
+    }
+
+    function syncCategories(lastId = 0) {
+        $('#sync-progress').append('<h3>Starting category sync...</h3>');
+
+        function syncNextCategory(currentId) {
+            $.post(SyncAuthorsAjax.ajax_url, {
+                action: 'sync_categories',
+                last_id: currentId
+            }, function (response) {
+                if (response.success && response.data) {
+                    const { message, done, last_id } = response.data;
+                    $('#sync-progress').append('<div style="color: teal;">[Category] ' + message + '</div>');
+
+                    if (!done) {
+                        syncNextCategory(last_id);
+                    } else {
+                        $('#sync-progress').append('<strong style="color: green;">All categories have been synced.</strong>');
+                    }
+                } else {
+                    $('#sync-progress').append('<div style="color:red;">Error syncing category: ' + response.data + '</div>');
+                }
+            });
+        }
+
+        syncNextCategory(lastId);
+    }
+
+    $('#sync-authors-button').on('click', function () {
         syncAuthors();
+    });
+
+    $('#sync-categories-button').on('click', function () {
+        syncCategories();
     });
 });

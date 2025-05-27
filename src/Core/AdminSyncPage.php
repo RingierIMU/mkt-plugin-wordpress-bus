@@ -42,7 +42,7 @@ class AdminSyncPage
 
         wp_enqueue_script(
             'ringier-bus-sync-authors',
-            RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/sync-authors.js',
+            RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/sync-tools.js',
             ['jquery'],
             _S_CACHE_NONCE,
             true
@@ -139,4 +139,50 @@ class AdminSyncPage
         $authorEvent->setEventType($event_type);
         $authorEvent->sendToBus($author_data);
     }
+
+    public static function handleCategoriesSync(): void
+    {
+        $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
+
+        $all_terms = get_terms([
+            'taxonomy' => 'category',
+            'hide_empty' => false,
+            'orderby' => 'term_id',
+            'order' => 'ASC',
+            'fields' => 'all',
+        ]);
+
+        $next_term = null;
+        foreach ($all_terms as $term) {
+            if ($term->term_id > $last_id) {
+                $next_term = $term;
+                break;
+            }
+        }
+
+        if (!$next_term) {
+            wp_send_json_success([
+                'message' => 'All categories have been synced.',
+                'done' => true,
+            ]);
+        }
+
+        try {
+            \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
+                $next_term->term_id,
+                $next_term->term_taxonomy_id,
+                $next_term->taxonomy,
+                (array) $next_term
+            );
+
+            wp_send_json_success([
+                'message' => "Synced Category (ID {$next_term->term_id}) – {$next_term->name}",
+                'done' => false,
+                'last_id' => $next_term->term_id,
+            ]);
+        } catch (\Throwable $e) {
+            wp_send_json_error($e->getMessage());
+        }
+    }
+
 }
