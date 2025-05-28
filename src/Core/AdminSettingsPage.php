@@ -73,12 +73,11 @@ class AdminSettingsPage
      * title (e.g., toplevel_page_ringier-bus) and ensures consistent, predictable hook suffixes
      * (like ringier-bus-api_page_ringier-bus-sync-page). Even if the method outputs nothing,
      * it anchors the menu page to a stable, named callback — improving control and maintainability.
-     *
-     * @return void
      */
     public static function renderParentPage(): void
     {
-        echo '<div class="wrap"><h1>Ringier BUS Settings</h1><p>Select a section from the submenu.</p></div>';
+        //echo '<div class="wrap"><h1>Ringier BUS Settings</h1><p>Select a section from the submenu.</p></div>';
+        return;
     }
 
     /**
@@ -123,6 +122,8 @@ class AdminSettingsPage
         $this->add_field_google_youtube_api_key_textbox();
         $this->add_field_enable_quick_edit();
         $this->add_field_enable_custom_post_type_events();
+        $this->add_field_enable_author_events();
+        $this->add_field_enable_terms_events();
     }
 
     /**
@@ -754,6 +755,66 @@ class AdminSettingsPage
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-custom-post-type-events.php',
+            $args
+        );
+    }
+
+    /**
+     * field field_enable_author_events
+     */
+    public function add_field_enable_author_events(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_ENABLE_AUTHOR_EVENTS,
+            'Enable events for Authors',
+            [self::class, 'field_enable_author_events_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_ENABLE_AUTHOR_EVENTS,
+                'class' => 'ringier-bus-row first',
+                'field_custom_data' => Enum::FIELD_ENABLE_AUTHOR_EVENTS,
+            ]
+        );
+    }
+
+    public static function field_enable_author_events_callback($args): void
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-toggle-author-events-checkbox.php',
+            $args
+        );
+    }
+
+    /**
+     * field field_enable_terms_events
+     */
+    public function add_field_enable_terms_events(): void
+    {
+        add_settings_field(
+            'wp_bus_' . Enum::FIELD_ENABLE_TERMS_EVENTS,
+            'Enable events for Terms',
+            [self::class, 'field_enable_terms_events_callback'],
+            Enum::ADMIN_SETTINGS_MENU_SLUG,
+            Enum::ADMIN_SETTINGS_SECTION_1,
+            [
+                'label_for' => Enum::FIELD_ENABLE_TERMS_EVENTS,
+                'class' => 'ringier-bus-row',
+                'field_custom_data' => Enum::FIELD_ENABLE_TERMS_EVENTS,
+            ]
+        );
+    }
+
+    public static function field_enable_terms_events_callback($args): void
+    {
+        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-toggle-terms-events-checkbox.php',
             $args
         );
     }
