@@ -70,38 +70,47 @@ class BusHelper
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
             add_action(Enum::HOOK_NAME_SCHEDULED_EVENTS, [self::class, 'cronSendToBusScheduled'], 10, 3);
 
+            // Fetch some options from the settings page
+            $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+            $enable_author_events = isset($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS], 'on') === 0;
+            $enable_terms_events = isset($options[Enum::FIELD_ENABLE_TERMS_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_TERMS_EVENTS], 'on') === 0;
+
             /**
              * Author events
              */
-            add_filter('insert_user_meta', function (array $meta, \WP_User $user, bool $update, array $userdata) {
-                /**
-                 * This is used to help us determine if the user was just created
-                 * when the hook profile_update gets called in the hook user_register
-                 * (wordpress being wordpress calls profile_update a bazillion times)
-                 */
-                if (!$update) {
-                    // Set transient to mark that this user was just created
-                    set_transient("user_just_created_{$user->ID}", true, 5);
-                }
+            if ($enable_author_events === true) {
+                add_filter('insert_user_meta', function (array $meta, \WP_User $user, bool $update, array $userdata) {
+                    /**
+                     * This is used to help us determine if the user was just created
+                     * when the hook profile_update gets called in the hook user_register
+                     * (wordpress being wordpress calls profile_update a bazillion times)
+                     */
+                    if (!$update) {
+                        // Set transient to mark that this user was just created
+                        set_transient("user_just_created_{$user->ID}", true, 5);
+                    }
 
-                return $meta;
-            }, 10, 4);
-            // ref: https://developer.wordpress.org/reference/hooks/user_register/
-            add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
-            // ref: https://developer.wordpress.org/reference/hooks/profile_update/
-            add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
-            // ref: https://developer.wordpress.org/reference/hooks/delete_user/
-            add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 1);
+                    return $meta;
+                }, 10, 4);
+                // ref: https://developer.wordpress.org/reference/hooks/user_register/
+                add_action('user_register', [self::class, 'triggerUserCreatedEvent'], Enum::RUN_LAST, 2);
+                // ref: https://developer.wordpress.org/reference/hooks/profile_update/
+                add_action('profile_update', [self::class, 'triggerUserUpdatedEvent'], Enum::RUN_LAST, 3);
+                // ref: https://developer.wordpress.org/reference/hooks/delete_user/
+                add_action('delete_user', [self::class, 'triggerUserDeletedEvent'], Enum::RUN_LAST, 1);
+            }
 
             /**
              * Category & Tag events
              */
-            // ref: https://developer.wordpress.org/reference/hooks/create_term/
-            add_action('create_term', [self::class, 'triggerTermCreatedEvent'], Enum::RUN_LAST, 4);
-            // ref: https://developer.wordpress.org/reference/hooks/edited_term/
-            add_action('edited_term', [self::class, 'triggerTermUpdatedEvent'], Enum::RUN_LAST, 4);
-            // ref: https://developer.wordpress.org/reference/hooks/delete_term/
-            add_action('delete_term', [self::class, 'triggerTermDeletedEvent'], Enum::RUN_LAST, 5);
+            if ($enable_terms_events === true) {
+                // ref: https://developer.wordpress.org/reference/hooks/create_term/
+                add_action('create_term', [self::class, 'triggerTermCreatedEvent'], Enum::RUN_LAST, 4);
+                // ref: https://developer.wordpress.org/reference/hooks/edited_term/
+                add_action('edited_term', [self::class, 'triggerTermUpdatedEvent'], Enum::RUN_LAST, 4);
+                // ref: https://developer.wordpress.org/reference/hooks/delete_term/
+                add_action('delete_term', [self::class, 'triggerTermDeletedEvent'], Enum::RUN_LAST, 5);
+            }
         }
     }
 

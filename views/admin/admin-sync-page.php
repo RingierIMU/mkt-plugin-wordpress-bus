@@ -8,10 +8,31 @@
  *
  * Loaded via Utils::load_tpl() from AdminSyncPage::renderPage().
  */
+
+use RingierBusPlugin\Utils;
+
 ?>
 
 <div class="wrap">
-    <h1>BUS Batch Sync Dashboard</h1>
+    <h1>BUS Tooling Dashboard</h1>
+
+    <div style="margin-bottom: 10px;">&nbsp;</div>
+    <hr />
+
+    <h2>Cache Flush Tools</h2>
+
+    <?php
+    if (isset($_GET['flush_success']) && $_GET['flush_success'] === '1') {
+        echo '<div class="updated notice is-dismissible"><p>The Auth token transient has been flushed.</p></div>';
+    }
+Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
+?>
+
+    <div style="margin-bottom: 10px;">&nbsp;</div>
+    <hr />
+
+    <h2>Batch Sync Tools</h2>
+
     <p>
         Use the tools below to batch-sync different types of WordPress entities
         with the BUS API. Each sync operation will trigger a <strong>Created</strong> event

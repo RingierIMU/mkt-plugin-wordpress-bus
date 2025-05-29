@@ -49,7 +49,7 @@ class BusPluginClass
      */
     public static function adminInit()
     {
-        //if on plugin activation
+        // if on plugin activation
         if (get_option(Enum::PLUGIN_KEY)) {
             delete_option(Enum::PLUGIN_KEY);
 
@@ -68,15 +68,18 @@ class BusPluginClass
             );
         }
 
-        //AJAX - Register within init as they need to be called BEFORE admin_menu action
+        // AJAX - Register within init as they need to be called BEFORE admin_menu action
         add_action('wp_ajax_sync_authors', [AdminSyncPage::class, 'handleAjax']);
         add_action('wp_ajax_sync_categories', [AdminSyncPage::class, 'handleCategoriesSync']);
         add_action('wp_ajax_sync_tags', [AdminSyncPage::class, 'handleTagsSync']);
 
-        //Now do normal stuff
+        // Handle custom POST
+        add_action('admin_post_flush_all_transients', [AdminSyncPage::class, 'handleFlushAllTransients']);
+
+        // Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
 
-        //enqueue custom editor js scripts
+        // Enqueue custom editor js scripts
         add_action('admin_enqueue_scripts', [self::class, 'add_javascript_to_article_dashboard']);
 
         /*
@@ -135,17 +138,17 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, WP_Post $post)
     {
-        //to show meta box on all current & future custom post_type
+        // to show meta box on all current & future custom post_type
         $args = [
             'post_type' => 'page',
             'public' => false,
         ];
         $screens = get_post_types($args, 'names', 'not'); //pay attention to the operator (last param)
-        //we do not want to show it on "Page"
+        // we do not want to show it on "Page"
         if (in_array('page', $screens)) {
             unset($screens['page']);
         }
-        //Remove any other non desired custom post_type that came through
+        // Remove any other non desired custom post_type that came through
         if (in_array('attachment', $screens)) {
             unset($screens['attachment']);
         }
