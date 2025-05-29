@@ -18,12 +18,43 @@ class AdminSyncPage
     {
         add_submenu_page(
             Enum::ADMIN_SETTINGS_MENU_SLUG,
-            'BUS Events Sync Page',
-            'Sync Events',
+            'BUS Tooling Page',
+            'Tools',
             'manage_options',
             Enum::ADMIN_SYNC_EVENTS_MENU_SLUG,
             [self::class, 'renderPage']
         );
+    }
+
+    /**
+     * Button to flush Auth transient
+     */
+    public static function handleFlushAllTransients(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized', 'Error', ['response' => 403]);
+        }
+
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'flush_transients_nonce')) {
+            wp_die('Invalid nonce specified', 'Error', ['response' => 403]);
+        }
+
+        global $wpdb;
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE %s
+             OR option_name LIKE %s",
+                '_transient_%' . Enum::CACHE_KEY,
+                '_transient_timeout_%' . Enum::CACHE_KEY
+            )
+        );
+
+        // Redirect back with notice
+        wp_safe_redirect(
+            add_query_arg('flush_success', '1', wp_get_referer())
+        );
+        exit;
     }
 
     public static function enqueueAssets(string $hook): void
