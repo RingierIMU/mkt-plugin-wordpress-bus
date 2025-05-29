@@ -734,7 +734,7 @@ class AdminSettingsPage
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_ALLOW_CUSTOM_POST_TYPES,
-            'Enable events for custom post types',
+            'Enable custom post types Events',
             [self::class, 'field_enable_custom_post_type_events_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -766,7 +766,7 @@ class AdminSettingsPage
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_ENABLE_AUTHOR_EVENTS,
-            'Enable events for Authors',
+            'Enable Author Events',
             [self::class, 'field_enable_author_events_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
@@ -796,7 +796,7 @@ class AdminSettingsPage
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_ENABLE_TERMS_EVENTS,
-            'Enable events for Terms',
+            'Enable Terms Events',
             [self::class, 'field_enable_terms_events_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
