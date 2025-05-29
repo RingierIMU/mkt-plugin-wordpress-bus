@@ -17,6 +17,7 @@ use Twig\Markup;
 
 final class EscaperRuntime implements RuntimeExtensionInterface
 {
+    /** @var array<string, callable(string $string, string $charset): string> */
     private $escapers = [];
 
     /** @internal */
@@ -25,18 +26,18 @@ final class EscaperRuntime implements RuntimeExtensionInterface
     /** @internal */
     public $safeLookup = [];
 
-    private $charset;
-
-    public function __construct($charset = 'UTF-8')
-    {
-        $this->charset = $charset;
+    public function __construct(
+        private $charset = 'UTF-8',
+    ) {
     }
 
     /**
      * Defines a new escaper to be used via the escape filter.
      *
-     * @param string                                    $strategy The strategy name that should be used as a strategy in the escape call
-     * @param callable(string $string, string $charset) $callable A valid PHP callable
+     * @param string                                            $strategy The strategy name that should be used as a strategy in the escape call
+     * @param callable(string $string, string $charset): string $callable A valid PHP callable
+     *
+     * @return void
      */
     public function setEscaper($strategy, callable $callable)
     {
@@ -46,13 +47,18 @@ final class EscaperRuntime implements RuntimeExtensionInterface
     /**
      * Gets all defined escapers.
      *
-     * @return array<callable(string $string, string $charset)> An array of escapers
+     * @return array<string, callable(string $string, string $charset): string> An array of escapers
      */
     public function getEscapers()
     {
         return $this->escapers;
     }
 
+    /**
+     * @param array<class-string<\Stringable>, string[]> $safeClasses
+     *
+     * @return void
+     */
     public function setSafeClasses(array $safeClasses = [])
     {
         $this->safeClasses = [];
@@ -62,6 +68,12 @@ final class EscaperRuntime implements RuntimeExtensionInterface
         }
     }
 
+    /**
+     * @param class-string<\Stringable> $class
+     * @param string[]                  $strategies
+     *
+     * @return void
+     */
     public function addSafeClass(string $class, array $strategies)
     {
         $class = ltrim($class, '\\');
@@ -92,9 +104,9 @@ final class EscaperRuntime implements RuntimeExtensionInterface
         }
 
         if (!\is_string($string)) {
-            if (\is_object($string) && method_exists($string, '__toString')) {
+            if ($string instanceof \Stringable) {
                 if ($autoescape) {
-                    $c = \get_class($string);
+                    $c = $string::class;
                     if (!isset($this->safeClasses[$c])) {
                         $this->safeClasses[$c] = [];
                         foreach (class_parents($string) + class_implements($string) as $class) {
@@ -112,7 +124,7 @@ final class EscaperRuntime implements RuntimeExtensionInterface
                 }
 
                 $string = (string) $string;
-            } elseif (\in_array($strategy, ['html', 'js', 'css', 'html_attr', 'url'])) {
+            } elseif (\in_array($strategy, ['html', 'js', 'css', 'html_attr', 'url'], true)) {
                 // we return the input as is (which can be of any type)
                 return $string;
             }
