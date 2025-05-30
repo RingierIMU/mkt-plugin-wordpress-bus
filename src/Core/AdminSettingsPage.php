@@ -796,7 +796,7 @@ class AdminSettingsPage
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_ENABLE_TERMS_EVENTS,
-            'Enable Terms Events',
+            'Enable Topics Events',
             [self::class, 'field_enable_terms_events_callback'],
             Enum::ADMIN_SETTINGS_MENU_SLUG,
             Enum::ADMIN_SETTINGS_SECTION_1,
