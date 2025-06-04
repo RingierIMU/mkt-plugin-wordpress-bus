@@ -11,7 +11,6 @@ class AdminSyncPage
     {
         self::addMenuPage();
         add_action('admin_enqueue_scripts', [self::class, 'enqueueAssets']);
-        add_action('wp_ajax_sync_authors', [self::class, 'handleAjax']);
     }
 
     public static function addMenuPage(): void
@@ -94,7 +93,7 @@ class AdminSyncPage
         Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/admin-sync-page.php');
     }
 
-    public static function handleAjax(): void
+    public static function handleAuthorsSync(): void
     {
         $offset = isset($_POST['offset']) ? (int) $_POST['offset'] : 0;
         $perPage = 1;
