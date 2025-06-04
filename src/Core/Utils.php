@@ -679,6 +679,9 @@ class Utils
         $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
         $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
         $professional_name = trim($first_name . ' ' . $last_name);
+        if (empty($professional_name)) {
+            $professional_name = isset($userdata['display_name']) ? sanitize_text_field($userdata['display_name']) : '';
+        }
 
         /**
          * Get Author page URL

@@ -774,11 +774,11 @@ class BusHelper
      * @param array $userdata
      * @param string $event_type
      */
-    private static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
+    public static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
     {
         $author_data = Utils::buildAuthorInfo($user_id, $userdata);
 
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
         if (empty($endpointUrl)) {
             ringier_errorlogthis($event_type . ': endpointUrl is empty');
             Utils::pushToSlack($event_type . ': endpointUrl is empty', Enum::LOG_ERROR);
@@ -787,12 +787,17 @@ class BusHelper
         }
 
         $busToken = new BusTokenManager();
-        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $busToken->setParameters(
+            $endpointUrl,
+            $_ENV[Enum::ENV_VENTURE_CONFIG] ?? '',
+            $_ENV[Enum::ENV_BUS_API_USERNAME] ?? '',
+            $_ENV[Enum::ENV_BUS_API_PASSWORD] ?? ''
+        );
 
         $result = $busToken->acquireToken();
         if (!$result) {
-            ringier_errorlogthis($event_type . ': a problem with Bus Token');
-            Utils::pushToSlack($event_type . ': a problem with Bus Token', Enum::LOG_ERROR);
+            ringier_errorlogthis($event_type . ': Failed to acquire BUS token');
+            Utils::pushToSlack("[{$event_type}] Failed to acquire BUS token", Enum::LOG_ERROR);
 
             return;
         }

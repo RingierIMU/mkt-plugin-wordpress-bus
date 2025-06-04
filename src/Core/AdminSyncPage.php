@@ -2,8 +2,7 @@
 
 namespace RingierBusPlugin;
 
-use RingierBusPlugin\Bus\AuthorEvent;
-use RingierBusPlugin\Bus\BusTokenManager;
+use RingierBusPlugin\Bus\BusHelper;
 
 class AdminSyncPage
 {
@@ -126,7 +125,11 @@ class AdminSyncPage
         }
 
         try {
-            self::dispatchAuthorEvent($user_id, (array) $user->data, Enum::EVENT_AUTHOR_CREATED);
+            BusHelper::dispatchAuthorEvent(
+                $user_id,
+                (array) $user->data,
+                Enum::EVENT_AUTHOR_CREATED
+            );
 
             wp_send_json_success([
                 'message' => "Synced Author (ID {$user_id}) - {$user->user_login}",
@@ -138,36 +141,6 @@ class AdminSyncPage
                 'done' => true,
             ]);
         }
-    }
-
-    private static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
-    {
-        $author_data = Utils::buildAuthorInfo($user_id, $userdata);
-
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
-        if (!$endpointUrl) {
-            Utils::pushToSlack("[{$event_type}] Missing BUS endpoint", Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $busToken = new BusTokenManager();
-        $busToken->setParameters(
-            $endpointUrl,
-            $_ENV[Enum::ENV_VENTURE_CONFIG] ?? '',
-            $_ENV[Enum::ENV_BUS_API_USERNAME] ?? '',
-            $_ENV[Enum::ENV_BUS_API_PASSWORD] ?? ''
-        );
-
-        if (!$busToken->acquireToken()) {
-            Utils::pushToSlack("[{$event_type}] Failed to acquire BUS token", Enum::LOG_ERROR);
-
-            return;
-        }
-
-        $authorEvent = new AuthorEvent($busToken, $endpointUrl);
-        $authorEvent->setEventType($event_type);
-        $authorEvent->sendToBus($author_data);
     }
 
     public static function handleCategoriesSync(): void
