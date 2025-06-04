@@ -669,7 +669,7 @@ class Utils
          */
         $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
         $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        if (strcmp($show_profile_page, 'off') === 0) {
+        if (empty($show_profile_page) || strcmp($show_profile_page, 'off') === 0) {
             $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
         }
 
