@@ -547,8 +547,8 @@ class Utils
             'duration' => self::convert_youtube_duration($video['contentDetails']['duration']),
         ];
 
-        // Cache data for 24 hours (86400 seconds)
-        set_transient($cache_key, $video_details, 86400);
+        // Cache data for 1 month
+        set_transient($cache_key, $video_details, MONTH_IN_SECONDS);
 
         return $video_details;
     }
