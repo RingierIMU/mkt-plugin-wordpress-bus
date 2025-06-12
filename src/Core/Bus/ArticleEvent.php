@@ -628,11 +628,25 @@ class ArticleEvent
      */
     private function getParentCategoryArray(int $post_ID): array
     {
-        if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            return $this->getCustomTopLevelCategory();
-        } else {
-            return $this->getBlogParentCategory($post_ID);
+        $categories = [];
+
+        // Check if custom top-level category is enabled
+        if ($this->isCustomTopLevelCategoryEnabled()) {
+            $categories[] = $this->getCustomTopLevelCategory();
         }
+
+        // Fetch default blog parent category
+        $blogParentCategory = $this->getBlogParentCategory($post_ID);
+        if (!empty($blogParentCategory['id'])) {
+            $categories[] = $blogParentCategory;
+        } else { // If no blog parent category, check for custom taxonomy category
+            $custom_taxo_list = $this->getCustomTaxonomyCategory($post_ID);
+            if (!empty($custom_taxo_list)) {
+                $categories[] = $custom_taxo_list[0];
+            }
+        }
+
+        return $categories;
     }
 
     /**
@@ -723,12 +737,40 @@ class ArticleEvent
      */
     private function getAllCategoryListArray(int $post_ID): array
     {
-        if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            $data_array[] = $this->getCustomTopLevelCategory();
-        }
-        $data_array[] = $this->getBlogParentCategory($post_ID);
+        $categories = [];
 
-        return $data_array;
+        // Include custom top-level category if enabled
+        if ($this->isCustomTopLevelCategoryEnabled()) {
+            $categories[] = $this->getCustomTopLevelCategory();
+        }
+
+        // Fetch all default categories associated with the post
+        $defaultCategories = get_the_category($post_ID);
+        foreach ($defaultCategories as $category) {
+            $categories[] = [
+                'id' => $category->term_id,
+                'title' => [
+                    [
+                        'culture' => ringier_getLocale(),
+                        'value' => $category->name,
+                    ],
+                ],
+                'slug' => [
+                    [
+                        'culture' => ringier_getLocale(),
+                        'value' => $category->slug,
+                    ],
+                ],
+            ];
+        }
+
+        // Fetch custom taxonomy categories
+        $custom_taxo_list = $this->getCustomTaxonomyCategory($post_ID);
+        if (!empty($custom_taxo_list)) {
+            $categories = array_merge($categories, $custom_taxo_list);
+        }
+
+        return $categories;
     }
 
     /**
@@ -801,5 +843,41 @@ class ArticleEvent
         }
 
         return get_the_excerpt($post_ID);
+    }
+
+    /**
+     * Fetch custom taxonomy terms
+     *
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function getCustomTaxonomyCategory(int $post_ID): array
+    {
+        $categories = [];
+        $customTaxonomies = get_the_terms($post_ID, 'custom_taxonomy');
+        if (!empty($customTaxonomies) && !is_wp_error($customTaxonomies)) {
+            foreach ($customTaxonomies as $taxonomy) {
+                if ($taxonomy->taxonomy === 'category') {
+                    $categories[] = [
+                        'id' => $taxonomy->term_id,
+                        'title' => [
+                            [
+                                'culture' => ringier_getLocale(),
+                                'value' => $taxonomy->name,
+                            ],
+                        ],
+                        'slug' => [
+                            [
+                                'culture' => ringier_getLocale(),
+                                'value' => $taxonomy->slug,
+                            ],
+                        ],
+                    ];
+                }
+            }
+        }
+
+        return $categories;
     }
 }
