@@ -107,7 +107,7 @@ class Utils
      *
      * @return mixed
      */
-    public static function getPrimaryCategoryProperty($post_id, $property): mixed
+    public static function getPrimaryCategoryProperty($post_id, $property): string
     {
         //some post_ids are simply revisions, so make sure we are actually using the parent id
         $post_id = self::getParentPostId($post_id);
@@ -132,7 +132,7 @@ class Utils
         ringier_errorlogthis('Warning: Could not find a category for article with ID: ' . $post_id);
         Utils::slackthat('Warning: Could not find a category for article with ID: ' . $post_id);
 
-        return false;
+        return '';
     }
 
     /**
