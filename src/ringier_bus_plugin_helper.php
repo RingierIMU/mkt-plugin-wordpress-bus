@@ -17,7 +17,7 @@ use RingierBusPlugin\Enum;
 function ringier_errorlogthis(string $message, string $level = 'ERROR'): void
 {
     try {
-        $log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
+        $log_file = RINGIER_BUS_PLUGIN_ERROR_LOG_FILE;
 
         // Ensure the directory exists
         if (!file_exists(dirname($log_file))) {

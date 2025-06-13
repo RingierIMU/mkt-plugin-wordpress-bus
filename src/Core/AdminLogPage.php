@@ -49,7 +49,7 @@ class AdminLogPage
     public static function renderLogPage()
     {
         global $title;
-        $error_log_file = WP_CONTENT_DIR . RINGIER_BUS_DS . Enum::RINGIER_LOG_FILE_ERROR;
+        $error_log_file = RINGIER_BUS_PLUGIN_ERROR_LOG_FILE;
         $error_msg = '';
 
         if (!current_user_can('manage_options')) {
