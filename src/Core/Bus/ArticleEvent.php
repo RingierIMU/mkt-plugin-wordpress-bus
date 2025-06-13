@@ -256,16 +256,6 @@ class ArticleEvent
             'wordcount' => Utils::getContentWordCount(Utils::getRawContent($this->fetchArticleContent($post_ID))),
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
-            /*
-             * NOTE:
-             *  For now 'categories' will have only one time similar to 'parent_category
-             *  As per MKT-1639, until further priority comes, we agreed on the following:
-             *      - Currently on the blog, there is only one level of categories
-             *      - add categories and keep parent_category for now, as the CDE
-             *        and the Sailthru publishing services will need some time to switch over
-             *
-             * (wasseem | 9th Dec 2022)
-             */
             'categories' => $this->getAllCategoryListArray($post_ID),
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
@@ -281,7 +271,10 @@ class ArticleEvent
         ];
 
         if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
+            $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
+            if (!empty($primary_parent_category)) {
+                $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
+            }
         }
 
         /**
@@ -633,16 +626,13 @@ class ArticleEvent
         // Check if custom top-level category is enabled
         if ($this->isCustomTopLevelCategoryEnabled()) {
             $categories[] = $this->getCustomTopLevelCategory();
-        }
-
-        // Fetch default blog parent category
-        $blogParentCategory = $this->getBlogParentCategory($post_ID);
-        if (!empty($blogParentCategory['id'])) {
-            $categories[] = $blogParentCategory;
-        } else { // If no blog parent category, check for custom taxonomy category
-            $custom_taxo_list = $this->getCustomTaxonomyCategory($post_ID);
-            if (!empty($custom_taxo_list)) {
-                $categories[] = $custom_taxo_list[0];
+        } else {
+            // Fetch default blog parent category
+            $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
+            if (!empty($primary_parent_category)) {
+                $categories[] = $this->getBlogParentCategory($post_ID);
+            } else {
+                $categories[] = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
             }
         }
 
@@ -727,11 +717,7 @@ class ArticleEvent
     /**
      * To get list of all categories
      *
-     *
-     *
      * @param int $post_ID
-     *
-     * @throws \Monolog\Handler\MissingExtensionException
      *
      * @return array
      */
@@ -746,26 +732,28 @@ class ArticleEvent
 
         // Fetch all default categories associated with the post
         $defaultCategories = get_the_category($post_ID);
-        foreach ($defaultCategories as $category) {
-            $categories[] = [
-                'id' => $category->term_id,
-                'title' => [
-                    [
-                        'culture' => ringier_getLocale(),
-                        'value' => $category->name,
+        if (!empty($defaultCategories)) {
+            foreach ($defaultCategories as $category) {
+                $categories[] = [
+                    'id' => $category->term_id,
+                    'title' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $category->name,
+                        ],
                     ],
-                ],
-                'slug' => [
-                    [
-                        'culture' => ringier_getLocale(),
-                        'value' => $category->slug,
+                    'slug' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $category->slug,
+                        ],
                     ],
-                ],
-            ];
+                ];
+            }
         }
 
         // Fetch custom taxonomy categories
-        $custom_taxo_list = $this->getCustomTaxonomyCategory($post_ID);
+        $custom_taxo_list = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
         if (!empty($custom_taxo_list)) {
             $categories = array_merge($categories, $custom_taxo_list);
         }
@@ -846,31 +834,41 @@ class ArticleEvent
     }
 
     /**
-     * Fetch custom taxonomy terms
+     * Get all hierarchical taxonomies for the post type
+     * This will be used to fetch all terms for the post type
      *
      * @param int $post_ID
      *
      * @return array
      */
-    private function getCustomTaxonomyCategory(int $post_ID): array
+    private function getAllHierarchicalTaxonomiesForThePostType(int $post_ID): array
     {
         $categories = [];
-        $customTaxonomies = get_the_terms($post_ID, 'custom_taxonomy');
-        if (!empty($customTaxonomies) && !is_wp_error($customTaxonomies)) {
-            foreach ($customTaxonomies as $taxonomy) {
-                if ($taxonomy->taxonomy === 'category') {
+        $taxonomies = get_object_taxonomies(get_post_type($post_ID));
+        foreach ($taxonomies as $taxonomy) {
+            if (!taxonomy_exists($taxonomy)) {
+                continue;
+            }
+
+            $terms = get_the_terms($post_ID, $taxonomy);
+            if (is_wp_error($terms)) {
+                continue;
+            }
+
+            if (!empty($terms)) {
+                foreach ($terms as $term) {
                     $categories[] = [
-                        'id' => $taxonomy->term_id,
+                        'id' => $term->term_id,
                         'title' => [
                             [
                                 'culture' => ringier_getLocale(),
-                                'value' => $taxonomy->name,
+                                'value' => $term->name,
                             ],
                         ],
                         'slug' => [
                             [
                                 'culture' => ringier_getLocale(),
-                                'value' => $taxonomy->slug,
+                                'value' => $term->slug,
                             ],
                         ],
                     ];
