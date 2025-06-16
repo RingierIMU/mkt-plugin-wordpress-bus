@@ -129,9 +129,6 @@ class Utils
             return $primaryCategory->{$property};
         }
 
-        ringier_errorlogthis('Warning: Could not find a category for article with ID: ' . $post_id);
-        Utils::slackthat('Warning: Could not find a category for article with ID: ' . $post_id);
-
         return '';
     }
 
