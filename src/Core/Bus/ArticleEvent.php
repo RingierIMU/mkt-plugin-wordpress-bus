@@ -99,6 +99,7 @@ class ArticleEvent
      */
     public function sendToBus(int $post_ID, \WP_Post $post): void
     {
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         /*
          * TODO: As of this coding (Apr 2021) there was no use-case for Callback yet
          *
@@ -135,24 +136,22 @@ class ArticleEvent
             }
             $raw_response = json_encode($raw_response);
 
-            if (extension_loaded('zlib')) {
-                $raw_response = gzcompress($raw_response);
-            }
+            //            if (extension_loaded('zlib')) {
+            //                $raw_response = gzcompress($raw_response);
+            //            }
 
             $message2 = <<<EOF
-            The payload seems to have been successfully delivered.
+            $blogKey: [INFO] The payload seems to have been successfully delivered.
             And the FULL json compressed with gzcompress() (to prevent truncation) was:
             
             EOF;
-            Utils::slackthat($message2 . base64_encode($raw_response)); //push to SLACK
-
-            //            ringier_errorlogthis($bodyArray);
+            // Utils::slackthat($message2 . base64_encode($raw_response)); //push to SLACK
+            Utils::slackthat($message2 . $raw_response); //push to SLACK
         } catch (\Exception $exception) {
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[api] Could not send request to BUS because: ');
             ringier_errorlogthis($exception->getMessage()); //push to SLACK
 
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
                             [This job should be (re)queued in the next few seconds..]
