@@ -126,27 +126,14 @@ class ArticleEvent
                 $requestBody
             );
             $raw_response = (string) $response->getBody();
-            $bodyArray = json_decode($raw_response, true);
-
-            // To compress string so it is not truncated on Slack
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Utils::slackthat('JSON encoding error: ' . json_last_error_msg());
-
-                return;
-            }
-            $raw_response = json_encode($raw_response);
-
-            //            if (extension_loaded('zlib')) {
-            //                $raw_response = gzcompress($raw_response);
-            //            }
 
             $message2 = <<<EOF
-            $blogKey: [INFO] The payload seems to have been successfully delivered.
-            And the FULL json compressed with gzcompress() (to prevent truncation) was:
+            $blogKey: [INFO] The payload seems to have been successfully delivered:
             
             EOF;
-            // Utils::slackthat($message2 . base64_encode($raw_response)); //push to SLACK
-            Utils::slackthat($message2 . $raw_response); //push to SLACK
+            Utils::slackthat($message2);
+            Utils::slackthat(print_r($raw_response, true));
+
         } catch (\Exception $exception) {
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[api] Could not send request to BUS because: ');
@@ -755,6 +742,15 @@ class ArticleEvent
         $custom_taxo_list = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
         if (!empty($custom_taxo_list)) {
             $categories = array_merge($categories, $custom_taxo_list);
+
+            // Remove any duplicates based on the 'id' key
+            $categories = array_values(array_reduce($categories, function ($carry, $item) {
+                if (!isset($carry[$item['id']])) {
+                    $carry[$item['id']] = $item;
+                }
+
+                return $carry;
+            }, []));
         }
 
         return $categories;
@@ -843,9 +839,15 @@ class ArticleEvent
     private function getAllHierarchicalTaxonomiesForThePostType(int $post_ID): array
     {
         $categories = [];
-        $taxonomies = get_object_taxonomies(get_post_type($post_ID));
-        foreach ($taxonomies as $taxonomy) {
-            if (!taxonomy_exists($taxonomy)) {
+        $taxonomies = get_object_taxonomies(get_post_type($post_ID), 'objects');
+
+        if (empty($taxonomies)) {
+            return $categories; //return early if no taxonomies found
+        }
+
+        foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
+            // Skip non-hierarchical taxonomies like 'post_tag'
+            if (!$taxonomy_obj->hierarchical) {
                 continue;
             }
 
