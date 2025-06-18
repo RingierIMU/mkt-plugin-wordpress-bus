@@ -853,6 +853,8 @@ class ArticleEvent
             'sailthru_user_type',
             'sailthru_user_status',
             'sailthru_property_type',
+            'sailthru_experience_level',
+            'sailthru_functions',
             'content_style',
             'content_author',
             'article_intent',
