@@ -839,41 +839,50 @@ class ArticleEvent
     private function getAllHierarchicalTaxonomiesForThePostType(int $post_ID): array
     {
         $categories = [];
-        $taxonomies = get_object_taxonomies(get_post_type($post_ID), 'objects');
+        $post_type = get_post_type($post_ID);
+        $taxonomies = get_object_taxonomies($post_type, 'objects');
 
         if (empty($taxonomies)) {
-            return $categories; //return early if no taxonomies found
+            return $categories; // Return early if no taxonomies found
         }
 
         foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
-            // Skip non-hierarchical taxonomies like 'post_tag'
+            // Only consider hierarchical taxonomies
             if (!$taxonomy_obj->hierarchical) {
                 continue;
             }
 
-            $terms = get_the_terms($post_ID, $taxonomy);
-            if (is_wp_error($terms)) {
+            // We keep only:
+            // 1. Built-in 'category' if supported by custom post types
+            // 2. Custom taxonomies explicitly registered to custom post types
+            $is_builtin_category = $taxonomy === 'category';
+            $is_registered_to_post_type = in_array($post_type, (array) $taxonomy_obj->object_type, true);
+
+            if (!($is_builtin_category || $is_registered_to_post_type)) {
                 continue;
             }
 
-            if (!empty($terms)) {
-                foreach ($terms as $term) {
-                    $categories[] = [
-                        'id' => $term->term_id,
-                        'title' => [
-                            [
-                                'culture' => ringier_getLocale(),
-                                'value' => $term->name,
-                            ],
+            $terms = get_the_terms($post_ID, $taxonomy);
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            foreach ($terms as $term) {
+                $categories[] = [
+                    'id' => $term->term_id,
+                    'title' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->name,
                         ],
-                        'slug' => [
-                            [
-                                'culture' => ringier_getLocale(),
-                                'value' => $term->slug,
-                            ],
+                    ],
+                    'slug' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->slug,
                         ],
-                    ];
-                }
+                    ],
+                ];
             }
         }
 
