@@ -843,22 +843,25 @@ class ArticleEvent
         $taxonomies = get_object_taxonomies($post_type, 'objects');
 
         if (empty($taxonomies)) {
-            return $categories; // Return early if no taxonomies found
+            return $categories;
         }
 
+        /**
+         * we are blacklisting some taxonomies that are not relevant
+         */
+        $blacklist = [
+            'sailthru_user_type',
+            'sailthru_user_status',
+            'sailthru_property_type',
+            'content_style',
+            'content_author',
+            'article_intent',
+            'post_tag',
+            'post_format',
+        ];
+
         foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
-            // Only consider hierarchical taxonomies
-            if (!$taxonomy_obj->hierarchical) {
-                continue;
-            }
-
-            // We keep only:
-            // 1. Built-in 'category' if supported by custom post types
-            // 2. Custom taxonomies explicitly registered to custom post types
-            $is_builtin_category = $taxonomy === 'category';
-            $is_registered_to_post_type = in_array($post_type, (array) $taxonomy_obj->object_type, true);
-
-            if (!($is_builtin_category || $is_registered_to_post_type)) {
+            if (!$taxonomy_obj->hierarchical || in_array($taxonomy, $blacklist, true)) {
                 continue;
             }
 
