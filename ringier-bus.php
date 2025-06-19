@@ -56,7 +56,7 @@ define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slas
 define('RINGIER_BUS_PLUGIN_BASENAME', plugin_basename(RINGIER_BUS_PLUGIN_DIR));
 define('RINGIER_BUS_PLUGIN_VIEWS', RINGIER_BUS_PLUGIN_DIR . 'views' . RINGIER_BUS_DS);
 define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache' . RINGIER_BUS_DS);
-define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error_log');
+define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error.log');
 
 /**
  * Register a shutdown handler for fatal error logging

@@ -99,6 +99,7 @@ class ArticleEvent
      */
     public function sendToBus(int $post_ID, \WP_Post $post): void
     {
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
         /*
          * TODO: As of this coding (Apr 2021) there was no use-case for Callback yet
          *
@@ -125,34 +126,19 @@ class ArticleEvent
                 $requestBody
             );
             $raw_response = (string) $response->getBody();
-            $bodyArray = json_decode($raw_response, true);
-
-            // To compress string so it is not truncated on Slack
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                Utils::slackthat('JSON encoding error: ' . json_last_error_msg());
-
-                return;
-            }
-            $raw_response = json_encode($raw_response);
-
-            if (extension_loaded('zlib')) {
-                $raw_response = gzcompress($raw_response);
-            }
 
             $message2 = <<<EOF
-            The payload seems to have been successfully delivered.
-            And the FULL json compressed with gzcompress() (to prevent truncation) was:
+            $blogKey: [INFO] The payload seems to have been successfully delivered:
             
             EOF;
-            Utils::slackthat($message2 . base64_encode($raw_response)); //push to SLACK
+            Utils::slackthat($message2);
+            Utils::slackthat(print_r($raw_response, true));
 
-            //            ringier_errorlogthis($bodyArray);
         } catch (\Exception $exception) {
             //log error to our custom log file - viewable via Admin UI
             ringier_errorlogthis('[api] Could not send request to BUS because: ');
             ringier_errorlogthis($exception->getMessage()); //push to SLACK
 
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
             $message = <<<EOF
                             $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
                             [This job should be (re)queued in the next few seconds..]
@@ -256,16 +242,6 @@ class ArticleEvent
             'wordcount' => Utils::getContentWordCount(Utils::getRawContent($this->fetchArticleContent($post_ID))),
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
-            /*
-             * NOTE:
-             *  For now 'categories' will have only one time similar to 'parent_category
-             *  As per MKT-1639, until further priority comes, we agreed on the following:
-             *      - Currently on the blog, there is only one level of categories
-             *      - add categories and keep parent_category for now, as the CDE
-             *        and the Sailthru publishing services will need some time to switch over
-             *
-             * (wasseem | 9th Dec 2022)
-             */
             'categories' => $this->getAllCategoryListArray($post_ID),
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
@@ -281,7 +257,10 @@ class ArticleEvent
         ];
 
         if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
+            $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
+            if (!empty($primary_parent_category)) {
+                $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
+            }
         }
 
         /**
@@ -628,11 +607,22 @@ class ArticleEvent
      */
     private function getParentCategoryArray(int $post_ID): array
     {
-        if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            return $this->getCustomTopLevelCategory();
+        $categories = [];
+
+        // Check if custom top-level category is enabled
+        if ($this->isCustomTopLevelCategoryEnabled()) {
+            $categories[] = $this->getCustomTopLevelCategory();
         } else {
-            return $this->getBlogParentCategory($post_ID);
+            // Fetch default blog parent category
+            $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
+            if (!empty($primary_parent_category)) {
+                $categories[] = $this->getBlogParentCategory($post_ID);
+            } else {
+                $categories[] = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
+            }
         }
+
+        return $categories;
     }
 
     /**
@@ -713,22 +703,57 @@ class ArticleEvent
     /**
      * To get list of all categories
      *
-     *
-     *
      * @param int $post_ID
-     *
-     * @throws \Monolog\Handler\MissingExtensionException
      *
      * @return array
      */
     private function getAllCategoryListArray(int $post_ID): array
     {
-        if ($this->isCustomTopLevelCategoryEnabled() === true) {
-            $data_array[] = $this->getCustomTopLevelCategory();
-        }
-        $data_array[] = $this->getBlogParentCategory($post_ID);
+        $categories = [];
 
-        return $data_array;
+        // Include custom top-level category if enabled
+        if ($this->isCustomTopLevelCategoryEnabled()) {
+            $categories[] = $this->getCustomTopLevelCategory();
+        }
+
+        // Fetch all default categories associated with the post
+        $defaultCategories = get_the_category($post_ID);
+        if (!empty($defaultCategories)) {
+            foreach ($defaultCategories as $category) {
+                $categories[] = [
+                    'id' => $category->term_id,
+                    'title' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $category->name,
+                        ],
+                    ],
+                    'slug' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $category->slug,
+                        ],
+                    ],
+                ];
+            }
+        }
+
+        // Fetch custom taxonomy categories
+        $custom_taxo_list = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
+        if (!empty($custom_taxo_list)) {
+            $categories = array_merge($categories, $custom_taxo_list);
+
+            // Remove any duplicates based on the 'id' key
+            $categories = array_values(array_reduce($categories, function ($carry, $item) {
+                if (!isset($carry[$item['id']])) {
+                    $carry[$item['id']] = $item;
+                }
+
+                return $carry;
+            }, []));
+        }
+
+        return $categories;
     }
 
     /**
@@ -801,5 +826,71 @@ class ArticleEvent
         }
 
         return get_the_excerpt($post_ID);
+    }
+
+    /**
+     * Get all hierarchical taxonomies for the post type
+     * This will be used to fetch all terms for the post type
+     *
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function getAllHierarchicalTaxonomiesForThePostType(int $post_ID): array
+    {
+        $categories = [];
+        $post_type = get_post_type($post_ID);
+        $taxonomies = get_object_taxonomies($post_type, 'objects');
+
+        if (empty($taxonomies)) {
+            return $categories;
+        }
+
+        /**
+         * we are blacklisting some taxonomies that are not relevant
+         */
+        $blacklist = [
+            'sailthru_user_type',
+            'sailthru_user_status',
+            'sailthru_property_type',
+            'sailthru_experience_level',
+            'sailthru_functions',
+            'content_style',
+            'content_author',
+            'article_intent',
+            'post_tag',
+            'post_format',
+        ];
+
+        foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
+            if (!$taxonomy_obj->hierarchical || in_array($taxonomy, $blacklist, true)) {
+                continue;
+            }
+
+            $terms = get_the_terms($post_ID, $taxonomy);
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            foreach ($terms as $term) {
+                $categories[] = [
+                    'id' => $term->term_id,
+                    'title' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->name,
+                        ],
+                    ],
+                    'slug' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->slug,
+                        ],
+                    ],
+                ];
+            }
+        }
+
+        return $categories;
     }
 }

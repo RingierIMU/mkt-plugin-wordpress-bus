@@ -394,8 +394,6 @@ class BusHelper
                 $article_lifetime_value = sanitize_text_field($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY]);
                 if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
-                } else {
-                    ringier_errorlogthis('BUS: article_lifetime field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
@@ -404,8 +402,6 @@ class BusHelper
                 $publication_reason_value = sanitize_text_field($_POST[Enum::FIELD_PUBLICATION_REASON_KEY]);
                 if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
-                } else {
-                    ringier_errorlogthis('[warning] BUS: publication_reason field value was empty for post ID: ' . $post_id, 'INFO');
                 }
             }
 
