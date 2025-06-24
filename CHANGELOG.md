@@ -1,4 +1,48 @@
-# Changelog Details
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [Unreleased] ##
+### Removed ###
+* (dependency) Fully remove Monolog
+* (dependency) Fully remove Guzzle/Symfony dependencies
+* (dependency) Fully remove Timber/Twig
+
+
+## [3.3.0] - 2025-06-24 ##
+
+### Added ###
+* (payload) Custom Taxonomy support for category related properties within the Article payload
+* (payload) Author Events:
+  * AuthorCreated
+  * AuthorUpdated
+  * AuthorDeleted
+* (payload) Topic Events:
+  * TopicCreated
+  * TopicUpdated
+  * TopicDeleted
+* (UI) Introduced checkboxes (Settings page) to toggle ON/OFF event sending for Authors Events
+* (UI) Introduced checkboxes (Settings page) to toggle ON/OFF event sending for Topic Events (categories and tags).
+* (UI) Tooling Menu for batch syncing and flushing transients
+* (UI) Batch Syncing Mechanism with real-time progression updates during sync operations
+  * batch syncing Topics events
+  * batch syncing Author events
+* (code) Used WordPress-native features like wp_remote_*() with the above new events in place of Guzzle/Symfony dependencies
+* (code) Introduced new Enums for writer type, hook priorities, and author roles to improve clarity and reuse
+
+### Changed ###
+* Improved error reporting with contextual messages and consistent formatting
+* (dependency) Replaced Monolog logging logic with native PHP for better control and performance
+* (dependency) Used WordPress-native features like wp_remote_*() and transient in place of Guzzle/Symfony dependencies
+* (code) Reduced transient expiry for recently created authors from 10s to 5s for more accurate event filtering
+* (code) Adopted a pure WordPress templating approach for better separation of logic and templates
+* (code) refactored logging message + removed redundant log inputs
+
 
 ### 3.2.0 (May 15, 2024) ###
 * [NEW] UI + Logic: Added a checkbox (in settings page) to allow users to enable/disable the Quick Edit button
@@ -6,10 +50,12 @@
   * By default, only the default `post` post_type is sent as Events, unless custom types are explicitly enabled
 * [UPDATE] Logic: Improved the event logging mechanism
 
+
 ### 3.1.0 (Oct 9, 2024) ###
 * [NEW] Added Youtube videos to the event payload if there's any as part of the article
   * see PR#8 for more details
 * [UPDATE] When description is not set by author, it defaulted to the excerpt. As a consequence hellip was being added to the description. This has been fixed to remove the hellip, as well as any other html entities/tags that might be present in the excerpt.
+
 
 ### 3.0.0 (Jul 15, 2024) ###
 
@@ -26,6 +72,7 @@
 * [UPDATE]: Cache nonce now defaults to the plugin version number for consistency
 * [UPDATE]: Add more intuitive prompts to guide user, for e.g provide the STAGING and PROD endpoints right there in the UI to be handy for them
 
+
 ### 2.3.0 (Oct 9, 2023) ###
 
 * [UPDATE]: Transitioned from relying on the rest_after_insert_post hook to the more universally available transition_post_status hook.
@@ -38,6 +85,7 @@
   * Ensured safe JSON encoding with error checks
   * Utilized gzcompress for payload compression when available to prevent truncation in Slack notifications channel
 
+
 ### 2.2.0 (Oct 9, 2023) ###
 
 * [NEW] Introduction of the possibility to add a custom Top level primary category - can ENABLE/DISABLED when needed
@@ -47,6 +95,7 @@
 
 * [UPDATE] Refactored the logic for saving custom fields (on gutenberg) to work as soon as the plugin is active, irrespective if the BUS sync is OFF
 * [FIX] There was a bug that could prevent the primary category of an article from being fetched from the fallback method if the one from Yoast fails
+
 
 ### 2.1.0 (Jul 18, 2023) ###
 
@@ -70,6 +119,7 @@
   - symfony/cache to v6.0.19
   - ramsey/uuid to v4.7.4
 
+
 ### 2.0.0 (Dec 23, 2022) ###
 
 * [BREAKING] PHP Version | The code base now requires a minimum version of PHP 8.0.2
@@ -77,17 +127,21 @@
 * [UPDATE] API | New field `Categories[]` has been introduced to the JSON request - see commit#e857e083fb33a9bd58374482105e2d3215bbd5f1
 * [REFACTOR] Removal of the ACF plugin 3rd-party plugin in favor of doing things in native WordPress, see commit#b2e489b156ed12187403bb4599107972a61b4493
 
+
 ### 1.3.1 (Oct 18, 2022) ###
 * [UPDATE] JSON | change page_type to content_type for sailthru vars
+
 
 ### 1.3.0 (Oct 12, 2022) ###
 * [NEW] custom post_type event | handle triggering of events separately for custom post_type
 * [NEW] custom fields on admin UI | allow showing of acf custom fields on custom post_type as well, excluding page for now
 
+
 ### 1.2.0 (Oct 04, 2022) ###
 * [FIX] Events should not be triggered when "saving draft"
 * [NEW] Logging | Add additional log message when an Event is not sent to know why
 * [NEW] Addition of new logic for new field: primary_media_type
+
 
 ### 1.1.1 (Aug 16, 2022) ###
 * [JSON Request] The API's field `description` field truncated to 2500 chars since the BUS API request will fail on more than 3000 chars.
@@ -103,18 +157,23 @@
   * Article JSON - rename venture_config_id to from
   * Article JSON rename venture_reference to reference
 
+
 ### 1.0.3 (April 14, 2022) ###
 * update ACF to v5.12.2
+
 
 ### 1.0.2 (December 06, 2021) ###
 * update symfony/cache to v5.4.0 - we will stick to 5.x for now because v6.x focuses on php v8+
 * update ACF to v5.11.4
 
+
 ### 1.0.1 (November 25, 2021) ###
 * Update ACF to latest v5.11.3
 
+
 ### 1.0.0 (November 19, 2021) ###
 * Initial release onto WordPress.org plugin repo with the initial code from phase 1 of this plugin
+
 
 ### 0.1.0 (September 26, 2021) ###
 * Initial commit of working code for the benefit of everyone who needs this plugin
