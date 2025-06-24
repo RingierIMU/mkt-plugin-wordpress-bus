@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.8.1
-Stable tag: 3.2.0
+Stable tag: 3.3.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -127,6 +127,36 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [3.3.0] - 2025-06-24 ###
+
+#### Added ####
+* (payload) Custom Taxonomy support for category related properties within the Article payload
+* (payload) Author Events:
+  * AuthorCreated
+  * AuthorUpdated
+  * AuthorDeleted
+* (payload) Topic Events:
+  * TopicCreated
+  * TopicUpdated
+  * TopicDeleted
+* (UI) Introduced checkboxes (Settings page) to toggle ON/OFF event sending for Authors Events
+* (UI) Introduced checkboxes (Settings page) to toggle ON/OFF event sending for Topic Events (categories and tags).
+* (UI) Tooling Menu for batch syncing and flushing transients
+* (UI) Batch Syncing Mechanism with real-time progression updates during sync operations
+  * batch syncing Topics events
+  * batch syncing Author events
+* (code) Used WordPress-native features like wp_remote_*() with the above new events in place of Guzzle/Symfony dependencies
+* (code) Introduced new Enums for writer type, hook priorities, and author roles to improve clarity and reuse
+
+#### Changed ####
+* Improved error reporting with contextual messages and consistent formatting
+* (dependency) Replaced Monolog logging logic with native PHP for better control and performance
+* (dependency) Used WordPress-native features like wp_remote_*() and transient in place of Guzzle/Symfony dependencies
+* (code) Reduced transient expiry for recently created authors from 10s to 5s for more accurate event filtering
+* (code) Adopted a pure WordPress templating approach for better separation of logic and templates
+* (code) refactored logging message + removed redundant log inputs
+
 
 ### 3.2.0 (May 15, 2024) ###
 * [NEW] UI + Logic: Added a checkbox (in settings page) to allow users to enable/disable the Quick Edit button
