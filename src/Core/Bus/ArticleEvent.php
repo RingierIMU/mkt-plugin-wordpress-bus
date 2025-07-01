@@ -599,6 +599,8 @@ class ArticleEvent
     /**
      * Will return the primary category array depending on whether any user defined Top level category was ENABLEBD
      *
+     * NOTE: parent_category should be a TranslationObject, not a list of TranslationObjects
+     *
      * @param int $post_ID
      *
      * @throws \Monolog\Handler\MissingExtensionException
@@ -607,22 +609,22 @@ class ArticleEvent
      */
     private function getParentCategoryArray(int $post_ID): array
     {
-        $categories = [];
+        $category = [];
 
         // Check if custom top-level category is enabled
         if ($this->isCustomTopLevelCategoryEnabled()) {
-            $categories[] = $this->getCustomTopLevelCategory();
+            $category = $this->getCustomTopLevelCategory();
         } else {
             // Fetch default blog parent category
             $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
             if (!empty($primary_parent_category)) {
-                $categories[] = $this->getBlogParentCategory($post_ID);
+                $category = $this->getBlogParentCategory($post_ID);
             } else {
-                $categories[] = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
+                $category = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
             }
         }
 
-        return $categories;
+        return $category;
     }
 
     /**
