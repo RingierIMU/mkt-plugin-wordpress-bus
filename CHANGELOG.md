@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.3.1] - 2025-07-01 ##
+
+### Fixed ###
+
+* (payload) parent_category should be one TranslationObject and not a list of TranslationObjects
+
 ## [3.3.0] - 2025-06-24 ##
 
 ### Added ###

@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.8.1
-Stable tag: 3.3.0
+Stable tag: 3.3.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -127,6 +127,13 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+## [3.3.1] - 2025-07-01 ##
+
+### Fixed ###
+
+* (payload) parent_category should be one TranslationObject and not a list of TranslationObjects
+
 
 ### [3.3.0] - 2025-06-24 ###
 
