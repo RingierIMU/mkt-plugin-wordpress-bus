@@ -209,6 +209,12 @@ class ArticleEvent
                     'value' => wp_get_canonical_url($post_ID),
                 ],
             ],
+            'canonical' => [
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => Utils::get_canonical_url($post_ID),
+                ],
+            ],
             'title' => [
                 [
                     'culture' => ringier_getLocale(),
