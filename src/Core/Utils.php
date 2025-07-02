@@ -758,4 +758,32 @@ class Utils
     {
         return get_transient("user_just_created_{$user_id}") === true;
     }
+
+    /**
+     * Returns the canonical URL for a post.
+     *
+     * When the post is the same as the current requested page the function will handle the
+     * pagination arguments too.
+     *
+     * @param int|null $post_id
+     *
+     * @return string The canonical URL
+     */
+    public static function get_canonical_url(?int $post_id): string
+    {
+        $post = get_post($post_id);
+
+        // If Yoast is active and has overridden canonical URL
+        if (has_filter('wpseo_canonical')) {
+            $yoast_canonical = apply_filters('wpseo_canonical', false, $post);
+            if (is_string($yoast_canonical) && !empty($yoast_canonical)) {
+                return $yoast_canonical;
+            }
+        }
+
+        $canonical = wp_get_canonical_url($post);
+
+        return is_string($canonical) ? $canonical : '';
+    }
+
 }
