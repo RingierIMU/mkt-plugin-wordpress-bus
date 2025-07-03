@@ -128,15 +128,15 @@ This plugin requires *PHP version >= 8.1*.
 
 == Changelog ==
 
-## [3.4.0] - 2025-07-02 ##
+### [3.4.0] - 2025-07-02 ###
 
-### Added ###
+#### Added ####
 * (payload) Added `canonical` to the Article payload
 
 
-## [3.3.1] - 2025-07-01 ##
+### [3.3.1] - 2025-07-01 ###
 
-### Fixed ###
+#### Fixed ####
 
 * (payload) parent_category should be one TranslationObject and not a list of TranslationObjects
 
