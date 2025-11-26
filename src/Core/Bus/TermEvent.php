@@ -118,16 +118,22 @@ class TermEvent
             'created_at' => Utils::formatDate($topic_data['created_at']),
             'updated_at' => Utils::formatDate($topic_data['updated_at']),
             'url' => [
-                'culture' => ringier_getLocale(),
-                'value' => $topic_data['url'],
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => $topic_data['url'],
+                ],
             ],
             'title' => [
-                'culture' => ringier_getLocale(),
-                'value' => $topic_data['title'],
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => $topic_data['title'],
+                ],
             ],
             'slug' => [
-                'culture' => ringier_getLocale(),
-                'value' => $topic_data['slug'],
+                [
+                    'culture' => ringier_getLocale(),
+                    'value' => $topic_data['slug'],
+                ],
             ],
             'page_type' => $topic_data['page_type'],
         ];
