@@ -92,14 +92,12 @@ class AuthorEvent
 
     private function buildMainRequestBody(array $author_data): array
     {
-        $author_ID = $author_data['id'];
-
         return [[
             'events' => [
                 $this->eventType,
             ],
             'from' => $this->authClient->getVentureId(),
-            'reference' => "$author_ID",
+            'reference' => wp_generate_uuid4(),
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
             'version' => Enum::BUS_API_VERSION,
             'payload' => [
@@ -116,13 +114,13 @@ class AuthorEvent
         }
 
         return [
-            'reference' => $author_data['reference'],
-            'url' => $author_data['url'],
-            'name' => $author_data['name'],
-            'writer_type' => $author_data['writer_type'],
-            'status' => $author_page_status,
-            'created_at' => $author_data['created_at'],
-            'updated_at' => $author_data['updated_at'],
+            'reference' => (string) $author_data['reference'],
+            'url' => (string) $author_data['url'],
+            'name' => (string) $author_data['name'],
+            'writer_type' => (string) $author_data['writer_type'],
+            'status' => (string) $author_page_status,
+            'created_at' => Utils::formatDate($author_data['created_at']),
+            'updated_at' => Utils::formatDate($author_data['updated_at']),
             'image' => $author_data['image'],
         ];
     }

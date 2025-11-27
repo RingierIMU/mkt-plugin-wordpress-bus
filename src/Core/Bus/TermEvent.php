@@ -94,8 +94,6 @@ class TermEvent
 
     private function buildMainRequestBody(array $topic_data): array
     {
-        $topic_id = $topic_data['id'];
-
         return [[
             'events' => [
                 $this->eventType,
