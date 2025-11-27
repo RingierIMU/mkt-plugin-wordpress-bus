@@ -161,6 +161,12 @@ class BusHelper
             return;
         }
 
+        // Ensure created_at exists - for older terms created before this plugin was installed
+        $created_at = get_term_meta($term_id, Enum::DB_CREATED_AT, true);
+        if (empty($created_at)) {
+            update_term_meta($term_id, Enum::DB_CREATED_AT, current_time('mysql'));
+        }
+
         update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
 
         $term = get_term($term_id, $taxonomy);
