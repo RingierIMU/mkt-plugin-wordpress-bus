@@ -101,7 +101,7 @@ class TermEvent
                 $this->eventType,
             ],
             'from' => $this->authClient->getVentureId(),
-            'reference' => "$topic_id",
+            'reference' => wp_generate_uuid4(),
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
             'version' => Enum::BUS_API_VERSION,
             'payload' => [
@@ -112,30 +112,35 @@ class TermEvent
 
     private function buildTopicPayloadData(array $topic_data): array
     {
+        $date_created = Utils::formatDate($topic_data['created_at']);
+        if (empty($date_created)) {
+            $date_created = Utils::formatDate($topic_data['updated_at']);
+        }
+
         return [
-            'reference' => $topic_data['id'],
-            'status' => $topic_data['status'],
-            'created_at' => Utils::formatDate($topic_data['created_at']),
+            'reference' => (string) $topic_data['id'],
+            'status' => (string) $topic_data['status'],
+            'created_at' => $date_created,
             'updated_at' => Utils::formatDate($topic_data['updated_at']),
             'url' => [
                 [
-                    'culture' => ringier_getLocale(),
-                    'value' => $topic_data['url'],
+                    'culture' => (string) ringier_getLocale(),
+                    'value' => (string) $topic_data['url'],
                 ],
             ],
             'title' => [
                 [
-                    'culture' => ringier_getLocale(),
-                    'value' => $topic_data['title'],
+                    'culture' => (string) ringier_getLocale(),
+                    'value' => (string) $topic_data['title'],
                 ],
             ],
             'slug' => [
                 [
-                    'culture' => ringier_getLocale(),
-                    'value' => $topic_data['slug'],
+                    'culture' => (string) ringier_getLocale(),
+                    'value' => (string) $topic_data['slug'],
                 ],
             ],
-            'page_type' => $topic_data['page_type'],
+            'page_type' => (string) $topic_data['page_type'],
         ];
     }
 
