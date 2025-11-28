@@ -23,27 +23,32 @@ jQuery(document).ready(function ($) {
                 if (response.success && response.data) {
                     const { message, done, skipped } = response.data;
 
-                    if (skipped) {
-                        skippedCount++;
-                        progressDiv.append(`<div style="color: red; font-weight: bold;">${message}</div>`);
-                    } else {
-                        successCount++;
-                        progressDiv.append(`<div>${message}</div>`);
-                    }
-
-                    if (!done) {
-                        offset++;
-                        syncNextAuthor();
-                    } else {
+                    // 1. Check if we are done first
+                    if (done) {
+                        // If done, we stop the loop and print totals immediately.
+                        // We do NOT increment successCount here because this is the "termination" packet.
                         progressDiv.append(`
                             <hr />
                             <h3>All authors have been synced:</h3>
                             <ul>
                                 <li><strong>${successCount}</strong> authors successfully synced</li>
-                                <li><strong>${skippedCount}</strong> authors skipped (no matching role)</li>
+                                <li><strong>${skippedCount}</strong> authors skipped (Profile Disabled or no matching role)</li>
                             </ul>
                             <strong style="color: green;">Sync complete!</strong>
                         `);
+                    } else {
+                        // 2. If NOT done, it means we definitely processed a user row.
+                        if (skipped) {
+                            skippedCount++;
+                            progressDiv.append(`<div style="color: red; font-weight: bold;">${message}</div>`);
+                        } else {
+                            successCount++;
+                            progressDiv.append(`<div>${message}</div>`);
+                        }
+
+                        // 3. Move to next offset and recurse
+                        offset++;
+                        syncNextAuthor();
                     }
                 } else {
                     progressDiv.append(`<div style="color: red;">Error: ${response.data}</div>`);

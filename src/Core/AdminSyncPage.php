@@ -97,44 +97,42 @@ class AdminSyncPage
         $offset = isset($_POST['offset']) ? (int) $_POST['offset'] : 0;
         $perPage = 1;
 
-        // Fetch users in raw batches — we'll filter later
         $users = get_users([
+            'role__in' => Enum::AUTHOR_ROLE_LIST, // Only get specific roles
             'number' => $perPage,
             'offset' => $offset,
             'fields' => 'all',
         ]);
 
+        // If no users found, we are done
         if (empty($users)) {
             wp_send_json_success(['message' => 'All authors have been synced.', 'done' => true]);
         }
 
         $user = $users[0];
-        $roles = (array) $user->roles;
         $user_id = $user->ID;
 
-        // Check if user has at least one allowed role
-        $allowedRoles = Enum::AUTHOR_ROLE_LIST;
-        $intersects = array_intersect($roles, $allowedRoles);
-
-        if (empty($intersects)) {
-            wp_send_json_success([
-                'message' => "Skipping User ID {$user_id} ({$user->user_login}) — no allowed role.",
-                'done' => false,
-                'skipped' => true, // signal the JS to style it differently
-            ]);
-        }
-
         try {
-            BusHelper::dispatchAuthorEvent(
+            $was_dispatched = BusHelper::dispatchAuthorEvent(
                 $user_id,
                 (array) $user->data,
                 Enum::EVENT_AUTHOR_CREATED
             );
 
-            wp_send_json_success([
-                'message' => "Synced Author (ID {$user_id}) - {$user->user_login}",
-                'done' => false,
-            ]);
+            if ($was_dispatched) {
+                wp_send_json_success([
+                    'message' => "Synced Author (ID {$user_id}) - {$user->user_login}",
+                    'done' => false,
+                    'skipped' => false,
+                ]);
+            } else {
+                wp_send_json_success([
+                    'message' => "Skipped User ID {$user_id} - Profile Disabled or no matching role.",
+                    'done' => false,
+                    'skipped' => true,
+                ]);
+            }
+
         } catch (\Throwable $e) {
             wp_send_json_error([
                 'message' => $e->getMessage(),

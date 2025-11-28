@@ -360,6 +360,58 @@ class BusHelper
     }
 
     /**
+     * Determine whether the BUS plugin should dispatch an author-related event
+     * for a given user. This method implements layered logic:
+     *
+     * 1. If the Ringier Author Addon is NOT active:
+     *      - Always dispatch events (backwards-compatible behaviour).
+     *
+     * 2. If the Ringier Author Addon IS active:
+     *      - Only dispatch the event when the user's profile meta field
+     *        `ringier_show_author_profile_page` is set to "on".
+     *        (The addon stores only "on" or "off".)
+     *
+     * 3. After internal evaluation, the decision is passed through the
+     *      'ringier_bus_should_dispatch_author_event' filter, allowing other
+     *      plugins/themes or clients to override or extend the logic.
+     *
+     * @param int $user_id  The WordPress user ID being evaluated.
+     *
+     * @return bool         True if the BUS should dispatch the author event,
+     *                      false otherwise.
+     */
+    private static function shouldDispatchAuthorEvent(int $user_id): bool
+    {
+        // Default behaviour if addon is not active
+        $should_dispatch = true;
+
+        // If Ringier Author Addon is active, respect its "show profile" checkbox
+        if (defined('RINGIER_AUTHOR_ADDON_PLUGIN_VERSION')) {
+            $raw_value = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
+            $normalized = mb_strtolower((string) $raw_value);
+
+            // Ringier Author stores ONLY 'on' or 'off'
+            $should_dispatch = ($normalized === Enum::STATUS_ON);
+        }
+
+        /**
+         * Filter whether the Ringier BUS plugin should dispatch an author event
+         * for a specific user.
+         *
+         * This enables full extensibility: other plugins/themes or clients may override
+         * this behaviour globally or conditionally.
+         *
+         * @param bool $should_dispatch The computed base decision.
+         * @param int  $user_id         The user ID being evaluated.
+         */
+        return (bool) apply_filters(
+            'ringier_bus_should_dispatch_author_event',
+            $should_dispatch,
+            $user_id
+        );
+    }
+
+    /**
      * To save our custom fields like Article Lifetime & is_post_new
      *
      * @param int $post_id
@@ -775,9 +827,17 @@ class BusHelper
      * @param int $user_id
      * @param array $userdata
      * @param string $event_type
+     *
+     * @return bool
      */
-    public static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): void
+    public static function dispatchAuthorEvent(int $user_id, array $userdata, string $event_type): bool
     {
+        // If the gatekeeper says "No", we stop immediately.
+        if (!self::shouldDispatchAuthorEvent($user_id)) {
+            // ringier_errorlogthis("Skipped event {$event_type} for user {$user_id} due to privacy settings.");
+            return false;
+        }
+
         $author_data = Utils::buildAuthorInfo($user_id, $userdata);
 
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
@@ -785,7 +845,7 @@ class BusHelper
             ringier_errorlogthis($event_type . ': endpointUrl is empty');
             Utils::pushToSlack($event_type . ': endpointUrl is empty', Enum::LOG_ERROR);
 
-            return;
+            return false;
         }
 
         $busToken = new BusTokenManager();
@@ -801,11 +861,13 @@ class BusHelper
             ringier_errorlogthis($event_type . ': Failed to acquire BUS token');
             Utils::pushToSlack("[{$event_type}] Failed to acquire BUS token", Enum::LOG_ERROR);
 
-            return;
+            return false;
         }
 
         $authorEvent = new AuthorEvent($busToken, $endpointUrl);
         $authorEvent->setEventType($event_type);
         $authorEvent->sendToBus($author_data);
+
+        return true;
     }
 }
