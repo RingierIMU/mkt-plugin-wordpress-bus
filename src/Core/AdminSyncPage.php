@@ -143,30 +143,35 @@ class AdminSyncPage
 
     public static function handleCategoriesSync(): void
     {
+        // Use global $wpdb for a precise, lightweight query
+        global $wpdb;
+
         $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
 
-        $all_terms = get_terms([
-            'taxonomy' => 'category',
-            'hide_empty' => false,
-            'orderby' => 'term_id',
-            'order' => 'ASC',
-            'fields' => 'all',
-        ]);
+        // Instead of loading ALL terms, we query the database for exactly ONE ID
+        // that is higher than our current $last_id.
+        $next_term_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT t.term_id
+             FROM {$wpdb->terms} t
+             INNER JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id
+             WHERE tt.taxonomy = %s
+             AND t.term_id > %d
+             ORDER BY t.term_id ASC
+             LIMIT 1",
+            'category', // The taxonomy
+            $last_id    // The cursor
+        ));
 
-        $next_term = null;
-        foreach ($all_terms as $term) {
-            if ($term->term_id > $last_id) {
-                $next_term = $term;
-                break;
-            }
-        }
-
-        if (!$next_term) {
+        // If no ID returned, we are done
+        if (!$next_term_id) {
             wp_send_json_success([
                 'message' => 'All categories have been synced.',
                 'done' => true,
             ]);
         }
+
+        // Now we fetch the full object for just this ONE term
+        $next_term = get_term($next_term_id, 'category');
 
         try {
             \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
@@ -179,6 +184,7 @@ class AdminSyncPage
             wp_send_json_success([
                 'message' => "Synced Category (ID {$next_term->term_id}) – {$next_term->name}",
                 'done' => false,
+                // We send back the new ID so the JS knows where to start next time
                 'last_id' => $next_term->term_id,
             ]);
         } catch (\Throwable $e) {

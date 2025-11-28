@@ -62,11 +62,14 @@ jQuery(document).ready(function ($) {
     }
 
     function syncCategories(lastId = 0) {
+        // 1. Initialize the counter
+        let syncedCount = 0;
+
         progressDivCat.html(`
-            <h3>Starting category sync...</h3>
-            <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
-            <hr />
-        `);
+        <h3>Starting category sync...</h3>
+        <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
+        <hr />
+    `);
 
         function syncNextCategory(currentId) {
             $.post(SyncAuthorsAjax.ajax_url, {
@@ -75,16 +78,29 @@ jQuery(document).ready(function ($) {
             }, function (response) {
                 if (response.success && response.data) {
                     const { message, done, last_id } = response.data;
-                    progressDivCat.append('<div style="color: teal;">[Category] ' + message + '</div>');
 
-                    if (!done) {
-                        syncNextCategory(last_id);
+                    if (done) {
+                        // 3. Display the final count in the summary
+                        progressDivCat.append(`
+                        <hr />
+                        <h3>Category Sync Complete:</h3>
+                        <ul>
+                            <li><strong>${syncedCount}</strong> categories successfully synced.</li>
+                        </ul>
+                        <strong style="color: green;">Process finished.</strong>
+                    `);
                     } else {
-                        progressDivCat.append('<strong style="color: green;">All categories have been synced.</strong>');
+                        // 2. Increment the counter
+                        syncedCount++;
+
+                        progressDivCat.append(`<div style="color: teal;">[${syncedCount}] ${message}</div>`);
+                        syncNextCategory(last_id);
                     }
                 } else {
-                    progressDivCat.append('<div style="color:red;">Error syncing category: ' + response.data + '</div>');
+                    progressDivCat.append('<div style="color:red;">Error syncing category: ' + (response.data || 'Unknown error') + '</div>');
                 }
+            }).fail(function(xhr) {
+                progressDivCat.append('<div style="color:red;">Network/Server Error: ' + xhr.status + ' ' + xhr.statusText + '</div>');
             });
         }
 
