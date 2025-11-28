@@ -113,6 +113,39 @@ function custom_build_article_payload(array $payload_array, int $post_ID, WP_Pos
 add_filter('ringier_bus_build_article_payload', 'custom_build_article_payload', 10, 3);
 ```
 
+### 4. Controlling Author Event Dispatch ###
+
+You can control whether the Ringier Bus plugin should dispatch Author events for a specific user by using the **ringier_bus_should_dispatch_author_event** filter.
+This filter allows you to override the default logic to force enablement or disablement based on your own custom logic - when you want full control over which authors get sent to the Event Bus.
+
+Example:
+```php
+/**
+ * Example
+ */
+add_filter('ringier_bus_should_dispatch_author_event', function (bool $should_dispatch, int $user_id): bool {
+
+    // Example: Always send events for Administrators, ignoring the "Show Profile" checkbox
+    if (user_can($user_id, 'administrator')) {
+        return true;
+    }
+    
+    // Example condition: never sync user ID 1234
+    if ($user_id === 1234) {
+        return false;
+    }
+
+    // Otherwise, use the default logic
+    return $should_dispatch;
+}, 10, 2);
+```
+
+This filter gives you full flexibility to:
+- Disable syncing for certain authors
+- Force syncing regardless of profile visibility
+- Apply environment-specific rules (e.g., staging vs production)
+- Implement client-specific dispatch policies
+
 ## Contributing ##
 
 There are many ways you can contribute:  
