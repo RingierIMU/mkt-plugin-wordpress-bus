@@ -108,7 +108,10 @@ jQuery(document).ready(function ($) {
     }
 
     function syncTags(lastId = 0) {
-        progressDivTag.html(`
+        // 1. Initialize Sync Counter
+        let syncedCount = 0;
+
+            progressDivTag.html(`
             <h3>Starting tag sync...</h3>
             <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
             <hr />
@@ -121,16 +124,31 @@ jQuery(document).ready(function ($) {
             }, function (response) {
                 if (response.success && response.data) {
                     const { message, done, last_id } = response.data;
-                    progressDivTag.append('<div style="color: purple;">[Tag] ' + message + '</div>');
 
-                    if (!done) {
-                        syncNextTag(last_id);
+                    // 2. Logic Check: Are we done?
+                    if (done) {
+                        progressDivTag.append(`
+                        <hr />
+                        <h3>Tag Sync Complete:</h3>
+                        <ul>
+                            <li><strong>${syncedCount}</strong> tags successfully synced.</li>
+                        </ul>
+                        <strong style="color: green;">Process finished.</strong>
+                    `);
                     } else {
-                        progressDivTag.append('<strong style="color: green;">All tags have been synced.</strong>');
+                        // 3. Not done: Increment count and display row
+                        syncedCount++;
+                        progressDivTag.append(`<div style="color: purple;">[${syncedCount}] ${message}</div>`);
+
+                        // 4. Recurse with new ID
+                        syncNextTag(last_id);
                     }
                 } else {
-                    progressDivTag.append('<div style="color:red;">Error syncing tag: ' + response.data + '</div>');
+                    progressDivTag.append(`<div style="color:red;">Error syncing tag: ${response.data || 'Unknown error'}</div>`);
                 }
+            }).fail(function(xhr) {
+                // 5. Catch Network/Server Errors
+                progressDivTag.append(`<div style="color:red;">Network/Server Error: ${xhr.status} - ${xhr.statusText}</div>`);
             });
         }
 

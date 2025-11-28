@@ -194,30 +194,34 @@ class AdminSyncPage
 
     public static function handleTagsSync(): void
     {
+        global $wpdb;
+
         $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
 
-        $all_terms = get_terms([
-            'taxonomy' => 'post_tag',
-            'hide_empty' => false,
-            'orderby' => 'term_id',
-            'order' => 'ASC',
-            'fields' => 'all',
-        ]);
+        // Query the DB directly for the next available Term ID in the 'post_tag' taxonomy.
+        // This is significantly faster than loading all terms into an array.
+        $next_term_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT t.term_id
+         FROM {$wpdb->terms} t
+         INNER JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id
+         WHERE tt.taxonomy = %s
+         AND t.term_id > %d
+         ORDER BY t.term_id ASC
+         LIMIT 1",
+            'post_tag', // taxo
+            $last_id
+        ));
 
-        $next_term = null;
-        foreach ($all_terms as $term) {
-            if ($term->term_id > $last_id) {
-                $next_term = $term;
-                break;
-            }
-        }
-
-        if (!$next_term) {
+        // If no ID is returned, we have reached the end.
+        if (!$next_term_id) {
             wp_send_json_success([
                 'message' => 'All tags have been synced.',
                 'done' => true,
             ]);
         }
+
+        // Fetch the full object for this specific tag
+        $next_term = get_term($next_term_id, 'post_tag');
 
         try {
             \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
