@@ -86,6 +86,8 @@ class Enum
     const EVENT_TOPIC_UPDATED = 'TopicUpdated';
     const EVENT_TOPIC_DELETED = 'TopicDeleted';
     const META_SHOW_PROFILE_PAGE_KEY = 'ringier_show_author_profile_page';
+    const STATUS_OFF = 'off';
+    const STATUS_ON = 'on';
     const META_HIGH_RES_IMAGE_URL = 'ringier_high_res_image_url';
 
     public const JSON_FIELD_STATUS_ONLINE = 'online';
