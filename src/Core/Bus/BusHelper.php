@@ -380,7 +380,7 @@ class BusHelper
      * @return bool         True if the BUS should dispatch the author event,
      *                      false otherwise.
      */
-    private static function shouldDispatchAuthorEvent(int $user_id): bool
+    public static function shouldDispatchAuthorEvent(int $user_id): bool
     {
         // Default behaviour if addon is not active
         $should_dispatch = true;

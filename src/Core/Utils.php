@@ -8,6 +8,7 @@
 namespace RingierBusPlugin;
 
 use DateInterval;
+use RingierBusPlugin\Bus\BusHelper;
 
 class Utils
 {
@@ -664,9 +665,8 @@ class Utils
          * Retrieve the user meta for the key Enum::META_SHOW_PROFILE_PAGE_KEY if present
          * This applies only to Ringier's inhouse ventures who uses our AuthorAddon plugin
          */
-        $show_profile_page = get_user_meta($user_id, Enum::META_SHOW_PROFILE_PAGE_KEY, true);
         $author_page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        if (empty($show_profile_page) || strcmp($show_profile_page, 'off') === 0) {
+        if (!BusHelper::shouldDispatchAuthorEvent($user_id)) {
             $author_page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
         }
 
