@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.4.1] - 2025-12-02 ##
+
+### Added ###
+* (code) Added a check to see if the Ringier Author plugin is enabled
+  * If yes, only send events for authors that have their public profile set to ENABLED
+  * If that plugin is not present or disabled, it's business as usual
+
+### Fixed ###
+* (payload) TopicEvents: title, slug and url should be array of objects
+
+
 ## [3.4.0] - 2025-07-02 ##
 
 ### Added ###
