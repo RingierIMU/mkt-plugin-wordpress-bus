@@ -300,7 +300,7 @@ class Utils
 
         // Build the formatted message
         $slackMessage = sprintf(
-            "*%s* (%s):\n```%s```",
+            "*%s* (%s):\n %s ",
             mb_strtoupper($level),
             $location,
             $message
