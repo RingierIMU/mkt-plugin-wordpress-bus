@@ -881,7 +881,7 @@ class BusHelper
      *
      * @return bool
      */
-    public static function dispatchArticleEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
+    public static function dispatchArticlesEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
     {
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
 
