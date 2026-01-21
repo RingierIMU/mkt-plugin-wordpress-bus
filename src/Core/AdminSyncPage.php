@@ -242,18 +242,23 @@ class AdminSyncPage
     }
 
     /**
-     * Article Sync (Recent First)
+     * Article Sync
+     * Efficiently syncs articles (most recent first) using a Reverse ID Cursor strategy.
+     *
+     * Unlike standard OFFSET pagination which degrades in performance (O(N)),
+     * this method queries for the next ID smaller than the previous cursor (`WHERE ID < $last_id`).
+     * This guarantees O(1) constant performance for every request, even on massive datasets.
      */
     public static function handleArticlesSync(): void
     {
         global $wpdb;
 
-        // 1. Get parameters
+        // Get parameters
         $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
-        // flexible to accommodate checkboxes in future, but fallback to default 'post'
+        // array - flexible to accommodate checkboxes in future, but fallback to default 'post'
         $post_types = isset($_POST['post_types']) ? array_map('sanitize_text_field', $_POST['post_types']) : ['post'];
 
-        // 2. Prepare SQL for Reverse Cursor (Newest First)
+        // Prepare SQL for Reverse Cursor (Newest First)
         $placeholders = implode(',', array_fill(0, count($post_types), '%s'));
 
         $where_clause = "post_status = 'publish' AND post_type IN ($placeholders)";
@@ -264,7 +269,7 @@ class AdminSyncPage
             $args[] = $last_id;
         }
 
-        // 3. Fetch exactly ONE ID
+        // Fetch exactly ONE ID
         $next_post_id = $wpdb->get_var($wpdb->prepare(
             "SELECT ID FROM {$wpdb->posts} 
              WHERE $where_clause 
@@ -273,7 +278,7 @@ class AdminSyncPage
             $args
         ));
 
-        // 4. Termination Condition
+        // Termination Condition
         if (!$next_post_id) {
             wp_send_json_success([
                 'message' => 'All articles have been synced.',
@@ -281,7 +286,7 @@ class AdminSyncPage
             ]);
         }
 
-        // 5. Fetch Object & Dispatch
+        // Fetch Object & Dispatch
         $post_object = get_post($next_post_id);
 
         if (!$post_object) {
@@ -290,7 +295,6 @@ class AdminSyncPage
         }
 
         try {
-            // Refactored: Use the Helper to handle Auth & Sending
             $success = BusHelper::dispatchArticlesEvent(
                 $post_object->ID,
                 $post_object
@@ -305,7 +309,7 @@ class AdminSyncPage
             } else {
                 // If false, it likely failed auth or validation inside the helper
                 wp_send_json_success([
-                    'message' => "Failed to sync Article (ID {$post_object->ID}) - Check logs.",
+                    'message' => "Failed to sync Article (ID {$post_object->ID}) - Check logs. Moving to next..",
                     'done' => false, // We continue the loop even if one fails
                     'last_id' => $post_object->ID,
                 ]);
