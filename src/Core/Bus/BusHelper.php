@@ -858,8 +858,8 @@ class BusHelper
 
         $result = $busToken->acquireToken();
         if (!$result) {
-            ringier_errorlogthis($event_type . ': Failed to acquire BUS token');
-            Utils::pushToSlack("[{$event_type}] Failed to acquire BUS token", Enum::LOG_ERROR);
+            ringier_errorlogthis($event_type . ': Failed to acquire BUS token - try flushing the Auth token.');
+            Utils::pushToSlack("[{$event_type}] Failed to acquire BUS token - try flushing the Auth token", Enum::LOG_ERROR);
 
             return false;
         }
@@ -869,5 +869,63 @@ class BusHelper
         $authorEvent->sendToBus($author_data);
 
         return true;
+    }
+
+    /**
+     * Dispatch an Article event to the BUS.
+     * Used by Batch Sync tools and immediate triggers
+     *
+     * @param int $post_id
+     * @param WP_Post $post
+     * @param string $event_type
+     *
+     * @return bool
+     */
+    public static function dispatchArticleEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
+    {
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
+
+        if (empty($endpointUrl)) {
+            $msg = "ArticleEvent ($post_id): endpointUrl is empty";
+            ringier_errorlogthis($msg);
+            Utils::pushToSlack($msg, Enum::LOG_ERROR);
+
+            return false;
+        }
+
+        $busToken = new BusTokenManager();
+        $busToken->setParameters(
+            $endpointUrl,
+            $_ENV[Enum::ENV_VENTURE_CONFIG] ?? '',
+            $_ENV[Enum::ENV_BUS_API_USERNAME] ?? '',
+            $_ENV[Enum::ENV_BUS_API_PASSWORD] ?? ''
+        );
+
+        // Acquire Token
+        if (!$busToken->acquireToken()) {
+            $msg = "ArticleEvent ($post_id): Failed to acquire BUS token";
+            ringier_errorlogthis($msg);
+            Utils::pushToSlack($msg, Enum::LOG_ERROR);
+
+            return false;
+        }
+
+        $articlesEvent = new ArticlesEvent($busToken, $endpointUrl);
+        $articlesEvent->setEventType($event_type);
+
+        // Handle Brand Settings if available (mainly for ringier internal blogs)
+        if (class_exists('Brand_settings')) {
+            $articlesEvent->brandSettings = new \Brand_settings();
+        }
+
+        try {
+            $articlesEvent->sendToBus($post_id, $post);
+
+            return true;
+        } catch (\Throwable $e) {
+            ringier_errorlogthis("ArticleEvent ($post_id) Exception: " . $e->getMessage());
+
+            return false;
+        }
     }
 }
