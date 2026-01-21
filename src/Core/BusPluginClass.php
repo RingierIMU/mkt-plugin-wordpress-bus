@@ -72,6 +72,7 @@ class BusPluginClass
         add_action('wp_ajax_sync_authors', [AdminSyncPage::class, 'handleAuthorsSync']);
         add_action('wp_ajax_sync_categories', [AdminSyncPage::class, 'handleCategoriesSync']);
         add_action('wp_ajax_sync_tags', [AdminSyncPage::class, 'handleTagsSync']);
+        add_action('wp_ajax_sync_articles', [AdminSyncPage::class, 'handleArticlesSync']);
 
         // Handle custom POST
         add_action('admin_post_flush_all_transients', [AdminSyncPage::class, 'handleFlushAllTransients']);

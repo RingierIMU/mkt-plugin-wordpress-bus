@@ -14,6 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.5.0] - 2026-01-21 ##
+
+### Added ###
+* (UI) **Batch Article Sync** tool added to the "BUS Tooling Page".
+  * Features a "Recent First" sync strategy to prioritize the newest content.
+  * Includes a Post Type selector (Radio button) to allow syncing specific custom post types.
+  * Displays real-time progress logs in the admin dashboard.
+* (code) Implemented a **Reverse ID Cursor** strategy for the Article Sync logic.
+  * Ensures **O(1)** constant performance regardless of database size (efficiently handles 10k+ posts).
+  * Replaces standard `OFFSET` pagination to prevent timeout issues on deep database queries.
+
+### Changed ###
+* (code) Major refactor of the `ArticleEvent` class to remove 3rd-party dependencies in favor of 100% native WP code:
+  * Removed `GuzzleHttp\Client` in favor of native `wp_remote_post()`.
+  * Removed `AuthenticationInterface` dependency; now uses `BusTokenManager` directly.
+
+
 ## [3.4.1] - 2025-12-02 ##
 
 ### Added ###

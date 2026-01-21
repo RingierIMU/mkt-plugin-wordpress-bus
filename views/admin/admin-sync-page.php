@@ -21,10 +21,10 @@ use RingierBusPlugin\Utils;
 
     <h2>Cache Flush Tools</h2>
 
-    <?php
-    if (isset($_GET['flush_success']) && $_GET['flush_success'] === '1') {
-        echo '<div class="updated notice is-dismissible"><p>The Auth token transient has been flushed.</p></div>';
-    }
+<?php
+if (isset($_GET['flush_success']) && $_GET['flush_success'] === '1') {
+    echo '<div class="updated notice is-dismissible"><p>The Auth token transient has been flushed.</p></div>';
+}
 Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
 ?>
 
@@ -51,7 +51,7 @@ Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
     </p>
     <button id="sync-authors-button" class="button">Sync All Authors</button>
 
-    <div id="sync-progress" style="margin-top: 20px;"><!-- Placeholder for AJAX process --></div>
+    <div id="sync-progress" style="margin-top: 20px; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; display:none;"><!-- Placeholder for AJAX process --></div>
 
     <div style="margin-bottom: 10px;">&nbsp;</div>
     <hr />
@@ -61,7 +61,7 @@ Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
     <p>This will sync all WordPress categories as <code>TopicCreated</code> events to the BUS API.</p>
     <button id="sync-categories-button" class="button button-secondary">Sync All Categories</button>
 
-    <div id="sync-progress-cat" style="margin-top: 20px;"><!-- Placeholder for AJAX process --></div>
+    <div id="sync-progress-cat" style="margin-top: 20px; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; display:none;"><!-- Placeholder for AJAX process --></div>
 
     <div style="margin-bottom: 10px;">&nbsp;</div>
     <hr />
@@ -71,7 +71,43 @@ Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
     <p>This will sync all WordPress tags as <code>TopicCreated</code> events to the BUS API.</p>
     <button id="sync-tags-button" class="button">Sync All Tags</button>
 
-    <div id="sync-progress-tag" style="margin-top: 20px;"><!-- Placeholder for AJAX process --></div>
+    <div id="sync-progress-tag" style="margin-top: 20px; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; display:none;"><!-- Placeholder for AJAX process --></div>
+
+    <div style="margin-bottom: 10px;">&nbsp;</div>
+    <hr />
+
+    <h2>Article Sync</h2>
+    <p>
+        Syncs content starting from the <strong>most recent</strong>.
+        Select the Post Type you wish to sync:
+    </p>
+
+<?php
+// Fetch all public post types
+$post_types = get_post_types(['public' => true], 'objects');
+$exclude = [
+    'attachment',
+    'elementor_library',
+]; // todo: Add more types to exclude
+?>
+
+    <div class="post-types-selector" style="margin-bottom: 15px; background: #fff; padding: 15px; border: 1px solid #ccd0d4;">
+        <?php foreach ($post_types as $pt): ?>
+            <?php if (in_array($pt->name, $exclude)) {
+                continue;
+            } ?>
+            <label style="margin-right: 15px; display: inline-block; margin-bottom: 5px;">
+                <input type="radio" name="bus_sync_post_type" value="<?php echo esc_attr($pt->name); ?>"
+                    <?php checked($pt->name, 'post'); // Default to 'post' checked?> />
+                <?php echo esc_html($pt->label); ?> (<code><?php echo esc_html($pt->name); ?></code>)
+            </label>
+        <?php endforeach; ?>
+    </div>
+
+    <button id="sync-articles-button" class="button">Sync Selected Articles</button>
+
+    <div id="sync-progress-article" style="margin-top: 20px; max-height: 300px; overflow-y: auto; background: #f9f9f9; padding: 10px; border: 1px solid #ddd; display:none;">
+    </div>
 
     <div style="margin-bottom: 10px;">&nbsp;</div>
     <hr />

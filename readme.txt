@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.4.1
+Stable tag: 3.5.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -160,6 +160,23 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [3.5.0] - 2026-01-21 ###
+
+#### Added ####
+* (UI) **Batch Article Sync** tool added to the "BUS Tooling Page".
+  * Features a "Recent First" sync strategy to prioritize the newest content.
+  * Includes a Post Type selector (Radio button) to allow syncing specific custom post types.
+  * Displays real-time progress logs in the admin dashboard.
+* (code) Implemented a **Reverse ID Cursor** strategy for the Article Sync logic.
+  * Ensures **O(1)** constant performance regardless of database size (efficiently handles 10k+ posts).
+  * Replaces standard `OFFSET` pagination to prevent timeout issues on deep database queries.
+
+#### Changed ####
+* (code) Major refactor of the `ArticleEvent` class to remove 3rd-party dependencies in favor of 100% native WP code:
+  * Removed `GuzzleHttp\Client` in favor of native `wp_remote_post()`.
+  * Removed `AuthenticationInterface` dependency; now uses `BusTokenManager` directly.
+
 
 ### [3.4.0] - 2025-07-02 ###
 

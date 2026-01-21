@@ -174,7 +174,7 @@ class AdminSyncPage
         $next_term = get_term($next_term_id, 'category');
 
         try {
-            \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
+            BusHelper::triggerTermCreatedEvent(
                 $next_term->term_id,
                 $next_term->term_taxonomy_id,
                 $next_term->taxonomy,
@@ -224,7 +224,7 @@ class AdminSyncPage
         $next_term = get_term($next_term_id, 'post_tag');
 
         try {
-            \RingierBusPlugin\Bus\BusHelper::triggerTermCreatedEvent(
+            BusHelper::triggerTermCreatedEvent(
                 $next_term->term_id,
                 $next_term->term_taxonomy_id,
                 $next_term->taxonomy,
@@ -238,6 +238,85 @@ class AdminSyncPage
             ]);
         } catch (\Throwable $e) {
             wp_send_json_error($e->getMessage());
+        }
+    }
+
+    /**
+     * Article Sync
+     * Efficiently syncs articles (most recent first) using a Reverse ID Cursor strategy.
+     *
+     * Unlike standard OFFSET pagination which degrades in performance (O(N)),
+     * this method queries for the next ID smaller than the previous cursor (`WHERE ID < $last_id`).
+     * This guarantees O(1) constant performance for every request, even on massive datasets.
+     */
+    public static function handleArticlesSync(): void
+    {
+        global $wpdb;
+
+        // Get parameters
+        $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
+        // array - flexible to accommodate checkboxes in future, but fallback to default 'post'
+        $post_types = isset($_POST['post_types']) ? array_map('sanitize_text_field', $_POST['post_types']) : ['post'];
+
+        // Prepare SQL for Reverse Cursor (Newest First)
+        $placeholders = implode(',', array_fill(0, count($post_types), '%s'));
+
+        $where_clause = "post_status = 'publish' AND post_type IN ($placeholders)";
+        $args = $post_types;
+
+        if ($last_id > 0) {
+            $where_clause .= ' AND ID < %d';
+            $args[] = $last_id;
+        }
+
+        // Fetch exactly ONE ID
+        $next_post_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT ID FROM {$wpdb->posts} 
+             WHERE $where_clause 
+             ORDER BY ID DESC 
+             LIMIT 1",
+            $args
+        ));
+
+        // Termination Condition
+        if (!$next_post_id) {
+            wp_send_json_success([
+                'message' => 'All articles have been synced.',
+                'done' => true,
+            ]);
+        }
+
+        // Fetch Object & Dispatch
+        $post_object = get_post($next_post_id);
+
+        if (!$post_object) {
+            // Should not happen, but safe fallback
+            wp_send_json_error("Could not load post object for ID $next_post_id");
+        }
+
+        try {
+            $success = BusHelper::dispatchArticlesEvent(
+                $post_object->ID,
+                $post_object
+            );
+
+            if ($success) {
+                wp_send_json_success([
+                    'message' => "Synced Article (ID {$post_object->ID}) – " . mb_strimwidth($post_object->post_title, 0, 40, '...'),
+                    'done' => false,
+                    'last_id' => $post_object->ID,
+                ]);
+            } else {
+                // If false, it likely failed auth or validation inside the helper
+                wp_send_json_success([
+                    'message' => "Failed to sync Article (ID {$post_object->ID}) - Check logs. Moving to next..",
+                    'done' => false, // We continue the loop even if one fails
+                    'last_id' => $post_object->ID,
+                ]);
+            }
+
+        } catch (\Throwable $e) {
+            wp_send_json_error("Error ID {$next_post_id}: " . $e->getMessage());
         }
     }
 }
