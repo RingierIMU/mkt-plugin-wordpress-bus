@@ -78,7 +78,9 @@ class ArticlesEvent
             }
 
             // Build payload
-            $payloadData = $this->buildMainRequestBody($post_ID, $post);
+            $payloadData = [
+                $this->buildMainRequestBody($post_ID, $post),
+            ];
             $jsonBody = wp_json_encode($payloadData);
 
             $requestBody = [
@@ -125,13 +127,20 @@ class ArticlesEvent
 
             // Success
             $message = <<<EOF
+                // START OF MESSAGE //
                 $blogKey: [INFO] The Article (ID: $post_ID) was successfully delivered to the BUS..
-                ..
-                ..
+                .
+                .
+                Payload sent was:
+                $responseBody
+                .
+                .
+                // END OF MESSAGE //
+                .
+                .
             EOF;
 
             Utils::slackthat($message);
-            Utils::slackthat($responseBody);
 
         } catch (\Exception $exception) {
             $message = <<<EOF
