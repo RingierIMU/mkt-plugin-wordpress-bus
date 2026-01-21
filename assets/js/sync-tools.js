@@ -2,6 +2,7 @@ jQuery(document).ready(function ($) {
     const progressDiv = $('#sync-progress');
     const progressDivCat = $('#sync-progress-cat');
     const progressDivTag = $('#sync-progress-tag');
+    const progressDivArticle = $('#sync-progress-article');
 
     function syncAuthors() {
         let offset = 0;
@@ -155,6 +156,67 @@ jQuery(document).ready(function ($) {
         syncNextTag(lastId);
     }
 
+    /**
+     * Article Sync Logic
+     */
+    function syncArticles() {
+        // 1. Get Selected Post Type (Radio Button)
+        // We use 'input[name="bus_sync_post_type"]:checked' to get the single value
+        const selectedType = $('input[name="bus_sync_post_type"]:checked').val();
+
+        if (!selectedType) {
+            alert('Please select a post type.');
+            return;
+        }
+
+        // 2. Prepare UI
+        let syncedCount = 0;
+        progressDivArticle.show();
+        progressDivArticle.html(`
+            <h3>Starting article sync (Recent First)...</h3>
+            <p><strong>Type:</strong> ${selectedType}</p>
+            <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window.</p>
+            <hr />
+        `);
+
+        // 3. Recursive Function
+        function syncNextArticle(lastIdCursor) {
+            $.post(SyncAuthorsAjax.ajax_url, {
+                action: 'sync_articles',
+                last_id: lastIdCursor,
+                // Send as an array because the PHP backend expects 'post_types' array
+                // (keeps it compatible with your backend logic)
+                post_types: [selectedType]
+            }, function (response) {
+                if (response.success && response.data) {
+                    const { message, done, last_id } = response.data;
+
+                    if (done) {
+                        progressDivArticle.append(`
+                            <hr />
+                            <h3>Article Sync Complete:</h3>
+                            <ul>
+                                <li><strong>${syncedCount}</strong> articles successfully synced.</li>
+                            </ul>
+                            <strong style="color: green;">Process finished.</strong>
+                        `);
+                    } else {
+                        syncedCount++;
+                        progressDivArticle.append(`<div style="color: #333;">[${syncedCount}] ${message}</div>`);
+                        progressDivArticle.scrollTop(progressDivArticle[0].scrollHeight);
+                        syncNextArticle(last_id);
+                    }
+                } else {
+                    progressDivArticle.append(`<div style="color:red;">Error: ${response.data || 'Unknown'}</div>`);
+                }
+            }).fail(function(xhr) {
+                progressDivArticle.append(`<div style="color:red;">Server Error: ${xhr.status} ${xhr.statusText}</div>`);
+            });
+        }
+
+        syncNextArticle(0);
+    }
+
     $('#sync-authors-button').on('click', function () {
         syncAuthors();
     });
@@ -165,5 +227,9 @@ jQuery(document).ready(function ($) {
 
     $('#sync-tags-button').on('click', function () {
         syncTags();
+    });
+
+    $('#sync-articles-button').on('click', function () {
+        syncArticles();
     });
 });
