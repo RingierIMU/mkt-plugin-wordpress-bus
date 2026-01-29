@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.5.1] - 2026-01-29 ##
+
+### Added ###
+* (UI) Added **Resume from ID** functionality to the Batch Article Sync tool, allowing users to continue interrupted syncs from a specific Article ID.
+
+### Changed ###
+* (UI) Updated the sync status message to clarify when a sync is resuming versus starting fresh.
+
+
 ## [3.5.0] - 2026-01-21 ##
 
 ### Added ###
