@@ -93,15 +93,23 @@ $exclude = [
 
     <div class="post-types-selector" style="margin-bottom: 15px; background: #fff; padding: 15px; border: 1px solid #ccd0d4;">
         <?php foreach ($post_types as $pt): ?>
-            <?php if (in_array($pt->name, $exclude)) {
-                continue;
-            } ?>
+            <?php if (in_array($pt->name, $exclude)) continue; ?>
             <label style="margin-right: 15px; display: inline-block; margin-bottom: 5px;">
                 <input type="radio" name="bus_sync_post_type" value="<?php echo esc_attr($pt->name); ?>"
-                    <?php checked($pt->name, 'post'); // Default to 'post' checked?> />
+                    <?php checked($pt->name, 'post'); ?> />
                 <?php echo esc_html($pt->label); ?> (<code><?php echo esc_html($pt->name); ?></code>)
             </label>
         <?php endforeach; ?>
+
+        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;" />
+
+        <label for="bus_sync_start_id" style="font-weight: bold;">
+            Resume from ID (Optional):
+        </label>
+        <input type="number" id="bus_sync_start_id" placeholder="e.g. 16878" class="small-text" style="margin-left: 5px;width:100px;">
+        <p class="description" style="display:inline-block; margin-left: 5px;">
+            (Leave empty to start from the newest. Enter the <strong>last synced ID</strong> to resume.)
+        </p>
     </div>
 
     <button id="sync-articles-button" class="button">Sync Selected Articles</button>

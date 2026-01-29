@@ -154,6 +154,11 @@ jQuery(document).ready(function ($) {
     function syncArticles() {
         const selectedType = $('input[name="bus_sync_post_type"]:checked').val();
 
+        // Get the resume ID from the input box
+        const startFromIdInput = $('#bus_sync_start_id').val();
+        // If input is empty, default to 0 (Newest). If set, parse as Integer.
+        let initialCursor = startFromIdInput ? parseInt(startFromIdInput, 10) : 0;
+
         if (!selectedType) {
             alert('Please select a post type.');
             return;
@@ -161,8 +166,14 @@ jQuery(document).ready(function ($) {
 
         let syncedCount = 0;
         progressDivArticle.show();
+
+        // Update UI message to confirm where we are starting
+        let startMsg = initialCursor > 0
+            ? `Resuming sync from last known ID <strong>${initialCursor}</strong>...`
+            : `Starting fresh sync (Newest First)...`;
+
         progressDivArticle.html(`
-            <h3>Starting article sync (Recent First)...</h3>
+            <h3>${startMsg}</h3>
             <p><strong>Type:</strong> ${selectedType}</p>
             <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window.</p>
             <hr />
@@ -173,7 +184,6 @@ jQuery(document).ready(function ($) {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_articles',
                 last_id: lastIdCursor,
-                // Send array as the PHP backend expects 'post_types' array
                 post_types: [selectedType]
             }, function (response) {
                 if (response.success && response.data) {
@@ -184,7 +194,7 @@ jQuery(document).ready(function ($) {
                             <hr />
                             <h3>Article Sync Complete:</h3>
                             <ul>
-                                <li><strong>${syncedCount}</strong> articles successfully synced.</li>
+                                <li><strong>${syncedCount}</strong> articles successfully synced in this session.</li>
                             </ul>
                             <strong style="color: green;">Process finished.</strong>
                         `);
@@ -202,7 +212,8 @@ jQuery(document).ready(function ($) {
             });
         }
 
-        syncNextArticle(0);
+        // Start the loop with the ID from the input box (or 0)
+        syncNextArticle(initialCursor);
     }
 
     $('#sync-authors-button').on('click', function () {

@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.5.0
+Stable tag: 3.5.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -161,6 +161,15 @@ This plugin requires *PHP version >= 8.1*.
 
 == Changelog ==
 
+### [3.5.1] - 2026-01-29 ###
+
+#### Added ####
+* (UI) Added **Resume from ID** functionality to the Batch Article Sync tool, allowing users to continue interrupted syncs from a specific Article ID.
+
+#### Changed ####
+* (UI) Updated the sync status message to clarify when a sync is resuming versus starting fresh.
+
+
 ### [3.5.0] - 2026-01-21 ###
 
 #### Added ####
@@ -176,6 +185,17 @@ This plugin requires *PHP version >= 8.1*.
 * (code) Major refactor of the `ArticleEvent` class to remove 3rd-party dependencies in favor of 100% native WP code:
   * Removed `GuzzleHttp\Client` in favor of native `wp_remote_post()`.
   * Removed `AuthenticationInterface` dependency; now uses `BusTokenManager` directly.
+
+
+### [3.4.1] - 2025-12-02 ###
+
+#### Added ####
+* (code) Added a check to see if the Ringier Author plugin is enabled
+  * If yes, only send events for authors that have their public profile set to ENABLED
+  * If that plugin is not present or disabled, it's business as usual
+
+#### Fixed ####
+* (payload) TopicEvents: title, slug and url should be array of objects
 
 
 ### [3.4.0] - 2025-07-02 ###
