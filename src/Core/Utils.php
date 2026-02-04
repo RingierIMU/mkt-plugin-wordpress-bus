@@ -440,12 +440,22 @@ class Utils
      *
      * @return string
      */
-    public static function formatDate($date, $format = \DATE_RFC3339): string
+    public static function formatDate($date, string $format = \DATE_RFC3339): string
     {
+        // Handle empty or null inputs immediately
+        if (empty($date) || $date === '0000-00-00 00:00:00') {
+            return '';
+        }
+
         $immutable_date = \date_create_immutable_from_format('Y-m-d H:i:s', $date, new \DateTimeZone('UTC'));
 
         if (!$immutable_date) {
-            return $date;
+            // Try a generic parse as a final fallback before giving up
+            try {
+                $immutable_date = new \DateTimeImmutable($date, new \DateTimeZone('UTC'));
+            } catch (\Exception $e) {
+                return $date;
+            }
         }
 
         return $immutable_date->format($format);

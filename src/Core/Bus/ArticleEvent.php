@@ -773,13 +773,14 @@ class ArticleEvent
      *
      * @return string
      */
-    private function getOgArticleModifiedDate(int $post_ID, \WP_Post $post)
+    private function getOgArticleModifiedDate(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
-            return YoastSEO()->meta->for_post($post_ID)->open_graph_article_modified_time;
-        }
+        // Ensure we have a valid GMT modified date; fallback to local modified if GMT is empty
+        $date = !empty($post->post_modified_gmt) && $post->post_modified_gmt !== '0000-00-00 00:00:00'
+            ? $post->post_modified_gmt
+            : $post->post_modified;
 
-        return Utils::formatDate($post->post_modified_gmt);
+        return Utils::formatDate($date);
     }
 
     /**
@@ -791,13 +792,14 @@ class ArticleEvent
      *
      * @return string
      */
-    private function getOgArticlePublishedDate(int $post_ID, \WP_Post $post)
+    private function getOgArticlePublishedDate(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
-            return YoastSEO()->meta->for_post($post_ID)->open_graph_article_published_time;
-        }
+        // Ensure we have a valid GMT date; fallback to local date if GMT is empty
+        $date = !empty($post->post_date_gmt) && $post->post_date_gmt !== '0000-00-00 00:00:00'
+            ? $post->post_date_gmt
+            : $post->post_date;
 
-        return Utils::formatDate($post->post_date_gmt);
+        return Utils::formatDate($date);
     }
 
     /**
