@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.5.2] - 2026-02-04 ##
+
+### Changed ###
+* (code) Refactored `getOgArticlePublishedDate` and `getOgArticleModifiedDate` to use native `WP_Post` properties instead of Yoast SEO Indexables. This ensures the API uses the database "Source of Truth" and avoids data cross-contamination when posts share slugs with historical attachments.
+* (code) Hardened `Utils::formatDate` to handle null or "zeroed" database timestamps (`0000-00-00 00:00:00`), ensuring strict RFC3339 compliance.
+
+
 ## [3.5.1] - 2026-01-29 ##
 
 ### Added ###
