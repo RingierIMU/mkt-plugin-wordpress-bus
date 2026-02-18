@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (dependency) Fully remove Timber/Twig
 
 
+## [3.6.0] - 2026-02-18 ##
+
+### Added ###
+* (payload) Added `taxon_tags[]` (array of TranslationObject) to the Article payload, populated with all tags associated with the article.
+  * For standard `post` type: includes the built-in `post_tag` taxonomy.
+  * For custom post types: includes any non-hierarchical (tag-like) custom taxonomy registered for that post type.
+
+### Changed ###
+* (code) Aligned `ArticlesEvent` date methods (`getOgArticlePublishedDate`, `getOgArticleModifiedDate`) with the 3.5.2 hardening applied to `ArticleEvent`: uses native `WP_Post` properties as source of truth and guards against null/zeroed GMT timestamps with a local-date fallback.
+
+
 ## [3.5.2] - 2026-02-04 ##
 
 ### Changed ###

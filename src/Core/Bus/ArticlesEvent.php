@@ -228,6 +228,7 @@ class ArticlesEvent
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
             'categories' => $this->getAllCategoryListArray($post_ID),
+            'taxon_tags' => $this->getTaxonTags($post_ID),
             'sailthru_tags' => $this->getSailthruTags($post_ID),
             'sailthru_vars' => $this->getSailthruVars($post_ID),
             'lifetime' => Utils::getArticleLifetime($post_ID),
@@ -699,16 +700,14 @@ class ArticlesEvent
      *
      * @return string
      */
-    private function getOgArticleModifiedDate(int $post_ID, \WP_Post $post)
+    private function getOgArticleModifiedDate(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
-            $yoast = YoastSEO();
-            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
-                return $yoast->meta->for_post($post_ID)->open_graph_article_modified_time;
-            }
-        }
+        // Ensure we have a valid GMT modified date; fallback to local modified if GMT is empty
+        $date = !empty($post->post_modified_gmt) && $post->post_modified_gmt !== '0000-00-00 00:00:00'
+            ? $post->post_modified_gmt
+            : $post->post_modified;
 
-        return Utils::formatDate($post->post_modified_gmt);
+        return Utils::formatDate($date);
     }
 
     /**
@@ -720,16 +719,14 @@ class ArticlesEvent
      *
      * @return string
      */
-    private function getOgArticlePublishedDate(int $post_ID, \WP_Post $post)
+    private function getOgArticlePublishedDate(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
-            $yoast = YoastSEO();
-            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
-                return $yoast->meta->for_post($post_ID)->open_graph_article_published_time;
-            }
-        }
+        // Ensure we have a valid GMT date; fallback to local date if GMT is empty
+        $date = !empty($post->post_date_gmt) && $post->post_date_gmt !== '0000-00-00 00:00:00'
+            ? $post->post_date_gmt
+            : $post->post_date;
 
-        return Utils::formatDate($post->post_date_gmt);
+        return Utils::formatDate($date);
     }
 
     /**
@@ -772,6 +769,72 @@ class ArticlesEvent
         }
 
         return get_the_excerpt($post_ID);
+    }
+
+    /**
+     * Get all tags associated with a post as TranslationObjects.
+     *
+     * For standard posts this includes the built-in `post_tag` taxonomy.
+     * For custom post types it includes any non-hierarchical (tag-like) custom
+     * taxonomy registered for that post type, excluding irrelevant ones.
+     *
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function getTaxonTags(int $post_ID): array
+    {
+        $tags = [];
+        $post_type = get_post_type($post_ID);
+        $taxonomies = get_object_taxonomies($post_type, 'objects');
+
+        if (empty($taxonomies)) {
+            return $tags;
+        }
+
+        $blacklist = [
+            'post_format',
+            'sailthru_user_type',
+            'sailthru_user_status',
+            'sailthru_property_type',
+            'sailthru_experience_level',
+            'sailthru_functions',
+            'content_style',
+            'content_author',
+            'article_intent',
+        ];
+
+        foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
+            // Only process flat (non-hierarchical) taxonomies — i.e. tag-like ones
+            if ($taxonomy_obj->hierarchical || in_array($taxonomy, $blacklist, true)) {
+                continue;
+            }
+
+            $terms = get_the_terms($post_ID, $taxonomy);
+            if (is_wp_error($terms) || empty($terms)) {
+                continue;
+            }
+
+            foreach ($terms as $term) {
+                $tags[] = [
+                    'id' => $term->term_id,
+                    'title' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->name,
+                        ],
+                    ],
+                    'slug' => [
+                        [
+                            'culture' => ringier_getLocale(),
+                            'value' => $term->slug,
+                        ],
+                    ],
+                ];
+            }
+        }
+
+        return $tags;
     }
 
     /**

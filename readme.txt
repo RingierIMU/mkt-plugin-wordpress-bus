@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.5.2
+Stable tag: 3.6.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -160,6 +160,17 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [3.6.0] - 2026-02-18 ###
+
+#### Added ####
+* (payload) Added `taxon_tags[]` (array of TranslationObject) to the Article payload, populated with all tags associated with the article.
+  * For standard `post` type: includes the built-in `post_tag` taxonomy.
+  * For custom post types: includes any non-hierarchical (tag-like) custom taxonomy registered for that post type.
+
+#### Changed ####
+* (code) Aligned `ArticlesEvent` date methods with the 3.5.2 hardening: uses native `WP_Post` properties as source of truth and guards against null/zeroed GMT timestamps with a local-date fallback.
+
 
 ### [3.5.2] - 2026-02-04 ###
 
