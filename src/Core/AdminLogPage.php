@@ -9,8 +9,6 @@
 
 namespace RingierBusPlugin;
 
-use Timber\Timber;
-
 class AdminLogPage
 {
     public function __construct()
@@ -61,16 +59,16 @@ class AdminLogPage
             $error_msg = self::clearErrorLog($error_log_file);
         }
 
-        $log_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_log.twig';
         $txtlog_value = self::fetchLogData($error_log_file);
 
-        if (file_exists($log_page_tpl)) {
-            $context['admin_page_title'] = $title;
-            $context['error_msg'] = $error_msg;
-            $context['txtlog_value'] = $txtlog_value;
-
-            Timber::render($log_page_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page-log.php',
+            [
+                'admin_page_title' => $title,
+                'error_msg' => $error_msg,
+                'txtlog_value' => $txtlog_value,
+            ]
+        );
     }
 
     /**

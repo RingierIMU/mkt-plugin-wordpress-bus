@@ -28,9 +28,7 @@
     },
     "files": ["src/ringier_bus_plugin_helper.php"]
   },
-  "require": {
-    "timber/timber": "2.2.0"
-  },
+  "require": {},
   "repositories": [
     {
       "type": "composer",

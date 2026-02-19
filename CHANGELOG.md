@@ -8,10 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased] ##
+### Changed ###
+* (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single `ArticleEvent` class using 100% native WordPress APIs (`wp_remote_post()`, `BusTokenManager` with WP transients). Both real-time hook dispatch and batch sync tooling now share the same code path.
+* (refactor) `BusHelper::sendToBus()` now delegates to `BusHelper::dispatchArticleEvent()`, removing all Guzzle/Symfony dependencies from the real-time event flow.
+* (refactor) Renamed `dispatchArticlesEvent()` to `dispatchArticleEvent()` for consistency.
+* (refactor) Replaced all 18 Twig templates with native PHP templates using `Utils::load_tpl()` and WordPress `load_template()`. Admin views (`AdminSettingsPage`, `AdminLogPage`) now use 100% native WordPress templating.
+
 ### Removed ###
-* (dependency) Fully remove Monolog
-* (dependency) Fully remove Guzzle/Symfony dependencies
-* (dependency) Fully remove Timber/Twig
+* (dependency) Fully removed Monolog (`monolog/monolog`)
+* (dependency) Fully removed Guzzle (`guzzlehttp/guzzle`) and Symfony Cache (`symfony/cache`)
+* (dependency) Fully removed Timber (`timber/timber`) and Twig (`twig/twig`) — the plugin now has **zero production dependencies**
+* (code) Removed legacy `Auth.php`, `AuthenticationInterface.php`, and `LoggingHandler.php` classes
+* (code) Removed dead `BusHelper::getImageArrayForApi()` method
+* (code) Removed unused `RINGIER_BUS_PLUGIN_CACHE_DIR` constant
+* (code) Deleted all 18 `.twig` template files from `views/admin/`
 
 
 ## [3.6.0] - 2026-02-18 ##

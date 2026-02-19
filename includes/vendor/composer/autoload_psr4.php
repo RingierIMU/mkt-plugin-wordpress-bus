@@ -6,9 +6,5 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname(dirname($vendorDir));
 
 return array(
-    'Twig\\' => array($vendorDir . '/twig/twig/src'),
-    'Timber\\' => array($vendorDir . '/timber/timber/src'),
-    'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
-    'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'RingierBusPlugin\\' => array($baseDir . '/src/Core'),
 );

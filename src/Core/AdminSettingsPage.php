@@ -9,9 +9,6 @@
 
 namespace RingierBusPlugin;
 
-use Timber\FunctionWrapper;
-use Timber\Timber;
-
 class AdminSettingsPage
 {
     public function __construct()
@@ -91,15 +88,10 @@ class AdminSettingsPage
             return;
         }
 
-        $settings_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_settings.twig';
-        if (file_exists($settings_page_tpl)) {
-            $context['admin_page_title'] = $title;
-            $context['settings_fields'] = new FunctionWrapper('settings_fields', [Enum::SETTINGS_PAGE_OPTION_GROUP]);
-            $context['do_settings_sections'] = new FunctionWrapper('do_settings_sections', [Enum::ADMIN_SETTINGS_MENU_SLUG]);
-            $context['submit_button'] = new FunctionWrapper('submit_button', ['Save Settings']);
-
-            Timber::render($settings_page_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page-settings.php',
+            ['admin_page_title' => $title]
+        );
     }
 
     public function addFieldsViaSettingsAPI()
@@ -158,25 +150,22 @@ class AdminSettingsPage
      */
     public static function field_bus_status_callback($args)
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_bus_status_dropdown.twig';
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
-            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
+            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
         }
 
-        if (file_exists($field_bus_status_tpl)) {
-            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
-            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+        $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
+        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
 
-            Timber::render($field_bus_status_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-bus-status-dropdown.php',
+            $args
+        );
     }
 
     /**
@@ -206,7 +195,7 @@ class AdminSettingsPage
      */
     public static function field_venture_config_callback($args)
     {
-        self::render_field_tpl($args, 'field_venture_config.twig');
+        self::render_field_tpl($args, 'field-venture-config.php');
     }
 
     /**
@@ -231,7 +220,7 @@ class AdminSettingsPage
 
     public static function field_app_locale_callback($args)
     {
-        self::render_field_tpl($args, 'field_app_locale.twig');
+        self::render_field_tpl($args, 'field-app-locale.php');
     }
 
     /**
@@ -256,7 +245,7 @@ class AdminSettingsPage
 
     public static function field_app_key_callback($args)
     {
-        self::render_field_tpl($args, 'field_app_key.twig');
+        self::render_field_tpl($args, 'field-app-key.php');
     }
 
     /**
@@ -281,7 +270,7 @@ class AdminSettingsPage
 
     public static function field_api_username_callback($args)
     {
-        self::render_field_tpl($args, 'field_api_username.twig');
+        self::render_field_tpl($args, 'field-api-username.php');
     }
 
     /**
@@ -306,7 +295,7 @@ class AdminSettingsPage
 
     public static function field_api_password_callback($args)
     {
-        self::render_field_tpl($args, 'field_api_password.twig');
+        self::render_field_tpl($args, 'field-api-password.php');
     }
 
     /**
@@ -331,7 +320,7 @@ class AdminSettingsPage
 
     public static function field_api_endpoint_callback($args)
     {
-        self::render_field_tpl($args, 'field_api_endpoint.twig');
+        self::render_field_tpl($args, 'field-api-endpoint.php');
     }
 
     /**
@@ -356,7 +345,7 @@ class AdminSettingsPage
 
     public static function field_slack_hook_url_callback($args)
     {
-        self::render_field_tpl($args, 'field_slack_hook_url.twig');
+        self::render_field_tpl($args, 'field-slack-hook-url.php');
     }
 
     /**
@@ -381,7 +370,7 @@ class AdminSettingsPage
 
     public static function field_slack_channel_name_callback($args)
     {
-        self::render_field_tpl($args, 'field_slack_channel_name.twig');
+        self::render_field_tpl($args, 'field-slack-channel-name.php');
     }
 
     /**
@@ -406,7 +395,7 @@ class AdminSettingsPage
 
     public static function field_slack_bot_name_callback($args)
     {
-        self::render_field_tpl($args, 'field_slack_bot_name.twig');
+        self::render_field_tpl($args, 'field-slack-bot-name.php');
     }
 
     /**
@@ -431,7 +420,7 @@ class AdminSettingsPage
 
     public static function field_backoff_duration_callback($args)
     {
-        self::render_field_tpl($args, 'field_backoff_duration.twig');
+        self::render_field_tpl($args, 'field-backoff-duration.php');
     }
 
     /**
@@ -442,23 +431,20 @@ class AdminSettingsPage
      */
     private static function render_field_tpl($args, $tpl_name): void
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . $tpl_name;
         $field_value = '';
         if (isset($options[$args['label_for']])) {
             $field_value = $options[$args['label_for']];
         }
 
-        if (file_exists($field_tpl)) {
-            $context['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_value'] = esc_attr($field_value);
+        $args['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_value'] = $field_value;
 
-            Timber::render($field_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . $tpl_name,
+            $args
+        );
     }
 
     /**
@@ -493,25 +479,22 @@ class AdminSettingsPage
      */
     public static function field_validation_publication_reason_callback($args): void
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_publication_reason.twig';
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
-            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
+            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
         }
 
-        if (file_exists($field_bus_status_tpl)) {
-            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
-            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+        $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
+        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
 
-            Timber::render($field_bus_status_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-validation-status-publication-reason.php',
+            $args
+        );
     }
 
     /**
@@ -546,25 +529,22 @@ class AdminSettingsPage
      */
     public static function field_validation_article_lifetime_callback($args): void
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_bus_status_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_validation_status_article_lifetime.twig';
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
-            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
+            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
         }
 
-        if (file_exists($field_bus_status_tpl)) {
-            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
-            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+        $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
+        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
 
-            Timber::render($field_bus_status_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-validation-status-article-lifetime.php',
+            $args
+        );
     }
 
     /**
@@ -594,26 +574,22 @@ class AdminSettingsPage
      */
     public static function field_alt_primary_category_selectbox_callback($args)
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_status_alt_category_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_selectbox.twig';
         $bus_status_selected_on = $bus_status_selected_off = '';
         if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[ $args['label_for'] ], 'on', false);
-            $bus_status_selected_off = selected($options[ $args['label_for'] ], 'off', false);
+            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
+            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
         }
 
-        if (file_exists($field_status_alt_category_tpl)) {
-            //handle select box
-            $context['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_custom_data_selected_on'] = esc_attr($bus_status_selected_on);
-            $context['field_custom_data_selected_off'] = esc_attr($bus_status_selected_off);
+        $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
+        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
 
-            Timber::render($field_status_alt_category_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-alternate-primary-category-selectbox.php',
+            $args
+        );
     }
 
     /**
@@ -643,23 +619,20 @@ class AdminSettingsPage
      */
     public static function field_alt_primary_category_textbox_callback($args): void
     {
-        // Get the value of the setting we've registered with register_setting()
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field_alternate_primary_category_textbox.twig';
         $field_value = parse_url(get_site_url(), PHP_URL_HOST);
         if (isset($options[$args['label_for']])) {
             $field_value = $options[$args['label_for']];
         }
 
-        if (file_exists($field_tpl)) {
-            $context['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . esc_attr($args['label_for']) . ']';
-            $context['label_for'] = esc_attr($args['label_for']);
-            $context['field_custom_data'] = esc_attr($args['field_custom_data']);
-            $context['field_value'] = esc_attr($field_value);
+        $args['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
+        $args['field_value'] = $field_value;
 
-            Timber::render($field_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-alternate-primary-category-textbox.php',
+            $args
+        );
     }
 
     /**
@@ -689,7 +662,7 @@ class AdminSettingsPage
      */
     public static function field_google_youtube_api_key_callback($args): void
     {
-        self::render_field_tpl($args, 'field_google_youtube_api_key.twig');
+        self::render_field_tpl($args, 'field-google-youtube-api-key.php');
     }
 
     /**
