@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit793ebfc96cf02cfb89fc1d82176ba33c
+class ComposerStaticInit52cb50e268287c82a1b983032aa40807
 {
     public static $files = array (
         '3ffbb1ebb515c183110095caa71af43f' => __DIR__ . '/../../..' . '/src/ringier_bus_plugin_helper.php',
@@ -43,9 +43,9 @@ class ComposerStaticInit793ebfc96cf02cfb89fc1d82176ba33c
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit793ebfc96cf02cfb89fc1d82176ba33c::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit793ebfc96cf02cfb89fc1d82176ba33c::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInit793ebfc96cf02cfb89fc1d82176ba33c::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit52cb50e268287c82a1b983032aa40807::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit52cb50e268287c82a1b983032aa40807::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit52cb50e268287c82a1b983032aa40807::$classMap;
 
         }, null, ClassLoader::class);
     }
