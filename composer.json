@@ -29,10 +29,7 @@
     "files": ["src/ringier_bus_plugin_helper.php"]
   },
   "require": {
-    "monolog/monolog": "3.7.0",
-    "timber/timber": "2.2.0",
-    "guzzlehttp/guzzle": "7.8.1",
-    "symfony/cache": "6.4.8"
+    "timber/timber": "2.2.0"
   },
   "repositories": [
     {
