@@ -1,25 +1,11 @@
 <?php
 /**
- * Build the JSON request & send on the following trigger
+ * Build the JSON request & send on the following trigger:
  *  - ArticleCreated
  *  - ArticleUpdated
  *  - ArticleDeleted
  *
- * USAGE example:
- * ///
- * $authClient = new Auth();
- * $authClient->setParameters($_ENV['BUS_ENDPOINT'], $_ENV['VENTURE_CONFIG'], $_ENV['BUS_API_USERNAME'], $_ENV['BUS_API_PASSWORD']);
- *
- * $result = $authClient->acquireToken();
- * if ($result === true) {
- * $articleEvent = new ArticleEvent($authClient);
- * $articleEvent->setEventType($articleTriggerMode);
- * $articleEvent->sendToBus($post_ID, $post);
- * } else {
- * wp_die('could not get token');
- * }
- * ///
- *
+ * Uses 100% native WordPress APIs (wp_remote_post, transients).
  *
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  *
@@ -33,9 +19,9 @@ use RingierBusPlugin\Utils;
 
 class ArticleEvent
 {
-    /** @var AuthenticationInterface */
-    private AuthenticationInterface $authClient;
+    private BusTokenManager $tokenManager;
     private string $eventType;
+    private string $endpointUrl;
 
     /**
      * @var \Brand_settings
@@ -52,19 +38,15 @@ class ArticleEvent
      */
     public mixed $brandSettings;
 
-    public function __construct(AuthenticationInterface $authClient)
+    public function __construct(BusTokenManager $tokenManager, string $endpointUrl)
     {
-        $this->authClient = $authClient; //Let's get an auth token early
+        $this->tokenManager = $tokenManager;
+        $this->endpointUrl = rtrim($endpointUrl, '/');
         $this->eventType = Enum::EVENT_ARTICLE_CREATED;
-        $this->brandSettings = null; //initially null until set by respective brands' blog
+        $this->brandSettings = null;
     }
 
-    /**
-     * We will need to be able to set the type individually in the scenario for ArticleDeleted
-     *
-     * @param string $type
-     */
-    public function setEventType(string $type)
+    public function setEventType(string $type): void
     {
         $this->eventType = $type;
     }
@@ -89,91 +71,108 @@ class ArticleEvent
         }
     }
 
-    /**
-     * Will reuse $authClient object to send the Article Payload
-     *
-     * @param int $post_ID
-     * @param \WP_Post $post
-     *
-     * @throws \Exception
-     */
     public function sendToBus(int $post_ID, \WP_Post $post): void
     {
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
-        /*
-         * TODO: As of this coding (Apr 2021) there was no use-case for Callback yet
-         *
-         * for now, we go the simple route as below.
-         */
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? 'defaultBlogKey';
+
         try {
+            $authToken = $this->tokenManager->getToken();
+
+            if (!$authToken) {
+                $error_msg = 'ArticleEvent: Failed to retrieve authentication token.';
+                ringier_errorlogthis($error_msg);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                return;
+            }
+
+            // Build payload
+            $payloadData = [
+                $this->buildMainRequestBody($post_ID, $post),
+            ];
+            $jsonBody = wp_json_encode($payloadData);
+
             $requestBody = [
                 'headers' => [
                     'Accept' => 'application/json',
-                    'Content-type' => 'application/json',
+                    'Content-Type' => 'application/json',
                     'charset' => 'utf-8',
-                    'x-api-key' => $this->authClient->getToken(),
+                    'x-api-key' => $authToken,
                 ],
-
-                'json' => [
-                    $this->buildMainRequestBody($post_ID, $post),
-                ],
+                'body' => $jsonBody,
+                'timeout' => 15,
             ];
-            //            ringier_errorlogthis(json_encode($this->buildMainRequestBody($post_ID, $post)));
 
-            $response = $this->authClient->getHttpClient()->request(
-                'POST',
-                'events',
+            $response = wp_remote_post(
+                trailingslashit($this->endpointUrl) . 'events',
                 $requestBody
             );
-            $raw_response = (string) $response->getBody();
 
-            $message2 = <<<EOF
-            $blogKey: [INFO] The payload seems to have been successfully delivered:
-            
+            // Handle WP Errors (Network issues, DNS, etc)
+            if (is_wp_error($response)) {
+                $error_msg = 'ArticleEvent: Could not send request to BUS: ' . $response->get_error_message();
+                ringier_errorlogthis($error_msg);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                return;
+            }
+
+            $responseCode = wp_remote_retrieve_response_code($response);
+            $responseBody = wp_remote_retrieve_body($response);
+
+            // Handle API Errors (4xx, 5xx)
+            if (!in_array($responseCode, [200, 201], true)) {
+                $error_msg = "(API|ArticleEvent) Invalid response from BUS ($responseCode): " . $responseBody;
+                ringier_errorlogthis($error_msg);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                // If 401/403, flush token
+                if ($responseCode === 401 || $responseCode === 403) {
+                    $this->tokenManager->flushToken();
+                }
+
+                return;
+            }
+
+            // Success
+            $message = <<<EOF
+                // START OF MESSAGE //
+                $blogKey: [INFO] The Article (ID: $post_ID) was successfully delivered to the BUS..
+                .
+                .
+                Payload sent was:
+                $responseBody
+                .
+                .
+                // END OF MESSAGE //
+                .
+                .
             EOF;
-            Utils::slackthat($message2);
-            Utils::slackthat(print_r($raw_response, true));
+
+            Utils::slackthat($message);
 
         } catch (\Exception $exception) {
-            //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[api] Could not send request to BUS because: ');
-            ringier_errorlogthis($exception->getMessage()); //push to SLACK
-
             $message = <<<EOF
-                            $blogKey: [ALERT] an error occurred for article (ID: $post_ID)
-                            [This job should be (re)queued in the next few seconds..]
-                            
-                            Error message below:
-                            
-                        EOF;
-            Utils::slackthat($message . $exception->getMessage()); //push to SLACK
+                $blogKey: [ALERT] ArticleEvent: An error occurred for article (ID: $post_ID)
+                Error message below:
+            EOF;
 
-            //clear Auth token on any error
-            $this->authClient->flushToken();
+            ringier_errorlogthis('(api) ArticleEvent Exception: ' . $exception->getMessage());
+            Utils::slackthat($message . $exception->getMessage(), Enum::LOG_ERROR);
 
-            //Queuing - done by outer call, hence rethrow error back
-            throw $exception;
+            // Force token refresh on next run if something went wrong
+            $this->tokenManager->flushToken();
         }
     }
 
-    /**
-     * Main JSON structure is created here
-     *
-     * @param int $post_ID
-     * @param \WP_Post $post
-     *
-     * @throws \Exception
-     *
-     * @return array
-     */
-    public function buildMainRequestBody(int $post_ID, \WP_Post $post): array
+    private function buildMainRequestBody(int $post_ID, \WP_Post $post): array
     {
         return [
             'events' => [
                 $this->eventType,
             ],
-            'from' => $this->authClient->getVentureId(),
-            'reference' => "$post_ID",
+            'from' => $this->tokenManager->getVentureId(),
+            'reference' => (string) $post_ID,
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
             'version' => Enum::BUS_API_VERSION,
             'payload' => [
@@ -182,21 +181,10 @@ class ArticleEvent
         ];
     }
 
-    /**
-     * Sub JSON structure
-     * Here we create the inner Article Payload
-     *
-     * @param int $post_ID
-     * @param \WP_Post $post
-     *
-     * @throws \Exception
-     *
-     * @return array
-     */
-    public function buildArticlePayloadData(int $post_ID, \WP_Post $post): array
+    private function buildArticlePayloadData(int $post_ID, \WP_Post $post): array
     {
         $payload_array = [
-            'reference' => "$post_ID",
+            'reference' => (string) $post_ID,
             'status' => $this->getFieldStatus(),
             'created_at' => $this->getOgArticlePublishedDate($post_ID, $post),
             'published_at' => $this->getOgArticlePublishedDate($post_ID, $post),
@@ -205,43 +193,43 @@ class ArticleEvent
             'source_detail' => $this->getAuthorName($post_ID),
             'url' => [
                 [
-                    'culture' => ringier_getLocale(),
-                    'value' => wp_get_canonical_url($post_ID),
+                    'culture' => (string) ringier_getLocale(),
+                    'value' => (string) wp_get_canonical_url($post_ID),
                 ],
             ],
             'canonical' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::get_canonical_url($post_ID),
                 ],
             ],
             'title' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::truncate(Utils::getDecodedContent($post->post_title), 255),
                 ],
             ],
             'og_title' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::truncate(Utils::getDecodedContent($this->getOgArticleOgTitle($post_ID, $post)), 255),
                 ],
             ],
             'description' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::truncate(Utils::getDecodedContent(get_the_excerpt($post_ID)), 1000),
                 ],
             ],
             'og_description' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::truncate(Utils::getDecodedContent($this->getOgArticleOgDescription($post_ID, $post)), 1000),
                 ],
             ],
             'teaser' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::truncate(Utils::getDecodedContent(get_the_excerpt($post_ID)), 300),
                 ],
             ],
@@ -257,12 +245,13 @@ class ArticleEvent
             'primary_media_type' => $this->getPrimaryMediaType($post),
             'body' => [
                 [
-                    'culture' => ringier_getLocale(),
+                    'culture' => (string) ringier_getLocale(),
                     'value' => Utils::getRawContent($this->fetchArticleContent($post_ID)),
                 ],
             ],
         ];
 
+        // Custom Top Level Category Logic
         if ($this->isCustomTopLevelCategoryEnabled() === true) {
             $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
             if (!empty($primary_parent_category)) {
@@ -270,13 +259,11 @@ class ArticleEvent
             }
         }
 
-        /**
-         * Handle any YouTube videos
-         */
+        // Handle YouTube Videos
         $raw_content = Utils::getRawContent($this->fetchArticleContent($post_ID));
         $video_id_list = Utils::extract_youtube_video_ids($raw_content);
-        $youtube_api_key = $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY];
-        // Check if URLs were found
+        $youtube_api_key = $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
+
         if (!empty($video_id_list) && !empty($youtube_api_key)) {
             $video_data_list = [];
             foreach ($video_id_list as $video_id) {
@@ -376,10 +363,16 @@ class ArticleEvent
 
         foreach ($imageSizes as $size) {
             $imageId = get_post_thumbnail_id($post_ID);
+            if (!$imageId) {
+                continue;
+            } // Skip if no thumbnail
+
             $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
-            $imageUrl = get_the_post_thumbnail_url(get_post($post_ID), $size);
-            //$image_title = get_the_title($image_id);
-            $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true);
+            $imageUrl = get_the_post_thumbnail_url($post_ID, $size);
+
+            if ($imageUrl) {
+                $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true);
+            }
         }
 
         return $imageList;
@@ -398,11 +391,10 @@ class ArticleEvent
         $imageSizes = $this->imageSizeList();
 
         //Remove the featured image in the list since we are already catering for it prior to this
-        if (!empty($imageList) && (isset($imageList[$featuredImageId]))) {
+        if (!empty($imageList) && isset($imageList[$featuredImageId])) {
             unset($imageList[$featuredImageId]);
         }
 
-        //now deal with the rest
         if (count($imageList) > 0) {
             foreach ($imageList as $image) {
                 foreach ($imageSizes as $size) {
@@ -419,7 +411,10 @@ class ArticleEvent
                         $imageId = trim($image->ID);
                         $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
                         $imageUrl = wp_get_attachment_image_url($imageId, $size);
-                        $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt);
+
+                        if ($imageUrl) {
+                            $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt);
+                        }
                     }
                 }
             }
@@ -447,7 +442,6 @@ class ArticleEvent
      */
     private function getPrimaryMediaType(\WP_Post $post): string
     {
-        //default value
         $media_type = 'text';
 
         if (isset($post->post_content)) {
@@ -473,13 +467,9 @@ class ArticleEvent
      *
      * @return bool
      */
-    private function isImageAttachedAndStillUsed(string $post_name, string $content)
+    private function isImageAttachedAndStillUsed(string $post_name, string $content): bool
     {
-        if ((mb_strpos($content, $post_name) !== false)) {
-            return true;
-        }
-
-        return false;
+        return (mb_strpos($content, $post_name) !== false);
     }
 
     /**
@@ -489,15 +479,9 @@ class ArticleEvent
      *
      * @return bool
      */
-    private function hasGallery(string $content)
+    private function hasGallery(string $content): bool
     {
-        //we are using `strpos` instead of `str_contains` to be php7.4 compatible
-        if ((mb_strpos($content, 'wp-block-gallery') !== false) ||
-            (mb_strpos($content, 'wp:gallery') !== false)) {
-            return true;
-        }
-
-        return false;
+        return ((mb_strpos($content, 'wp-block-gallery') !== false) || (mb_strpos($content, 'wp:gallery') !== false));
     }
 
     /**
@@ -507,14 +491,9 @@ class ArticleEvent
      *
      * @return bool
      */
-    private function hasVideo(string $content)
+    private function hasVideo(string $content): bool
     {
-        if ((mb_strpos($content, 'https://www.youtube.com/') !== false) ||
-            (mb_strpos($content, 'https://youtu.be/') !== false)) {
-            return true;
-        }
-
-        return false;
+        return ((mb_strpos($content, 'https://www.youtube.com/') !== false) || (mb_strpos($content, 'https://youtu.be/') !== false));
     }
 
     /**
@@ -524,16 +503,12 @@ class ArticleEvent
      *
      * @return bool
      */
-    private function hasAudio(string $content)
+    private function hasAudio(string $content): bool
     {
-        if ((mb_strpos($content, '.mp3') !== false)) {
-            return true;
-        }
-
-        return false;
+        return (mb_strpos($content, '.mp3') !== false);
     }
 
-    private function getSailthruTags(int $post_ID)
+    private function getSailthruTags(int $post_ID): array
     {
         if ($this->brandSettings == null) {
             return [];
@@ -541,59 +516,40 @@ class ArticleEvent
             return [];
         }
 
-        //else proceed further
         $vertical_type = (int) $this->brandSettings->sailthru->vertical;
-        if ($vertical_type == 1) { //jobs
+        if ($vertical_type == 1) { // jobs
             $functions_terms_object = get_the_terms($post_ID, 'sailthru_functions');
-            if (($functions_terms_object === false) || is_wp_error($functions_terms_object)) {
-                $functions_list = [];
-            } else {
-                $functions_list = wp_list_pluck($functions_terms_object, 'slug');
-            }
+            $functions_list = (!empty($functions_terms_object) && !is_wp_error($functions_terms_object)) ? wp_list_pluck($functions_terms_object, 'slug') : [];
 
             $experience_level_terms_object = get_the_terms($post_ID, 'sailthru_experience_level');
-            if (($experience_level_terms_object === false) || is_wp_error($experience_level_terms_object)) {
-                $experience_level_list = [];
-            } else {
-                $experience_level_list = wp_list_pluck($experience_level_terms_object, 'slug');
-            }
+            $experience_level_list = (!empty($experience_level_terms_object) && !is_wp_error($experience_level_terms_object)) ? wp_list_pluck($experience_level_terms_object, 'slug') : [];
 
             return array_merge($functions_list, $experience_level_list);
-        } elseif ($vertical_type == 3) { //property
+        } elseif ($vertical_type == 3) { // property
             $meta_type_terms_object = get_the_terms($post_ID, 'sailthru_property_type');
-            if (($meta_type_terms_object === false) || (is_wp_error($meta_type_terms_object))) {
+            if (empty($meta_type_terms_object) || is_wp_error($meta_type_terms_object)) {
                 return [];
             }
-            $meta_type_list = wp_list_pluck($meta_type_terms_object, 'slug');
 
-            return $meta_type_list;
+            return wp_list_pluck($meta_type_terms_object, 'slug');
         }
 
         return [];
     }
 
-    private function getSailthruVars(int $post_ID)
+    private function getSailthruVars(int $post_ID): array
     {
         if ($this->brandSettings == null) {
             return [];
-        } elseif ($this->brandSettings->sailthru->enable === false) {
+        } elseif (isset($this->brandSettings->sailthru) && $this->brandSettings->sailthru->enable === false) {
             return [];
         }
-        //get user_type
-        $user_type_terms_object = get_the_terms($post_ID, 'sailthru_user_type');
-        if (($user_type_terms_object === false) || is_wp_error($user_type_terms_object)) {
-            $user_type_list = [];
-        } else {
-            $user_type_list = wp_list_pluck($user_type_terms_object, 'slug');
-        }
 
-        //get user_status
+        $user_type_terms_object = get_the_terms($post_ID, 'sailthru_user_type');
+        $user_type_list = (!empty($user_type_terms_object) && !is_wp_error($user_type_terms_object)) ? wp_list_pluck($user_type_terms_object, 'slug') : [];
+
         $user_status_terms_object = get_the_terms($post_ID, 'sailthru_user_status');
-        if (($user_status_terms_object === false) || is_wp_error($user_status_terms_object)) {
-            $user_status_list = [];
-        } else {
-            $user_status_list = wp_list_pluck($user_status_terms_object, 'slug');
-        }
+        $user_status_list = (!empty($user_status_terms_object) && !is_wp_error($user_status_terms_object)) ? wp_list_pluck($user_status_terms_object, 'slug') : [];
 
         return [
             'content_type' => 'article',
@@ -609,8 +565,6 @@ class ArticleEvent
      * NOTE: parent_category should be a TranslationObject, not a list of TranslationObjects
      *
      * @param int $post_ID
-     *
-     * @throws \Monolog\Handler\MissingExtensionException
      *
      * @return array
      */
@@ -643,12 +597,8 @@ class ArticleEvent
     private function isCustomTopLevelCategoryEnabled(): bool
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        // Check if the key exists before accessing its value.
         if (isset($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY])) {
-            $field_status_alt_category = $options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY];
-            if (strcmp($field_status_alt_category, 'on') == 0) {
-                return true;
-            }
+            return strcmp($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY], 'on') == 0;
         }
 
         return false;
@@ -681,15 +631,6 @@ class ArticleEvent
         ];
     }
 
-    /**
-     * This is the actual primary category set within WordPress for this blog instance
-     *
-     * @param int $post_ID
-     *
-     * @throws \Monolog\Handler\MissingExtensionException
-     *
-     * @return array
-     */
     private function getBlogParentCategory(int $post_ID): array
     {
         return [
@@ -709,13 +650,6 @@ class ArticleEvent
         ];
     }
 
-    /**
-     * To get list of all categories
-     *
-     * @param int $post_ID
-     *
-     * @return array
-     */
     private function getAllCategoryListArray(int $post_ID): array
     {
         $categories = [];
@@ -751,8 +685,7 @@ class ArticleEvent
         $custom_taxo_list = $this->getAllHierarchicalTaxonomiesForThePostType($post_ID);
         if (!empty($custom_taxo_list)) {
             $categories = array_merge($categories, $custom_taxo_list);
-
-            // Remove any duplicates based on the 'id' key
+            // Remove duplicates by ID
             $categories = array_values(array_reduce($categories, function ($carry, $item) {
                 if (!isset($carry[$item['id']])) {
                     $carry[$item['id']] = $item;
@@ -814,8 +747,11 @@ class ArticleEvent
      */
     private function getOgArticleOgTitle(int $post_ID, \WP_Post $post)
     {
-        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
-            return YoastSEO()->meta->for_post($post_ID)->open_graph_title;
+        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
+            $yoast = YoastSEO();
+            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
+                return $yoast->meta->for_post($post_ID)->open_graph_title;
+            }
         }
 
         return $post->post_title;
@@ -832,8 +768,11 @@ class ArticleEvent
      */
     private function getOgArticleOgDescription(int $post_ID, \WP_Post $post)
     {
-        if (class_exists('YoastSEO') && (is_object(YoastSEO()))) {
-            return YoastSEO()->meta->for_post($post_ID)->open_graph_description;
+        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
+            $yoast = YoastSEO();
+            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
+                return $yoast->meta->for_post($post_ID)->open_graph_description;
+            }
         }
 
         return get_the_excerpt($post_ID);

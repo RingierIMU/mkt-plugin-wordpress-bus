@@ -7,45 +7,12 @@
 
 namespace RingierBusPlugin\Bus;
 
-use Exception;
-use GuzzleHttp\Exception\GuzzleException;
-use Monolog\Handler\MissingExtensionException;
-use Psr\Cache\InvalidArgumentException;
 use RingierBusPlugin\Enum;
 use RingierBusPlugin\Utils;
 use WP_Post;
 
 class BusHelper
 {
-    /**
-     * Used in in ArticleEvent class
-     *
-     * @param int $post_ID
-     * @param string $image_size_name
-     * @param string $isHero
-     *
-     * @return array
-     */
-    public static function getImageArrayForApi(int $post_ID, string $image_size_name = 'large_rectangle', string $isHero = 'false'): array
-    {
-        $image_id = get_post_thumbnail_id($post_ID);
-        $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
-        $imageUrl = get_the_post_thumbnail_url(get_post($post_ID), $image_size_name);
-        //        $image_title = get_the_title($image_id);
-
-        if ($image_size_name == 'large_rectangle') {
-            $isHero = 'true';
-        }
-
-        return [
-            'url' => Utils::returnEmptyOnNullorFalse($imageUrl),
-            'size' => $image_size_name,
-            'alt_text' => Utils::returnEmptyOnNullorFalse($image_alt),
-            'hero' => $isHero,
-            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($imageUrl)),
-        ];
-    }
-
     /**
      * Registers the BUS API action within WordPress
      */
@@ -689,9 +656,6 @@ class BusHelper
      * @param int $post_ID
      * @param int $countCalled
      *
-     * @throws GuzzleException
-     * @throws InvalidArgumentException
-     *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
     public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled): void
@@ -717,32 +681,12 @@ class BusHelper
      * @param int $post_ID
      * @param WP_Post $post
      * @param int $countCalled to keep track of how many times this function was called by the cron
-     *
-     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      */
     public static function sendToBus(string $articleTriggerMode, int $post_ID, WP_Post $post, int $countCalled = 1): void
     {
-        try {
-            $authClient = new Auth();
-            $authClient->setParameters($_ENV[Enum::ENV_BUS_ENDPOINT], $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $success = self::dispatchArticleEvent($post_ID, $post, $articleTriggerMode);
 
-            $result = $authClient->acquireToken();
-            if ($result === true) {
-                $articleEvent = new ArticleEvent($authClient);
-
-                // Internal to some of the ventures, so not all will have this object, hence the check
-                if (class_exists('Brand_settings')) {
-                    $articleEvent->brandSettings = new \Brand_settings();
-                }
-
-                $articleEvent->setEventType($articleTriggerMode);
-                $articleEvent->sendToBus($post_ID, $post);
-            } else {
-                ringier_errorlogthis('A problem with Auth Token');
-
-                throw new Exception('A problem with Auth Token');
-            }
-        } catch (Exception $exception) {
+        if (!$success) {
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
@@ -755,8 +699,6 @@ class BusHelper
      * @param int $post_ID
      * @param int $countCalled
      * @param mixed $run_after_minutes
-     *
-     * @throws MissingExtensionException
      */
     public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false): void
     {
@@ -873,7 +815,7 @@ class BusHelper
 
     /**
      * Dispatch an Article event to the BUS.
-     * Used by Batch Sync tools and immediate triggers
+     * Used by both real-time hooks and batch sync tooling.
      *
      * @param int $post_id
      * @param WP_Post $post
@@ -881,7 +823,7 @@ class BusHelper
      *
      * @return bool
      */
-    public static function dispatchArticlesEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
+    public static function dispatchArticleEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
     {
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
 
@@ -910,16 +852,16 @@ class BusHelper
             return false;
         }
 
-        $articlesEvent = new ArticlesEvent($busToken, $endpointUrl);
-        $articlesEvent->setEventType($event_type);
+        $articleEvent = new ArticleEvent($busToken, $endpointUrl);
+        $articleEvent->setEventType($event_type);
 
         // Handle Brand Settings if available (mainly for ringier internal blogs)
         if (class_exists('Brand_settings')) {
-            $articlesEvent->brandSettings = new \Brand_settings();
+            $articleEvent->brandSettings = new \Brand_settings();
         }
 
         try {
-            $articlesEvent->sendToBus($post_id, $post);
+            $articleEvent->sendToBus($post_id, $post);
 
             return true;
         } catch (\Throwable $e) {

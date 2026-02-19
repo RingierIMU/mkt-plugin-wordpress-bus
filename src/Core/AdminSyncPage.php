@@ -295,7 +295,7 @@ class AdminSyncPage
         }
 
         try {
-            $success = BusHelper::dispatchArticlesEvent(
+            $success = BusHelper::dispatchArticleEvent(
                 $post_object->ID,
                 $post_object
             );
