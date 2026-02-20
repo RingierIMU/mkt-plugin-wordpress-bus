@@ -703,9 +703,10 @@ class BusHelper
     public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false): void
     {
         if ($run_after_minutes === false) {
-            $minutesToRun = getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30;
+            $minutesToRun = (int) (getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30);
+        } else {
+            $minutesToRun = (int) $run_after_minutes;
         }
-        $minutesToRun = (int) $run_after_minutes;
         $timestampNow = date_timestamp_get(date_create()); //get a UNIX Timestamp for NOW
 
         /*
