@@ -337,17 +337,18 @@ class ArticleEvent
      * @param string $size
      * @param mixed $image_alt
      * @param bool $isHero
+     * @param int $attachmentId
      *
      * @return array
      */
-    private function transformImageFieldsIntoExpectedFormat(bool|string $imageUrl, string $size, mixed $image_alt, bool $isHero = false): array
+    private function transformImageFieldsIntoExpectedFormat(bool|string $imageUrl, string $size, mixed $image_alt, bool $isHero = false, int $attachmentId = 0): array
     {
         return [
             'url' => Utils::returnEmptyOnNullorFalse($imageUrl),
             'size' => $size,
             'alt_text' => Utils::returnEmptyOnNullorFalse($image_alt),
             'hero' => $isHero,
-            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($imageUrl)),
+            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($attachmentId)),
         ];
     }
 
@@ -371,7 +372,7 @@ class ArticleEvent
             $imageUrl = get_the_post_thumbnail_url($post_ID, $size);
 
             if ($imageUrl) {
-                $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true);
+                $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true, (int) $imageId);
             }
         }
 
@@ -413,7 +414,7 @@ class ArticleEvent
                         $imageUrl = wp_get_attachment_image_url($imageId, $size);
 
                         if ($imageUrl) {
-                            $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt);
+                            $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, (int) $image->ID);
                         }
                     }
                 }

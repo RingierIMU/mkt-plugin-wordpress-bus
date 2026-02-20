@@ -35,38 +35,60 @@ class Utils
     }
 
     /**
-     * Send an md5 hash of the image content
-     * Mainly used as part of the Bus API request
+     * Return an md5 hash of the original image file.
+     * Tries the local filesystem first (fastest), falls back to HTTP download
+     * for S3/CDN-hosted images. Caches per attachment ID so each unique image
+     * is hashed only once regardless of how many size variants are requested.
      *
-     * @param $image_url
+     * @param int $attachment_id WordPress attachment ID
      *
-     * @return string
+     * @return string MD5 hash, or empty string on failure
      */
-    public static function hashImage($image_url): string
+    public static function hashImage(int $attachment_id): string
     {
-        if (empty($image_url) || is_null($image_url)) {
+        static $cache = [];
+
+        if ($attachment_id <= 0) {
             return '';
         }
 
-        $ch = curl_init($image_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Set a timeout
-
-        $imagelink = curl_exec($ch);
-
-        if ($imagelink === false) {
-            $error = curl_error($ch);
-            error_log('Curl error: ' . $error);
-            $imagelink = ''; // or any other fallback value
+        if (isset($cache[$attachment_id])) {
+            return $cache[$attachment_id];
         }
 
-        curl_close($ch);
+        // Try local filesystem first (fastest)
+        $file_path = get_attached_file($attachment_id);
+        if (!empty($file_path) && file_exists($file_path)) {
+            $cache[$attachment_id] = md5_file($file_path);
 
-        if ($imagelink === false) {
+            return $cache[$attachment_id];
+        }
+
+        // Fallback: download via HTTP (for S3/CDN-hosted images)
+        $url = wp_get_attachment_url($attachment_id);
+        if (empty($url)) {
+            $cache[$attachment_id] = '';
+
             return '';
         }
 
-        return md5($imagelink);
+        $response = wp_remote_get($url, ['timeout' => 10]);
+        if (is_wp_error($response)) {
+            $cache[$attachment_id] = '';
+
+            return '';
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        if (empty($body)) {
+            $cache[$attachment_id] = '';
+
+            return '';
+        }
+
+        $cache[$attachment_id] = md5($body);
+
+        return $cache[$attachment_id];
     }
 
     /**
