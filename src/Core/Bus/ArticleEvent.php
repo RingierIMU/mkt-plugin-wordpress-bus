@@ -194,7 +194,7 @@ class ArticleEvent
             'url' => [
                 [
                     'culture' => (string) ringier_getLocale(),
-                    'value' => (string) wp_get_canonical_url($post_ID),
+                    'value' => Utils::get_reliable_permalink($post_ID),
                 ],
             ],
             'canonical' => [

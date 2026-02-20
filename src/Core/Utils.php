@@ -813,9 +813,36 @@ class Utils
             }
         }
 
-        $canonical = wp_get_canonical_url($post);
+        return self::get_reliable_permalink($post_id);
+    }
 
-        return is_string($canonical) ? $canonical : '';
+    /**
+     * Get a reliable permalink for a post, even when it has been trashed.
+     *
+     * wp_get_canonical_url() returns false for non-public posts (e.g. trashed),
+     * so we fall back to get_permalink() which still works but appends __trashed
+     * to the slug — we strip that suffix to recover the original URL.
+     *
+     * @param int|null $post_id
+     *
+     * @return string
+     */
+    public static function get_reliable_permalink(?int $post_id): string
+    {
+        // Try the canonical URL first (works for public posts)
+        $url = wp_get_canonical_url($post_id);
+        if (is_string($url) && !empty($url)) {
+            return $url;
+        }
+
+        // Fallback: get_permalink() still works for trashed posts
+        // but WordPress appends __trashed to the slug — strip it
+        $url = get_permalink($post_id);
+        if (is_string($url) && !empty($url)) {
+            return str_replace('__trashed', '', $url);
+        }
+
+        return '';
     }
 
 }
