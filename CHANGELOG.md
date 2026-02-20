@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (code) Removed unused `RINGIER_BUS_PLUGIN_CACHE_DIR` constant
 * (code) Deleted all 18 `.twig` template files from `views/admin/`
 
+### Fixed ###
+* (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
+
 
 ## [3.6.0] - 2026-02-18 ##
 
