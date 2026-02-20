@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (code) Deleted all 18 `.twig` template files from `views/admin/`
 
 ### Fixed ###
+* (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts. Added `Utils::get_reliable_permalink()` which falls back to `get_permalink()` and strips the `__trashed` slug suffix WordPress appends during trash.
 * (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
 
 
