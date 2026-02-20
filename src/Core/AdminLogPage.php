@@ -83,7 +83,7 @@ class AdminLogPage
     {
         $log_file = $log_file_path;
         $max_lines = 10;
-        $log_data = '';
+        $tail_bytes = 65536; // 64KB — plenty for 10 log entries
 
         if (!file_exists($log_file)) {
             return 'The log seems empty!';
@@ -93,27 +93,39 @@ class AdminLogPage
             return '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
-        $log_data_array = file($log_file, FILE_SKIP_EMPTY_LINES);
-
-        if ($log_data_array === false) {
-            return 'Unable to open the log for read operation!';
-        }
-
-        $lines = count($log_data_array);
-        if ($lines == 0) {
+        $file_size = filesize($log_file);
+        if ($file_size === 0) {
             return 'The log is empty.';
         }
 
-        //We only want to display the latest 10 entries
-        if ($max_lines < $lines) {
-            for ($i = 0; $i < ($lines - $max_lines); ++$i) {
-                unset($log_data_array[$i]);
-            }
+        // Only read the tail of the file — O(1) memory regardless of file size
+        $fp = fopen($log_file, 'r');
+        if ($fp === false) {
+            return 'Unable to open the log for read operation!';
         }
 
-        //now fetch all lines
-        foreach ($log_data_array as $line) {
-            $log_data .= htmlentities($line . "\n");
+        $read_bytes = min($file_size, $tail_bytes);
+        fseek($fp, -$read_bytes, SEEK_END);
+        $tail = fread($fp, $read_bytes);
+        fclose($fp);
+
+        if ($tail === false) {
+            return 'Unable to read the log file!';
+        }
+
+        $lines = explode("\n", $tail);
+        $lines = array_filter($lines, fn ($line) => $line !== '');
+
+        if (count($lines) === 0) {
+            return 'The log is empty.';
+        }
+
+        // Take only the last N lines
+        $lines = array_slice($lines, -$max_lines);
+
+        $log_data = '';
+        foreach ($lines as $line) {
+            $log_data .= htmlentities($line) . "\n";
         }
 
         return $log_data;

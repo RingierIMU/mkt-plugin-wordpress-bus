@@ -24,6 +24,11 @@ function ringier_errorlogthis(string $message, string $level = 'ERROR'): void
             wp_mkdir_p(dirname($log_file));
         }
 
+        // Rotate if file exceeds 5MB — keep only the last ~1MB
+        if (file_exists($log_file) && filesize($log_file) > 5 * 1024 * 1024) {
+            ringier_rotate_log($log_file);
+        }
+
         // Append the error message to the log file
         $timestamp = date('Y-m-d H:i:s');
         $formatted_message = "[{$timestamp}] ERROR: {$message}" . PHP_EOL;
@@ -34,6 +39,37 @@ function ringier_errorlogthis(string $message, string $level = 'ERROR'): void
         file_put_contents($log_file, $formatted_message, FILE_APPEND | LOCK_EX);
     } catch (Throwable $e) { // fallback
         error_log('BUS_PLUGIN:: Logging failure in ringier_errorlogthis(): ' . $e->getMessage());
+    }
+}
+
+/**
+ * Rotate a log file by keeping only the last ~1MB.
+ * Uses fseek() to read only the tail — O(1) memory regardless of file size.
+ *
+ * @param string $log_file
+ */
+function ringier_rotate_log(string $log_file): void
+{
+    $keep_bytes = 1024 * 1024; // 1MB
+
+    $fp = fopen($log_file, 'r');
+    if ($fp === false) {
+        return;
+    }
+
+    $file_size = filesize($log_file);
+    fseek($fp, -min($file_size, $keep_bytes), SEEK_END);
+
+    // Skip the first partial line so we don't start mid-entry
+    if ($file_size > $keep_bytes) {
+        fgets($fp);
+    }
+
+    $tail = fread($fp, $keep_bytes);
+    fclose($fp);
+
+    if ($tail !== false) {
+        file_put_contents($log_file, $tail, LOCK_EX);
     }
 }
 
