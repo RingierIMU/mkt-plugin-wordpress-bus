@@ -188,16 +188,16 @@ class BusPluginClass
         }
 
         //parent div
-        echo '<div class="bus-hidden-text-field" data-name="' . $field_key . '" data-type="text" data-key="' . $field_key . '" style="margin: 10px 0;display:none">';
+        echo '<div class="bus-hidden-text-field" data-name="' . esc_attr($field_key) . '" data-type="text" data-key="' . esc_attr($field_key) . '" style="margin: 10px 0;display:none">';
 
         //label
         echo '<div class="bus-label bus-hidden" style="color: #a29f9f">';
-        echo '<label for="' . $field_key . '">Article status (internal use)</label>';
+        echo '<label for="' . esc_attr($field_key) . '">Article status (internal use)</label>';
         echo '</div>';
 
         //field
         echo '<div class="bus-text">';
-        echo '<input type="text" disabled id="' . $field_key . '" name="' . $field_key . '" value="' . $input_value . '">';
+        echo '<input type="text" disabled id="' . esc_attr($field_key) . '" name="' . esc_attr($field_key) . '" value="' . esc_attr($input_value) . '">';
         echo '</div>';
 
         //close parent div
@@ -217,21 +217,17 @@ class BusPluginClass
         $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
 
         //parent div
-        echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '" style="margin-bottom:20px;">';
-        echo '<label class="components-base-control__label" for="' . $field_key . '">' . $label . '</label>';
+        echo '<div class="bus-select-field" data-name="' . esc_attr($field_key) . '" data-type="select" data-key="' . esc_attr($field_key) . '" style="margin-bottom:20px;">';
+        echo '<label class="components-base-control__label" for="' . esc_attr($field_key) . '">' . esc_html($label) . '</label>';
 
         //select field
         echo '<div class="bus-select">';
-        echo '<select id="' . $field_key . '" name="' . $field_key . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;border-color:#2b689e;font-size:14px;line-height:1.4">';
+        echo '<select id="' . esc_attr($field_key) . '" name="' . esc_attr($field_key) . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;border-color:#2b689e;font-size:14px;line-height:1.4">';
 
         echo '<option value="-1">- Select -</option>';
         foreach ($field_key_list as $field_value) {
             $field_value = sanitize_text_field($field_value);
-            $is_field_selected = '';
-            if (strcmp($field_from_db, $field_value) == 0) {
-                $is_field_selected = 'selected="selected"';
-            }
-            echo '<option value="' . $field_value . '" ' . $is_field_selected . '>' . $field_value . '</option>';
+            echo '<option value="' . esc_attr($field_value) . '" ' . selected($field_from_db, $field_value, false) . '>' . esc_html($field_value) . '</option>';
         }
 
         echo '</select>';

@@ -82,6 +82,7 @@ class AdminSyncPage
             'SyncAuthorsAjax',
             [
                 'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('ringier_bus_sync'),
                 'role_list' => Enum::AUTHOR_ROLE_LIST,
             ]
         );
@@ -94,6 +95,11 @@ class AdminSyncPage
 
     public static function handleAuthorsSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         $offset = isset($_POST['offset']) ? (int) $_POST['offset'] : 0;
         $perPage = 1;
 
@@ -143,6 +149,11 @@ class AdminSyncPage
 
     public static function handleCategoriesSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         // Use global $wpdb for a precise, lightweight query
         global $wpdb;
 
@@ -194,6 +205,11 @@ class AdminSyncPage
 
     public static function handleTagsSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         global $wpdb;
 
         $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
@@ -251,6 +267,11 @@ class AdminSyncPage
      */
     public static function handleArticlesSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         global $wpdb;
 
         // Get parameters

@@ -2,6 +2,7 @@
     <h1><?php echo esc_html($args['admin_page_title']); ?></h1>
     <h3>Use the Error Log below to spot any error during the API calls</h3>
     <form name="log_page_form" action="" method="post">
+        <?php wp_nonce_field('ringier_bus_clear_log'); ?>
         <table class="form-table">
             <tr>
                 <td>(Only the latest 10 entries will be displayed - pay attention to the DATE!)</td>
@@ -11,7 +12,7 @@
             </tr>
             <tr>
                 <td width="100%">
-                    <textarea name="txtlog" class="large-text code" style="height:450px;" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><?php echo $args['txtlog_value']; ?></textarea>
+                    <textarea name="txtlog" class="large-text code" style="height:450px;" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"><?php echo esc_textarea($args['txtlog_value']); ?></textarea>
                 </td>
             </tr>
             <tr>

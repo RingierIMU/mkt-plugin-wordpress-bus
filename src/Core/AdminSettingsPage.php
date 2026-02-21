@@ -152,15 +152,8 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $bus_status_selected_on = $bus_status_selected_off = '';
-        if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
-            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
-        }
-
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
-        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
-        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
+        $args['field_selected_value'] = $options[$args['label_for']] ?? '';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-bus-status-dropdown.php',
@@ -481,15 +474,8 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $bus_status_selected_on = $bus_status_selected_off = '';
-        if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
-            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
-        }
-
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
-        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
-        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
+        $args['field_selected_value'] = $options[$args['label_for']] ?? '';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-validation-status-publication-reason.php',
@@ -531,15 +517,8 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $bus_status_selected_on = $bus_status_selected_off = '';
-        if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
-            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
-        }
-
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
-        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
-        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
+        $args['field_selected_value'] = $options[$args['label_for']] ?? '';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-validation-status-article-lifetime.php',
@@ -576,15 +555,8 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $bus_status_selected_on = $bus_status_selected_off = '';
-        if (isset($options[$args['label_for']])) {
-            $bus_status_selected_on = selected($options[$args['label_for']], 'on', false);
-            $bus_status_selected_off = selected($options[$args['label_for']], 'off', false);
-        }
-
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
-        $args['field_custom_data_selected_on'] = $bus_status_selected_on;
-        $args['field_custom_data_selected_off'] = $bus_status_selected_off;
+        $args['field_selected_value'] = $options[$args['label_for']] ?? '';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-alternate-primary-category-selectbox.php',
@@ -692,7 +664,7 @@ class AdminSettingsPage
     public static function field_enable_quick_edit_callback(array $args): void
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+        $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-enable-quick-edit.php',
@@ -754,7 +726,7 @@ class AdminSettingsPage
     public static function field_enable_author_events_callback($args): void
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+        $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-toggle-author-events-checkbox.php',
@@ -784,7 +756,7 @@ class AdminSettingsPage
     public static function field_enable_terms_events_callback($args): void
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        $args['checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on' ? 'checked="checked"' : '';
+        $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
             RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'field-toggle-terms-events-checkbox.php',

@@ -56,6 +56,7 @@ class AdminLogPage
 
         //Clear error log
         if (isset($_POST['clearlog_btn'])) {
+            check_admin_referer('ringier_bus_clear_log');
             $error_msg = self::clearErrorLog($error_log_file);
         }
 
@@ -125,7 +126,7 @@ class AdminLogPage
 
         $log_data = '';
         foreach ($lines as $line) {
-            $log_data .= htmlentities($line) . "\n";
+            $log_data .= $line . "\n";
         }
 
         return $log_data;

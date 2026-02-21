@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (code) Removed unused `RINGIER_BUS_PLUGIN_CACHE_DIR` constant
 * (code) Deleted all 18 `.twig` template files from `views/admin/`
 
+### Security ###
+* (csrf) Added nonce protection (`wp_nonce_field` + `check_admin_referer`) to the "Clear Error Log" form on the Log page
+* (csrf) Added nonce verification (`check_ajax_referer`) to all 4 AJAX sync handlers (authors, categories, tags, articles)
+* (authz) Added `current_user_can('manage_options')` capability check to all 4 AJAX sync handlers — previously any authenticated user could trigger sync operations
+* (xss) Added `escHtml()` helper to `sync-tools.js` — all server response messages (post titles, usernames, term names) are now HTML-escaped before DOM insertion via `.append()`
+* (escaping) Replaced raw `echo $args['txtlog_value']` with `esc_textarea()` in the Log page textarea (escaping now happens at the template output point)
+* (escaping) Replaced raw `echo $args['checked']` with WordPress `checked()` helper in 3 checkbox templates
+* (escaping) Replaced raw `echo $args['field_custom_data_selected_*']` with WordPress `selected()` helper in 4 dropdown templates
+* (escaping) Added `esc_attr()` and `esc_html()` to all meta box HTML output in `BusPluginClass::doSelectBox()` and `renderHtmlForHiddenPostStatusField()`
+
 ### Fixed ###
 * (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts. Added `Utils::get_reliable_permalink()` which falls back to `get_permalink()` and strips the `__trashed` slug suffix WordPress appends during trash.
 * (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
