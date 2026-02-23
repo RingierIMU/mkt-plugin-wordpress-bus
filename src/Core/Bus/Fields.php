@@ -65,7 +65,7 @@ class Fields
      *
      * @return bool
      */
-    public function initBusFields($optionList)
+    public function initBusFields(array $optionList): bool
     {
         $this->field_bus_locale = '';
         $this->field_app_key = '';
@@ -139,7 +139,7 @@ class Fields
      *
      * @return bool
      */
-    public function initSlackFields($optionList)
+    public function initSlackFields(array $optionList): bool
     {
         $this->field_bus_slack_hook_url = '';
         $this->field_bus_slack_channel_name = '';
@@ -180,7 +180,7 @@ class Fields
      * Load all fields onto the global $_ENV
      * Will only load if bus is enabled..etc
      */
-    public function load_vars_into_env()
+    public function load_vars_into_env(): void
     {
         if ($this->is_bus_enabled === true) {
             $_ENV[Enum::ENV_BUS_ENDPOINT] = $this->field_bus_api_endpoint;

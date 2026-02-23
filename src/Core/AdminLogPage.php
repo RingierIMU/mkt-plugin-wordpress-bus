@@ -18,17 +18,17 @@ class AdminLogPage
     /**
      * Main method for handling the admin pages
      */
-    public function handleAdminUI()
+    public function handleAdminUI(): void
     {
         $this->addAdminPages();
     }
 
-    public static function logSectionCallback($args)
+    public static function logSectionCallback(array $args): void
     {
         //silence for now
     }
 
-    public function addAdminPages()
+    public function addAdminPages(): void
     {
         //The "Log" sub-PAGE
         add_submenu_page(
@@ -44,7 +44,7 @@ class AdminLogPage
     /**
      * Handle & Render our Admin LOG Page
      */
-    public static function renderLogPage()
+    public static function renderLogPage(): void
     {
         global $title;
         $error_log_file = RINGIER_BUS_PLUGIN_ERROR_LOG_FILE;
@@ -80,7 +80,7 @@ class AdminLogPage
      *
      * @return string
      */
-    public static function fetchLogData($log_file_path)
+    public static function fetchLogData(string $log_file_path): string
     {
         $log_file = $log_file_path;
         $max_lines = 10;
@@ -139,7 +139,7 @@ class AdminLogPage
      *
      * @return string|void
      */
-    public static function clearErrorLog($log_file_path)
+    public static function clearErrorLog(string $log_file_path): string
     {
         if (!file_exists($log_file_path)) {
             return 'The log seems empty!';

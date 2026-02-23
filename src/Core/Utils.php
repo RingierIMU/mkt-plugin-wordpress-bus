@@ -21,7 +21,7 @@ class Utils
      *
      * @return int|string
      */
-    public static function returnEmptyOnNullorFalse($string, $is_id = false)
+    public static function returnEmptyOnNullorFalse(mixed $string, bool $is_id = false): int|string
     {
         if (($string === false) || is_null($string)) {
             if ($is_id === true) {
@@ -99,7 +99,7 @@ class Utils
      *
      * @return int
      */
-    public static function getParentPostId($post_ID)
+    public static function getParentPostId(int $post_ID): int
     {
         $parent_id = wp_is_post_revision($post_ID);
         if ($parent_id !== false) {
@@ -130,7 +130,7 @@ class Utils
      *
      * @return mixed
      */
-    public static function getPrimaryCategoryProperty($post_id, $property): string
+    public static function getPrimaryCategoryProperty(int $post_id, string $property): string
     {
         //some post_ids are simply revisions, so make sure we are actually using the parent id
         $post_id = self::getParentPostId($post_id);
@@ -167,7 +167,7 @@ class Utils
      *
      * @return bool
      */
-    public static function isPostNew($post_ID): bool
+    public static function isPostNew(int $post_ID): bool
     {
         global $wpdb;
         try {
@@ -200,7 +200,7 @@ class Utils
      *
      * @return string
      */
-    public static function getPublicationReason($post_ID): string
+    public static function getPublicationReason(int $post_ID): string
     {
         global $wpdb;
         try {
@@ -245,7 +245,7 @@ class Utils
      *
      * @return string
      */
-    public static function getArticleLifetime($post_ID): string
+    public static function getArticleLifetime(int $post_ID): string
     {
         global $wpdb;
         try {
@@ -395,7 +395,7 @@ class Utils
      *
      * @return int
      */
-    public static function getContentWordCount($content): int
+    public static function getContentWordCount(string $content): int
     {
         return str_word_count($content, 0, 'éëïöçñÉËÏÖÇÑ');
     }
@@ -407,7 +407,7 @@ class Utils
      *
      * @return bool
      */
-    public static function notEmptyOrNull($value): bool
+    public static function notEmptyOrNull(mixed $value): bool
     {
         if (is_object($value) && !is_null($value)) {
             return true;
@@ -443,7 +443,7 @@ class Utils
      *
      * @return bool
      */
-    public static function isAssociative($thatArray): bool
+    public static function isAssociative(array $thatArray): bool
     {
         foreach ($thatArray as $key => $value) {
             if ($key !== (int) $key) {
@@ -462,7 +462,7 @@ class Utils
      *
      * @return string
      */
-    public static function formatDate($date, string $format = \DATE_RFC3339): string
+    public static function formatDate(?string $date, string $format = \DATE_RFC3339): string
     {
         // Handle empty or null inputs immediately
         if (empty($date) || $date === '0000-00-00 00:00:00') {
