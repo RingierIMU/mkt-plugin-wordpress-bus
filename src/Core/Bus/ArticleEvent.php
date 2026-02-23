@@ -57,18 +57,12 @@ class ArticleEvent
      *
      * @return string
      */
-    private function getFieldStatus()
+    private function getFieldStatus(): string
     {
-        switch ($this->eventType) {
-            case Enum::EVENT_ARTICLE_CREATED:
-                return Enum::JSON_FIELD_STATUS_ONLINE;
-                break;
-            case Enum::EVENT_ARTICLE_DELETED:
-                return Enum::JSON_FIELD_STATUS_DELETED;
-                break;
-            default:
-                return Enum::JSON_FIELD_STATUS_ONLINE;
-        }
+        return match ($this->eventType) {
+            Enum::EVENT_ARTICLE_DELETED => Enum::JSON_FIELD_STATUS_DELETED,
+            default => Enum::JSON_FIELD_STATUS_ONLINE,
+        };
     }
 
     public function sendToBus(int $post_ID, \WP_Post $post): void
@@ -470,7 +464,7 @@ class ArticleEvent
      */
     private function isImageAttachedAndStillUsed(string $post_name, string $content): bool
     {
-        return (mb_strpos($content, $post_name) !== false);
+        return str_contains($content, $post_name);
     }
 
     /**
@@ -482,7 +476,7 @@ class ArticleEvent
      */
     private function hasGallery(string $content): bool
     {
-        return ((mb_strpos($content, 'wp-block-gallery') !== false) || (mb_strpos($content, 'wp:gallery') !== false));
+        return str_contains($content, 'wp-block-gallery') || str_contains($content, 'wp:gallery');
     }
 
     /**
@@ -494,7 +488,7 @@ class ArticleEvent
      */
     private function hasVideo(string $content): bool
     {
-        return ((mb_strpos($content, 'https://www.youtube.com/') !== false) || (mb_strpos($content, 'https://youtu.be/') !== false));
+        return str_contains($content, 'https://www.youtube.com/') || str_contains($content, 'https://youtu.be/');
     }
 
     /**
@@ -506,19 +500,19 @@ class ArticleEvent
      */
     private function hasAudio(string $content): bool
     {
-        return (mb_strpos($content, '.mp3') !== false);
+        return str_contains($content, '.mp3');
     }
 
     private function getSailthruTags(int $post_ID): array
     {
-        if ($this->brandSettings == null) {
+        if ($this->brandSettings === null) {
             return [];
         } elseif (isset($this->brandSettings->sailthru) && $this->brandSettings->sailthru->enable === false) {
             return [];
         }
 
         $vertical_type = (int) $this->brandSettings->sailthru->vertical;
-        if ($vertical_type == 1) { // jobs
+        if ($vertical_type === 1) { // jobs
             $functions_terms_object = get_the_terms($post_ID, 'sailthru_functions');
             $functions_list = (!empty($functions_terms_object) && !is_wp_error($functions_terms_object)) ? wp_list_pluck($functions_terms_object, 'slug') : [];
 
@@ -526,7 +520,7 @@ class ArticleEvent
             $experience_level_list = (!empty($experience_level_terms_object) && !is_wp_error($experience_level_terms_object)) ? wp_list_pluck($experience_level_terms_object, 'slug') : [];
 
             return array_merge($functions_list, $experience_level_list);
-        } elseif ($vertical_type == 3) { // property
+        } elseif ($vertical_type === 3) { // property
             $meta_type_terms_object = get_the_terms($post_ID, 'sailthru_property_type');
             if (empty($meta_type_terms_object) || is_wp_error($meta_type_terms_object)) {
                 return [];
@@ -540,7 +534,7 @@ class ArticleEvent
 
     private function getSailthruVars(int $post_ID): array
     {
-        if ($this->brandSettings == null) {
+        if ($this->brandSettings === null) {
             return [];
         } elseif (isset($this->brandSettings->sailthru) && $this->brandSettings->sailthru->enable === false) {
             return [];
@@ -598,11 +592,8 @@ class ArticleEvent
     private function isCustomTopLevelCategoryEnabled(): bool
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        if (isset($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY])) {
-            return strcmp($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY], 'on') == 0;
-        }
 
-        return false;
+        return ($options[Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY] ?? '') === 'on';
     }
 
     /**
@@ -613,7 +604,7 @@ class ArticleEvent
     private function getCustomTopLevelCategory(): array
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-        $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY];
+        $field_alt_category = $options[Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY] ?? '';
 
         return [
             'id' => 0,

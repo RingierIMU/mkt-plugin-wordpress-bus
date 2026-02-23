@@ -79,38 +79,16 @@ class Fields
         $this->field_google_youtube_api_key = '';
 
         if ($this->is_bus_enabled === true) {
-            if (isset($optionList[Enum::FIELD_VENTURE_CONFIG])) {
-                $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG];
-            }
-            if (isset($optionList[Enum::FIELD_API_USERNAME])) {
-                $this->field_bus_api_username = $optionList[Enum::FIELD_API_USERNAME];
-            }
-            if (isset($optionList[Enum::FIELD_API_PASSWORD])) {
-                $this->field_bus_api_password = $optionList[Enum::FIELD_API_PASSWORD];
-            }
-            if (isset($optionList[Enum::FIELD_API_ENDPOINT])) {
-                $this->field_bus_api_endpoint = $optionList[Enum::FIELD_API_ENDPOINT];
-            }
-            if (isset($optionList[Enum::FIELD_BACKOFF_DURATION])) {
-                $this->field_bus_backoff_duration = $optionList[Enum::FIELD_BACKOFF_DURATION];
-            }
-            if (isset($optionList[Enum::FIELD_APP_LOCALE])) {
-                $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE];
-            }
-            if (isset($optionList[Enum::FIELD_APP_KEY])) {
-                $this->field_app_key = $optionList[Enum::FIELD_APP_KEY];
-            }
-
-            if (isset($optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON])) {
-                $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON];
-            }
-            if (isset($optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME])) {
-                $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME];
-            }
-
-            if (isset($optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY])) {
-                $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY];
-            }
+            $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG] ?? '';
+            $this->field_bus_api_username = $optionList[Enum::FIELD_API_USERNAME] ?? '';
+            $this->field_bus_api_password = $optionList[Enum::FIELD_API_PASSWORD] ?? '';
+            $this->field_bus_api_endpoint = $optionList[Enum::FIELD_API_ENDPOINT] ?? '';
+            $this->field_bus_backoff_duration = $optionList[Enum::FIELD_BACKOFF_DURATION] ?? 0;
+            $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE] ?? '';
+            $this->field_app_key = $optionList[Enum::FIELD_APP_KEY] ?? '';
+            $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON] ?? 'on';
+            $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME] ?? 'on';
+            $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
 
             $error = '';
             if (!Utils::notEmptyOrNull($this->field_venture_config)) {

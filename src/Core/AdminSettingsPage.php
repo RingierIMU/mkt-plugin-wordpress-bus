@@ -426,10 +426,7 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_value = '';
-        if (isset($options[$args['label_for']])) {
-            $field_value = $options[$args['label_for']];
-        }
+        $field_value = $options[$args['label_for']] ?? '';
 
         $args['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_value'] = $field_value;
@@ -593,10 +590,7 @@ class AdminSettingsPage
     {
         $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
 
-        $field_value = parse_url(get_site_url(), PHP_URL_HOST);
-        if (isset($options[$args['label_for']])) {
-            $field_value = $options[$args['label_for']];
-        }
+        $field_value = $options[$args['label_for']] ?? parse_url(get_site_url(), PHP_URL_HOST);
 
         $args['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_value'] = $field_value;

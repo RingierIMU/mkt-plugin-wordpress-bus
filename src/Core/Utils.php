@@ -290,7 +290,7 @@ class Utils
     public static function slackthat($message, string $logLevel = 'alert'): void
     {
         //Enable logging to Slack ONLY IF it was enabled
-        if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
+        if (($_ENV[Enum::ENV_SLACK_ENABLED] ?? '') === 'ON') {
             self::pushToSlack($message, $logLevel);
         }
     }
@@ -413,7 +413,7 @@ class Utils
             return true;
         }
         if (is_array($value)) {
-            if (count($value) == 1) { //to cope with [''] and [' '] arrays
+            if (count($value) === 1) { //to cope with [''] and [' '] arrays
                 if (self::isAssociative($value)) {
                     return true;
                 } elseif (isset($value[0]) && self::notEmptyOrNull($value[0])) {
@@ -705,11 +705,11 @@ class Utils
         /**
          * Get Author professional Name
          */
-        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
-        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
+        $first_name = sanitize_text_field($userdata['first_name'] ?? '');
+        $last_name = sanitize_text_field($userdata['last_name'] ?? '');
         $professional_name = trim($first_name . ' ' . $last_name);
         if (empty($professional_name)) {
-            $professional_name = isset($userdata['display_name']) ? sanitize_text_field($userdata['display_name']) : '';
+            $professional_name = sanitize_text_field($userdata['display_name'] ?? '');
         }
 
         /**

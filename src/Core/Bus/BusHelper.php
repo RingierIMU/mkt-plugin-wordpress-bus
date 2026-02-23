@@ -39,8 +39,8 @@ class BusHelper
 
             // Fetch some options from the settings page
             $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-            $enable_author_events = isset($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS], 'on') === 0;
-            $enable_terms_events = isset($options[Enum::FIELD_ENABLE_TERMS_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_TERMS_EVENTS], 'on') === 0;
+            $enable_author_events = ($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS] ?? '') === 'on';
+            $enable_terms_events = ($options[Enum::FIELD_ENABLE_TERMS_EVENTS] ?? '') === 'on';
 
             /**
              * Author events
@@ -210,7 +210,7 @@ class BusHelper
         }
 
         $page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        if (strcmp($event_type, Enum::EVENT_TOPIC_DELETED) === 0) {
+        if ($event_type === Enum::EVENT_TOPIC_DELETED) {
             $page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
         }
 
@@ -394,7 +394,7 @@ class BusHelper
      */
     public static function save_custom_fields(int $post_id, WP_Post $post, bool $update): void
     {
-        if (strcmp($post->post_type, 'page') == 0) {
+        if ($post->post_type === 'page') {
             return;
         }
         if (empty($post->post_type)) {
@@ -405,7 +405,7 @@ class BusHelper
         }
 
         $wordpress_post_status = $post->post_status;
-        if (in_array($wordpress_post_status, ['auto-draft', 'inherit', 'trash'])) {
+        if (in_array($wordpress_post_status, ['auto-draft', 'inherit', 'trash'], true)) {
             return;
         }
 
@@ -468,7 +468,7 @@ class BusHelper
         }
 
         // Bail if we're working on a draft or trashed item
-        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+        if ($new_status === 'auto-draft' || $new_status === 'draft' || $new_status === 'inherit' || $new_status === 'trash') {
             return;
         }
 
@@ -502,7 +502,7 @@ class BusHelper
             set_transient('triggered_bus_event_' . $post->ID, true, 25);
 
             //for CIET purposes we need to push event fast on new article creation
-            if (($articleTriggerMode == Enum::EVENT_ARTICLE_CREATED)) {
+            if ($articleTriggerMode === Enum::EVENT_ARTICLE_CREATED) {
                 //Attempt to send the event immediately, queue it if it fails
                 self::sendToBus($articleTriggerMode, $post_ID, get_post($post_ID), 0);
                 //push to SLACK
@@ -536,11 +536,11 @@ class BusHelper
     public static function cater_for_custom_post(string $new_status, string $old_status, WP_Post $post): void
     {
         //bail if a page
-        if (strcmp($post->post_type, 'page') == 0) {
+        if ($post->post_type === 'page') {
             return;
         }
         //bail is normal post, we are catering for custom posts
-        if (strcmp($post->post_type, 'post') == 0) {
+        if ($post->post_type === 'post') {
             return;
         }
         if (empty($post->post_type)) {
@@ -548,7 +548,7 @@ class BusHelper
         }
 
         // Bail if we're working on a draft or trashed item
-        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+        if ($new_status === 'auto-draft' || $new_status === 'draft' || $new_status === 'inherit' || $new_status === 'trash') {
             return;
         }
 
@@ -581,7 +581,7 @@ class BusHelper
         $wordpress_post_status = $post->post_status;
 
         //we don't want to trigger the event if it is a draft, only when in public
-        if (strcmp($wordpress_post_status, 'publish') == 0) {
+        if ($wordpress_post_status === 'publish') {
             $post_ID = $post->ID;
 
             $post_ID = Utils::getParentPostId($post_ID);
@@ -618,7 +618,7 @@ class BusHelper
     public static function cater_for_manually_scheduled_post(WP_Post $post): void
     {
         $wordpress_post_status = $post->post_status;
-        if (strcmp($wordpress_post_status, 'publish') == 0) {
+        if ($wordpress_post_status === 'publish') {
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
