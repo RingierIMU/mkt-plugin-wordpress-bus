@@ -28,7 +28,7 @@ class TermEvent
     public function sendToBus(array $topic_data): void
     {
         $topic_id = $topic_data['id'];
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
 
         try {
             $authToken = $this->authClient->getToken();

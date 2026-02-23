@@ -43,7 +43,7 @@ class Fields
         $this->is_bus_enabled = false;
 
         if (is_array($optionList) && (Utils::notEmptyOrNull($optionList))) {
-            $this->field_bus_status = $optionList['field_bus_status'];
+            $this->field_bus_status = $optionList['field_bus_status'] ?? 'off';
         }
 
         if ($this->field_bus_status === 'on') {
@@ -169,9 +169,9 @@ class Fields
         $this->is_slack_enabled = true;
 
         if ($this->is_bus_enabled === true) {
-            $this->field_bus_slack_hook_url = $optionList[Enum::FIELD_SLACK_HOOK_URL];
-            $this->field_bus_slack_channel_name = $optionList[Enum::FIELD_SLACK_CHANNEL_NAME];
-            $this->field_bus_slack_bot_name = $optionList[Enum::FIELD_SLACK_BOT_NAME];
+            $this->field_bus_slack_hook_url = $optionList[Enum::FIELD_SLACK_HOOK_URL] ?? '';
+            $this->field_bus_slack_channel_name = $optionList[Enum::FIELD_SLACK_CHANNEL_NAME] ?? '';
+            $this->field_bus_slack_bot_name = $optionList[Enum::FIELD_SLACK_BOT_NAME] ?? '';
 
             $error = '';
             if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {

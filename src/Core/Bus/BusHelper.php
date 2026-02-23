@@ -186,7 +186,7 @@ class BusHelper
 
     protected static function dispatchTermEvent(\WP_Term $term, string $term_type, string $event_type): void
     {
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
         if (empty($endpointUrl)) {
             ringier_errorlogthis($term_type . '-Event: endpointUrl is empty');
             Utils::pushToSlack($term_type . '-Event: endpointUrl is empty', Enum::LOG_ERROR);
@@ -195,7 +195,12 @@ class BusHelper
         }
 
         $busToken = new BusTokenManager();
-        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $busToken->setParameters(
+            $endpointUrl,
+            $_ENV[Enum::ENV_VENTURE_CONFIG] ?? '',
+            $_ENV[Enum::ENV_BUS_API_USERNAME] ?? '',
+            $_ENV[Enum::ENV_BUS_API_PASSWORD] ?? ''
+        );
         $result = $busToken->acquireToken();
         if (!$result) {
             ringier_errorlogthis($term_type . '-Event: a problem with Bus Token');
@@ -475,7 +480,7 @@ class BusHelper
         if ($new_status === 'publish') {
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
 
             /*
              * This conditioning helps us get context if the post is in mode NEW or EDIT
@@ -586,7 +591,7 @@ class BusHelper
              * There is no other way around this as of this date of coding (Apr 2021)
              * Hope in the future WordPress exposes a better way for us to get this context
              */
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             if (Utils::isPostNew($post_ID) === true) {
                 $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
             } else {
@@ -614,7 +619,7 @@ class BusHelper
     {
         $wordpress_post_status = $post->post_status;
         if (strcmp($wordpress_post_status, 'publish') == 0) {
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
             $articleTriggerMode = 'ArticleCreated';
@@ -660,7 +665,7 @@ class BusHelper
      */
     public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled): void
     {
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
         $message = <<<EOF
             $blogKey: Now attempting push events for article (ID: $post_ID).
                     
@@ -731,7 +736,7 @@ class BusHelper
         }
         wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
 
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
         $message = <<<EOF
             $blogKey: [Queuing] Push-to-BUS for article (ID: $post_ID) has just been queued.
             And will run in the next ($minutesToRun)mins.
