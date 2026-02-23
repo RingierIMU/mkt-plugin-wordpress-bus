@@ -739,43 +739,33 @@ class ArticleEvent
 
     /**
      * Get Og Title of post
-     * We use the Yoast wrapper if possible, else return normal title
+     *
+     * Uses the native WP_Post title as the source of truth (not Yoast indexables,
+     * which can be stale if reindexing hasn't run after a post edit).
      *
      * @param int $post_ID
      * @param \WP_Post $post
      *
      * @return string
      */
-    private function getOgArticleOgTitle(int $post_ID, \WP_Post $post)
+    private function getOgArticleOgTitle(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
-            $yoast = YoastSEO();
-            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
-                return $yoast->meta->for_post($post_ID)->open_graph_title;
-            }
-        }
-
         return $post->post_title;
     }
 
     /**
      * Get Og Description of post
-     * We use the Yoast wrapper if possible, else return normal Description
+     *
+     * Uses the native WP excerpt as the source of truth (not Yoast indexables,
+     * which can be stale if reindexing hasn't run after a post edit).
      *
      * @param int $post_ID
      * @param \WP_Post $post
      *
      * @return string
      */
-    private function getOgArticleOgDescription(int $post_ID, \WP_Post $post)
+    private function getOgArticleOgDescription(int $post_ID, \WP_Post $post): string
     {
-        if (class_exists('YoastSEO') && (function_exists('YoastSEO'))) {
-            $yoast = YoastSEO();
-            if(isset($yoast->meta) && method_exists($yoast->meta, 'for_post')) {
-                return $yoast->meta->for_post($post_ID)->open_graph_description;
-            }
-        }
-
         return get_the_excerpt($post_ID);
     }
 

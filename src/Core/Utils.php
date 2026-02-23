@@ -803,16 +803,6 @@ class Utils
      */
     public static function get_canonical_url(?int $post_id): string
     {
-        $post = get_post($post_id);
-
-        // If Yoast is active and has overridden canonical URL
-        if (has_filter('wpseo_canonical')) {
-            $yoast_canonical = apply_filters('wpseo_canonical', false, $post);
-            if (is_string($yoast_canonical) && !empty($yoast_canonical)) {
-                return $yoast_canonical;
-            }
-        }
-
         return self::get_reliable_permalink($post_id);
     }
 

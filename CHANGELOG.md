@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single `ArticleEvent` class using 100% native WordPress APIs (`wp_remote_post()`, `BusTokenManager` with WP transients). Both real-time hook dispatch and batch sync tooling now share the same code path.
 * (refactor) `BusHelper::sendToBus()` now delegates to `BusHelper::dispatchArticleEvent()`, removing all Guzzle/Symfony dependencies from the real-time event flow.
 * (refactor) Renamed `dispatchArticlesEvent()` to `dispatchArticleEvent()` for consistency.
+* (refactor) Removed Yoast SEO dependency from `og_title`, `og_description`, and `canonical` payload fields — now uses native `WP_Post` properties and `wp_get_canonical_url()` as the source of truth, avoiding stale Yoast indexable data (extends the 3.5.2 date hardening to remaining fields).
 * (refactor) Replaced all 18 Twig templates with native PHP templates using `Utils::load_tpl()` and WordPress `load_template()`. Admin views (`AdminSettingsPage`, `AdminLogPage`) now use 100% native WordPress templating.
 
 ### Removed ###
