@@ -177,11 +177,17 @@ class ArticleEvent
 
     private function buildArticlePayloadData(int $post_ID, \WP_Post $post): array
     {
+        // Cache values used multiple times
+        $articleContent = $this->fetchArticleContent($post_ID);
+        $rawContent = Utils::getRawContent($articleContent);
+        $publishedDate = $this->getOgArticlePublishedDate($post_ID, $post);
+        $isCustomTopLevel = $this->isCustomTopLevelCategoryEnabled();
+
         $payload_array = [
             'reference' => (string) $post_ID,
             'status' => $this->getFieldStatus(),
-            'created_at' => $this->getOgArticlePublishedDate($post_ID, $post),
-            'published_at' => $this->getOgArticlePublishedDate($post_ID, $post),
+            'created_at' => $publishedDate,
+            'published_at' => $publishedDate,
             'updated_at' => $this->getOgArticleModifiedDate($post_ID, $post),
             'source_type' => 'original',
             'source_detail' => $this->getAuthorName($post_ID),
@@ -227,7 +233,7 @@ class ArticleEvent
                     'value' => Utils::truncate(Utils::getDecodedContent(get_the_excerpt($post_ID)), 300),
                 ],
             ],
-            'wordcount' => Utils::getContentWordCount(Utils::getRawContent($this->fetchArticleContent($post_ID))),
+            'wordcount' => Utils::getContentWordCount($rawContent),
             'images' => $this->getImages($post_ID),
             'parent_category' => $this->getParentCategoryArray($post_ID),
             'categories' => $this->getAllCategoryListArray($post_ID),
@@ -240,13 +246,13 @@ class ArticleEvent
             'body' => [
                 [
                     'culture' => (string) ringier_getLocale(),
-                    'value' => Utils::getRawContent($this->fetchArticleContent($post_ID)),
+                    'value' => $rawContent,
                 ],
             ],
         ];
 
         // Custom Top Level Category Logic
-        if ($this->isCustomTopLevelCategoryEnabled() === true) {
+        if ($isCustomTopLevel) {
             $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
             if (!empty($primary_parent_category)) {
                 $payload_array['child_category'] = $this->getBlogParentCategory($post_ID);
@@ -254,8 +260,7 @@ class ArticleEvent
         }
 
         // Handle YouTube Videos
-        $raw_content = Utils::getRawContent($this->fetchArticleContent($post_ID));
-        $video_id_list = Utils::extract_youtube_video_ids($raw_content);
+        $video_id_list = Utils::extract_youtube_video_ids($rawContent);
         $youtube_api_key = $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
 
         if (!empty($video_id_list) && !empty($youtube_api_key)) {
@@ -274,7 +279,7 @@ class ArticleEvent
          * @hook ringier_bus_build_article_payload
          *
          * @param array $payload_array The payload data array.
-         * @param int $post_ID The ID of the post.s
+         * @param int $post_ID The ID of the post.
          * @param \WP_Post $post The post object.
          *
          * @return array The payload data array.
@@ -353,16 +358,15 @@ class ArticleEvent
      */
     private function fetchFeaturedImage(int $post_ID): array
     {
+        $imageId = get_post_thumbnail_id($post_ID);
+        if (!$imageId) {
+            return [];
+        }
+
         $imageList = [];
-        $imageSizes = $this->imageSizeList();
+        $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
 
-        foreach ($imageSizes as $size) {
-            $imageId = get_post_thumbnail_id($post_ID);
-            if (!$imageId) {
-                continue;
-            } // Skip if no thumbnail
-
-            $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
+        foreach ($this->imageSizeList() as $size) {
             $imageUrl = get_the_post_thumbnail_url($post_ID, $size);
 
             if ($imageUrl) {
@@ -390,27 +394,30 @@ class ArticleEvent
             unset($imageList[$featuredImageId]);
         }
 
-        if (count($imageList) > 0) {
-            foreach ($imageList as $image) {
-                foreach ($imageSizes as $size) {
-                    $primaryImageSlug = sanitize_title($image->post_name);
-                    /**
-                     * There is an anomaly in WordPress, when an image is "removed" from a post,
-                     * it is not updated in an unattached state automatically.
-                     * ref: https://core.trac.wordpress.org/ticket/30691#comment:12
-                     *
-                     * So I am having to check if the post content actually has that image
-                     * (Wasseem)
-                     */
-                    if ($this->isImageAttachedAndStillUsed($primaryImageSlug, $this->fetchArticleContent($post_ID))) {
-                        $imageId = trim($image->ID);
-                        $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
-                        $imageUrl = wp_get_attachment_image_url($imageId, $size);
+        $articleContent = $this->fetchArticleContent($post_ID);
 
-                        if ($imageUrl) {
-                            $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, (int) $image->ID);
-                        }
-                    }
+        foreach ($imageList as $image) {
+            $primaryImageSlug = sanitize_title($image->post_name);
+            /**
+             * There is an anomaly in WordPress, when an image is "removed" from a post,
+             * it is not updated in an unattached state automatically.
+             * ref: https://core.trac.wordpress.org/ticket/30691#comment:12
+             *
+             * So I am having to check if the post content actually has that image
+             * (Wasseem)
+             */
+            if (!$this->isImageAttachedAndStillUsed($primaryImageSlug, $articleContent)) {
+                continue;
+            }
+
+            $imageId = $image->ID;
+            $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
+
+            foreach ($imageSizes as $size) {
+                $imageUrl = wp_get_attachment_image_url($imageId, $size);
+
+                if ($imageUrl) {
+                    $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, (int) $imageId);
                 }
             }
         }
@@ -437,21 +444,19 @@ class ArticleEvent
      */
     private function getPrimaryMediaType(\WP_Post $post): string
     {
-        $media_type = 'text';
+        $content = $post->post_content;
 
-        if (isset($post->post_content)) {
-            $content = $post->post_content;
-
-            if ($this->hasVideo($content)) {
-                $media_type = 'video';
-            } elseif ($this->hasGallery($content) === true) {
-                $media_type = 'gallery';
-            } elseif ($this->hasAudio($content)) {
-                $media_type = 'audio';
-            }
+        if ($this->hasVideo($content)) {
+            return 'video';
+        }
+        if ($this->hasGallery($content)) {
+            return 'gallery';
+        }
+        if ($this->hasAudio($content)) {
+            return 'audio';
         }
 
-        return $media_type;
+        return 'text';
     }
 
     /**
@@ -625,18 +630,21 @@ class ArticleEvent
 
     private function getBlogParentCategory(int $post_ID): array
     {
+        $term_id = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
+        $term = !empty($term_id) ? get_term($term_id) : null;
+
         return [
-            'id' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'term_id'), true),
+            'id' => Utils::returnEmptyOnNullorFalse($term->term_id ?? null, true),
             'title' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'name')),
+                    'value' => Utils::returnEmptyOnNullorFalse($term->name ?? null),
                 ],
             ],
             'slug' => [
                 [
                     'culture' => ringier_getLocale(),
-                    'value' => Utils::returnEmptyOnNullorFalse(Utils::getPrimaryCategoryProperty($post_ID, 'slug')),
+                    'value' => Utils::returnEmptyOnNullorFalse($term->slug ?? null),
                 ],
             ],
         ];
@@ -781,21 +789,9 @@ class ArticleEvent
             return $tags;
         }
 
-        $blacklist = [
-            'post_format',
-            'sailthru_user_type',
-            'sailthru_user_status',
-            'sailthru_property_type',
-            'sailthru_experience_level',
-            'sailthru_functions',
-            'content_style',
-            'content_author',
-            'article_intent',
-        ];
-
         foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
             // Only process flat (non-hierarchical) taxonomies — i.e. tag-like ones
-            if ($taxonomy_obj->hierarchical || in_array($taxonomy, $blacklist, true)) {
+            if ($taxonomy_obj->hierarchical || in_array($taxonomy, Enum::TAXONOMY_BLACKLIST, true)) {
                 continue;
             }
 
@@ -844,21 +840,8 @@ class ArticleEvent
             return $categories;
         }
 
-        /**
-         * we are blacklisting some taxonomies that are not relevant
-         */
-        $blacklist = [
-            'sailthru_user_type',
-            'sailthru_user_status',
-            'sailthru_property_type',
-            'sailthru_experience_level',
-            'sailthru_functions',
-            'content_style',
-            'content_author',
-            'article_intent',
-            'post_tag',
-            'post_format',
-        ];
+        // For hierarchical taxonomies, also exclude post_tag (flat taxonomy)
+        $blacklist = array_merge(Enum::TAXONOMY_BLACKLIST, ['post_tag']);
 
         foreach ($taxonomies as $taxonomy => $taxonomy_obj) {
             if (!$taxonomy_obj->hierarchical || in_array($taxonomy, $blacklist, true)) {
