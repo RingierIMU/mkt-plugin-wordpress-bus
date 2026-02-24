@@ -7,15 +7,15 @@ use RingierBusPlugin\Utils;
 
 class TermEvent
 {
-    private BusTokenManager $authClient;
+    private BusTokenManager $tokenManager;
     private string $eventType;
     private string $endpointUrl;
     private string $termType;
 
-    public function __construct(BusTokenManager $authClient, string $endpointUrl, string $termType = Enum::TERM_TYPE_CATEGORY)
+    public function __construct(BusTokenManager $tokenManager, string $endpointUrl, string $termType = Enum::TERM_TYPE_CATEGORY)
     {
-        $this->authClient = $authClient;
-        $this->eventType = Enum::EVENT_AUTHOR_CREATED;
+        $this->tokenManager = $tokenManager;
+        $this->eventType = Enum::EVENT_TOPIC_CREATED;
         $this->endpointUrl = rtrim($endpointUrl, '/');
         $this->termType = $termType;
     }
@@ -31,9 +31,13 @@ class TermEvent
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
 
         try {
-            $authToken = $this->authClient->getToken();
+            $authToken = $this->tokenManager->getToken();
             if (!$authToken) {
-                ringier_errorlogthis('TopicEvent | ' . $this->termType . ': Failed to retrieve authentication token.');
+                $error_msg = 'TopicEvent | ' . $this->termType . ': Failed to retrieve authentication token.';
+                ringier_errorlogthis($error_msg);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                return;
             }
 
             $jsonBody = wp_json_encode($this->buildMainRequestBody($topic_data));
@@ -54,16 +58,25 @@ class TermEvent
             );
 
             if (is_wp_error($response)) {
-                ringier_errorlogthis('TopicEvent | ' . $this->termType . ': Could not send request to BUS: ' . $response->get_error_message());
+                $error_msg = 'TopicEvent | ' . $this->termType . ': Could not send request to BUS: ' . $response->get_error_message();
+                ringier_errorlogthis($error_msg);
+                Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                return;
             }
 
             $responseCode = wp_remote_retrieve_response_code($response);
             $responseBody = wp_remote_retrieve_body($response);
 
             if (!in_array($responseCode, [200, 201], true)) {
-                $error_msg = '(API|TopicEvent | ' . $this->termType . ') Invalid response from BUS: ' . $responseBody;
+                $error_msg = '(API|TopicEvent | ' . $this->termType . ") Invalid response from BUS ($responseCode): " . $responseBody;
                 ringier_errorlogthis($error_msg);
                 Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+                // If 401/403, flush token
+                if ($responseCode === 401 || $responseCode === 403) {
+                    $this->tokenManager->flushToken();
+                }
 
                 return;
             }
@@ -72,8 +85,8 @@ class TermEvent
                 $blogKey: The event was successfully delivered to the BUS.
 
                 Payload details:
-                
-                
+
+
             EOF;
             Utils::slackthat($message . $jsonBody, Enum::LOG_INFO);
         } catch (\Exception $exception) {
@@ -84,11 +97,10 @@ class TermEvent
                 Error message below:
             EOF;
 
-            ringier_errorlogthis('(api) the following error was thrown:');
-            ringier_errorlogthis($exception->getMessage());
+            ringier_errorlogthis('(api) TopicEvent Exception: ' . $exception->getMessage());
             Utils::slackthat($message . $exception->getMessage(), Enum::LOG_ERROR);
 
-            $this->authClient->flushToken();
+            $this->tokenManager->flushToken();
         }
     }
 
@@ -98,7 +110,7 @@ class TermEvent
             'events' => [
                 $this->eventType,
             ],
-            'from' => $this->authClient->getVentureId(),
+            'from' => $this->tokenManager->getVentureId(),
             'reference' => wp_generate_uuid4(),
             'created_at' => date('Y-m-d\TH:i:s.vP'), //NOTE: \DateTime::RFC3339_EXTENDED has been deprecated
             'version' => Enum::BUS_API_VERSION,
@@ -141,5 +153,4 @@ class TermEvent
             'page_type' => (string) $topic_data['page_type'],
         ];
     }
-
 }
