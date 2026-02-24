@@ -1,5 +1,5 @@
 <?php
-/**p
+/**
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  *
  * @github wkhayrattee
@@ -163,32 +163,11 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return bool
      */
     public static function isPostNew(int $post_ID): bool
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::ACF_IS_POST_NEW_KEY
-            );
-            $results = $wpdb->get_row($sql);
-
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    return false;
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
-        }
-
-        return true;
+        return !metadata_exists('post', $post_ID, Enum::ACF_IS_POST_NEW_KEY);
     }
 
     /**
@@ -196,41 +175,26 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return string
      */
     public static function getPublicationReason(int $post_ID): string
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::FIELD_PUBLICATION_REASON_KEY
-            );
-            $results = $wpdb->get_row($sql);
+        $value = get_post_meta($post_ID, Enum::FIELD_PUBLICATION_REASON_KEY, true);
 
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    $publication_reason = sanitize_text_field($results->meta_value);
+        if (!empty($value)) {
+            $publication_reason = sanitize_text_field($value);
 
-                    /**
-                     * Gets the publication reason for a post.
-                     *
-                     * @hook ringier_bus_get_publication_reason
-                     *
-                     * @param string $publication_reason The publication reason.
-                     * @param int $post_ID The ID of the post.
-                     *
-                     * @return string The publication reason.
-                     */
-                    return apply_filters('ringier_bus_get_publication_reason', $publication_reason, $post_ID);
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
+            /**
+             * Gets the publication reason for a post.
+             *
+             * @hook ringier_bus_get_publication_reason
+             *
+             * @param string $publication_reason The publication reason.
+             * @param int $post_ID The ID of the post.
+             *
+             * @return string The publication reason.
+             */
+            return apply_filters('ringier_bus_get_publication_reason', $publication_reason, $post_ID);
         }
 
         return 'none';
@@ -241,41 +205,26 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return string
      */
     public static function getArticleLifetime(int $post_ID): string
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::ACF_ARTICLE_LIFETIME_KEY
-            );
-            $results = $wpdb->get_row($sql);
+        $value = get_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY, true);
 
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    $article_lifetime = sanitize_text_field($results->meta_value);
+        if (!empty($value)) {
+            $article_lifetime = sanitize_text_field($value);
 
-                    /**
-                     * Gets the article lifetime for a post.
-                     *
-                     * @hook ringier_bus_get_article_lifetime
-                     *
-                     * @param string $article_lifetime The article lifetime.
-                     * @param int $post_ID The ID of the post.
-                     *
-                     * @return string The article lifetime.
-                     */
-                    return apply_filters('ringier_bus_get_article_lifetime', $article_lifetime, $post_ID);
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
+            /**
+             * Gets the article lifetime for a post.
+             *
+             * @hook ringier_bus_get_article_lifetime
+             *
+             * @param string $article_lifetime The article lifetime.
+             * @param int $post_ID The ID of the post.
+             *
+             * @return string The article lifetime.
+             */
+            return apply_filters('ringier_bus_get_article_lifetime', $article_lifetime, $post_ID);
         }
 
         return 'none';
@@ -426,7 +375,7 @@ class Utils
                 return true;
             }
 
-            return true;
+            return false;
         } else {
             if ((is_string($value) || is_int($value)) && ($value != '') && ($value != 'NULL') && (mb_strlen(trim($value)) > 0)) {
                 return true;
@@ -515,7 +464,11 @@ class Utils
         }
 
         // If no cached data, proceed to fetching data via API request
-        $url = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id={$video_id}&key={$api_key}";
+        $url = 'https://www.googleapis.com/youtube/v3/videos?' . http_build_query([
+            'part' => 'snippet,contentDetails',
+            'id' => $video_id,
+            'key' => $api_key,
+        ]);
 
         // Add headers to the request since somehow a blank referer is being forwarded to the API - we restrict in referer for security reasons
         $args = [
@@ -526,15 +479,7 @@ class Utils
 
         $response = wp_remote_get($url, $args);
         if (is_wp_error($response)) {
-            //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[Youtube API] ERROR occurred, below error thrown:');
-
-            // Convert WP_Error to string
-            $error_message = $response->get_error_message();
-            ringier_errorlogthis($error_message);
-
-            $request_headers = wp_remote_retrieve_headers($response);
-            ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
+            ringier_errorlogthis('[Youtube API] ERROR occurred: ' . $response->get_error_message());
 
             return [];
         }
@@ -545,18 +490,11 @@ class Utils
         if (empty($data['items'])) {
             ringier_errorlogthis('[Youtube API] Warning - data was empty, below details:');
 
-            // Decode the response body to extract the error message
-            $body = wp_remote_retrieve_body($response);
-            $decoded_body = json_decode($body, true);
-
-            if (isset($decoded_body['error'])) {
-                $error_message = $decoded_body['error']['message'];
-                $error_details = isset($decoded_body['error']['errors']) ? json_encode($decoded_body['error']['errors']) : 'No further error details';
+            if (isset($data['error'])) {
+                $error_message = $data['error']['message'] ?? 'Unknown error';
+                $error_details = isset($data['error']['errors']) ? json_encode($data['error']['errors']) : 'No further error details';
                 ringier_errorlogthis('Error Message: ' . $error_message);
                 ringier_errorlogthis('Error Details: ' . $error_details);
-
-                $request_headers = wp_remote_retrieve_headers($response);
-                ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
             } else {
                 ringier_errorlogthis('No error details available in response body.');
             }
@@ -571,7 +509,7 @@ class Utils
             'reference' => $video_id,
             'content_url' => "https://www.youtube.com/watch?v={$video_id}",
             'embed_url' => "https://www.youtube.com/embed/{$video_id}",
-            'thumbnail' => $video['snippet']['thumbnails']['standard']['url'],
+            'thumbnail' => $video['snippet']['thumbnails']['standard']['url'] ?? $video['snippet']['thumbnails']['high']['url'] ?? $video['snippet']['thumbnails']['default']['url'] ?? '',
             'title' => $video['snippet']['title'],
             'description' => $video['snippet']['description'],
             'duration' => self::convert_youtube_duration($video['contentDetails']['duration']),
@@ -611,7 +549,7 @@ class Utils
 
         // no matches found
         if (empty($matches[1])) {
-            return []; // Return an empty array if
+            return [];
         }
 
         // Remove any duplicate IDs
@@ -725,7 +663,7 @@ class Utils
             $created_at = Utils::formatDate($userdata['user_registered']);
         } else {
             $user = get_userdata($user_id);
-            $created_at = $user->user_registered;
+            $created_at = Utils::formatDate($user->user_registered);
         }
 
         /**
