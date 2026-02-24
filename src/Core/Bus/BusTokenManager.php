@@ -7,12 +7,12 @@
  *
  * USAGE example:
  * ///
- * $authClient = new BusTokenManager();
- * $authClient->setParameters($_ENV['BUS_ENDPOINT'], $_ENV['VENTURE_CONFIG'], $_ENV['BUS_API_USERNAME'], $_ENV['BUS_API_PASSWORD']);
+ * $tokenManager = new BusTokenManager();
+ * $tokenManager->setParameters($_ENV['BUS_ENDPOINT'], $_ENV['VENTURE_CONFIG'], $_ENV['BUS_API_USERNAME'], $_ENV['BUS_API_PASSWORD']);
  *
- * $result = $authClient->acquireToken();
+ * $result = $tokenManager->acquireToken();
  * if ($result === true) {
- * //another should the be able to use $authClient by implementing its interface
+ * //another should the be able to use $tokenManager by implementing its interface
  * } else {
  * wp_die('could not get token');
  * }
@@ -26,6 +26,7 @@
 namespace RingierBusPlugin\Bus;
 
 use RingierBusPlugin\Enum;
+use RingierBusPlugin\Utils;
 
 class BusTokenManager
 {
@@ -33,7 +34,7 @@ class BusTokenManager
     private string $ventureConfig;
     private string $username;
     private string $password;
-    private mixed $authToken;
+    private ?string $authToken;
 
     public function __construct()
     {
@@ -48,9 +49,9 @@ class BusTokenManager
         $this->password = $password;
     }
 
-    public function getToken(mixed $regenerate = false): mixed
+    public function getToken(bool $regenerate = false): ?string
     {
-        if ($regenerate !== false) {
+        if ($regenerate) {
             $this->flushToken();
             $this->acquireToken();
         }
@@ -64,11 +65,13 @@ class BusTokenManager
         delete_transient(Enum::CACHE_KEY);
     }
 
-    public function acquireToken(): mixed
+    public function acquireToken(): bool
     {
         $this->authToken = get_transient(Enum::CACHE_KEY);
 
         if ($this->authToken === false) {
+            $this->authToken = null;
+
             $response = wp_remote_post(
                 trailingslashit($this->endpoint) . 'login',
                 [
@@ -87,13 +90,12 @@ class BusTokenManager
 
             if (is_wp_error($response)) {
                 $this->flushToken();
-                ringier_errorlogthis('[auth_api] could not get a token from BUS Login Endpoint: ');
-                ringier_errorlogthis($response->get_error_message());
+                ringier_errorlogthis('[auth_api] could not get a token from BUS Login Endpoint: ' . $response->get_error_message());
 
                 return false;
             }
 
-            $code = wp_remote_retrieve_response_code($response);
+            $responseCode = wp_remote_retrieve_response_code($response);
             $bodyArray = json_decode(wp_remote_retrieve_body($response), true);
 
             if (isset($bodyArray['token'])) {
@@ -102,6 +104,11 @@ class BusTokenManager
 
                 return true;
             }
+
+            // Log failure details so we know why token acquisition failed
+            $error_msg = "[auth_api] Failed to acquire BUS token (HTTP $responseCode)";
+            ringier_errorlogthis($error_msg);
+            Utils::slackthat($error_msg, Enum::LOG_ERROR);
 
             return false;
         }
