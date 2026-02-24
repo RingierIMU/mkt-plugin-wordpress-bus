@@ -261,7 +261,7 @@ class ArticleEvent
 
         // Handle YouTube Videos
         $video_id_list = Utils::extract_youtube_video_ids($rawContent);
-        $youtube_api_key = $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
+        $youtube_api_key = $_ENV[Enum::ENV_GOOGLE_YOUTUBE_API_KEY] ?? '';
 
         if (!empty($video_id_list) && !empty($youtube_api_key)) {
             $video_data_list = [];
