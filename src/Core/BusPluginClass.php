@@ -32,7 +32,7 @@ class BusPluginClass
      */
     public static function plugin_deactivation()
     {
-        // TODO: Remove any scheduled cron jobs?
+        wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
     }
 
     /**
@@ -97,11 +97,6 @@ class BusPluginClass
             add_action('post_row_actions', [self::class, 'hide_quick_edit_button'], PHP_INT_MAX);
         }
 
-        /*
-         * Register Bus API Mechanism
-         * Note: commented out because we are now fetching values from the UI (dashboard) itself
-         */
-        //        BusHelper::load_vars_into_env();
     }
 
     /**
@@ -139,20 +134,9 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, WP_Post $post)
     {
-        // to show meta box on all current & future custom post_type
-        $args = [
-            'post_type' => 'page',
-            'public' => false,
-        ];
-        $screens = get_post_types($args, 'names', 'not'); //pay attention to the operator (last param)
-        // we do not want to show it on "Page"
-        if (in_array('page', $screens)) {
-            unset($screens['page']);
-        }
-        // Remove any other non desired custom post_type that came through
-        if (in_array('attachment', $screens)) {
-            unset($screens['attachment']);
-        }
+        // to show meta box on all current & future public post types (excluding page and attachment)
+        $screens = get_post_types(['public' => false], 'names', 'not');
+        unset($screens['page'], $screens['attachment']);
         add_meta_box('event_bus_meta_box', __('Ringier BUS'), [self::class, 'render_meta_box_for_custom_fields'], $screens, 'side');
     }
 
@@ -166,21 +150,18 @@ class BusPluginClass
 
     public static function renderHtmlForArticleLifetimeField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::ACF_ARTICLE_LIFETIME_KEY);
-        $field_key_list = Enum::ACF_ARTICLE_LIFETIME_VALUES;
-        self::doSelectBox($post, 'Article lifetime', $field_key, $field_key_list);
+        self::doSelectBox($post, 'Article lifetime', Enum::ACF_ARTICLE_LIFETIME_KEY, Enum::ACF_ARTICLE_LIFETIME_VALUES);
     }
+
     public static function renderHtmlForPublicationReasonField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::FIELD_PUBLICATION_REASON_KEY);
-        $field_key_list = Enum::FIELD_PUBLICATION_REASON_VALUES;
-        self::doSelectBox($post, 'Publication reason', $field_key, $field_key_list);
+        self::doSelectBox($post, 'Publication reason', Enum::FIELD_PUBLICATION_REASON_KEY, Enum::FIELD_PUBLICATION_REASON_VALUES);
     }
 
     public static function renderHtmlForHiddenPostStatusField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::ACF_IS_POST_NEW_KEY);
-        $input_value = Enum::ACF_IS_POST_VALUE_NEW; //'is_new';
+        $field_key = Enum::ACF_IS_POST_NEW_KEY;
+        $input_value = Enum::ACF_IS_POST_VALUE_NEW;
 
         $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
         if (!empty($field_from_db)) {
@@ -250,14 +231,14 @@ class BusPluginClass
             $screen = get_current_screen();
 
             // load on NEW & EDIT screens of all post types
-            if (('post' === $screen->base) && ($screen->post_type != 'page')) {
+            if (('post' === $screen->base) && ($screen->post_type !== 'page')) {
                 //Publication reason
-                if ($fieldsObject->field_validation_publication_reason != 'off') {
+                if ($fieldsObject->field_validation_publication_reason !== 'off') {
                     wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
 
                 //Article lifetime
-                if ($fieldsObject->field_validation_article_lifetime != 'off') {
+                if ($fieldsObject->field_validation_article_lifetime !== 'off') {
                     wp_enqueue_script('ringier-validation-article-lifetime', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-article_lifetime.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
             }
