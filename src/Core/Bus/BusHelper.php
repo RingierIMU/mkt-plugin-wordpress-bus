@@ -30,8 +30,6 @@ class BusHelper
             /**
              * Article events
              */
-            //            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
-            //            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
@@ -107,6 +105,7 @@ class BusHelper
         $term_type = match (mb_strtolower($taxonomy)) {
             Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
             Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
+            'post_tag' => Enum::TERM_TYPE_TAG,
             default => mb_strtolower($term->taxonomy),
         };
 
@@ -167,10 +166,7 @@ class BusHelper
             return;
         }
 
-        update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
-
-        $term = $deleted_term;
-        if (!($term instanceof \WP_Term) || is_wp_error($term)) {
+        if (!($deleted_term instanceof \WP_Term) || is_wp_error($deleted_term)) {
             return;
         }
 
@@ -178,10 +174,10 @@ class BusHelper
             Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
             Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
             'post_tag' => Enum::TERM_TYPE_TAG,
-            default => mb_strtolower($term->taxonomy),
+            default => mb_strtolower($deleted_term->taxonomy),
         };
 
-        self::dispatchTermEvent($term, $term_type, Enum::EVENT_TOPIC_DELETED);
+        self::dispatchTermEvent($deleted_term, $term_type, Enum::EVENT_TOPIC_DELETED);
     }
 
     protected static function dispatchTermEvent(\WP_Term $term, string $term_type, string $event_type): void
@@ -299,8 +295,6 @@ class BusHelper
      * Triggered by hook: delete_user
      *
      * @param int $user_id
-     * @param \WP_User $old_user_data
-     * @param array $userdata
      */
     public static function triggerUserDeletedEvent(int $user_id): void
     {
@@ -389,8 +383,6 @@ class BusHelper
      * @param int $post_id
      * @param WP_Post $post
      * @param bool $update
-     *
-     * @throws Exception
      */
     public static function save_custom_fields(int $post_id, WP_Post $post, bool $update): void
     {
@@ -416,13 +408,13 @@ class BusHelper
         }
 
         //MKTC-1750 - should now allow saving when 'saving draft' and 'scheduled' posting
-        if (in_array($wordpress_post_status, ['publish', 'draft', 'future'])) {
+        if (in_array($wordpress_post_status, ['publish', 'draft', 'future'], true)) {
             $post_id = Utils::getParentPostId($post_id);
 
             //save custom field: article_lifetime
             if (isset($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY])) {
                 $article_lifetime_value = sanitize_text_field($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY]);
-                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
+                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES, true)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
                 }
             }
@@ -430,7 +422,7 @@ class BusHelper
             //save custom field: publication_reason
             if (isset($_POST[Enum::FIELD_PUBLICATION_REASON_KEY])) {
                 $publication_reason_value = sanitize_text_field($_POST[Enum::FIELD_PUBLICATION_REASON_KEY]);
-                if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
+                if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES, true)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
                 }
             }
@@ -468,7 +460,7 @@ class BusHelper
         }
 
         // Bail if we're working on a draft or trashed item
-        if ($new_status === 'auto-draft' || $new_status === 'draft' || $new_status === 'inherit' || $new_status === 'trash') {
+        if (in_array($new_status, ['auto-draft', 'draft', 'inherit', 'trash'], true)) {
             return;
         }
 
@@ -622,7 +614,7 @@ class BusHelper
             $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
-            $articleTriggerMode = 'ArticleCreated';
+            $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
             self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
             self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
         }
@@ -712,7 +704,7 @@ class BusHelper
         } else {
             $minutesToRun = (int) $run_after_minutes;
         }
-        $timestampNow = date_timestamp_get(date_create()); //get a UNIX Timestamp for NOW
+        $timestampNow = time();
 
         /*
          * We use WordPress Time Constants
