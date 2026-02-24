@@ -5,7 +5,7 @@
         <?php wp_nonce_field('ringier_bus_clear_log'); ?>
         <table class="form-table">
             <tr>
-                <td>(Only the latest 10 entries will be displayed - pay attention to the DATE!)</td>
+                <td>(Only the latest 100 entries will be displayed - pay attention to the DATE!)</td>
             </tr>
             <tr>
                 <td><?php echo esc_html($args['error_msg']); ?></td>

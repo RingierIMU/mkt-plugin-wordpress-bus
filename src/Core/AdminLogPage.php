@@ -83,8 +83,8 @@ class AdminLogPage
     public static function fetchLogData(string $log_file_path): string
     {
         $log_file = $log_file_path;
-        $max_lines = 10;
-        $tail_bytes = 65536; // 64KB — plenty for 10 log entries
+        $max_lines = 100;
+        $tail_bytes = 467000; // ~456KB — plenty for 100 log entries
 
         if (!file_exists($log_file)) {
             return 'The log seems empty!';
