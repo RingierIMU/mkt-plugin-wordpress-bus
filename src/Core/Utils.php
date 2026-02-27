@@ -569,7 +569,7 @@ class Utils
 
         foreach ($urls as $url) {
             if (!empty($url)) {
-                parse_str(parse_url($url, PHP_URL_QUERY), $query);
+                parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
                 if (isset($query['v'])) {
                     $video_ids[] = $query['v'];
                 }
@@ -658,12 +658,11 @@ class Utils
         /**
          * Get author creation date
          */
-        $created_at = 'todo';
         if (isset($userdata['user_registered'])) {
             $created_at = Utils::formatDate($userdata['user_registered']);
         } else {
             $user = get_userdata($user_id);
-            $created_at = Utils::formatDate($user->user_registered);
+            $created_at = $user ? Utils::formatDate($user->user_registered) : '';
         }
 
         /**
