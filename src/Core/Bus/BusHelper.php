@@ -858,14 +858,6 @@ class BusHelper
             $articleEvent->brandSettings = new \Brand_settings();
         }
 
-        try {
-            $articleEvent->sendToBus($post_id, $post);
-
-            return true;
-        } catch (\Throwable $e) {
-            ringier_errorlogthis("ArticleEvent ($post_id) Exception: " . $e->getMessage());
-
-            return false;
-        }
+        return $articleEvent->sendToBus($post_id, $post);
     }
 }

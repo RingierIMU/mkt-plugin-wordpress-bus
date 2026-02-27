@@ -65,7 +65,7 @@ class ArticleEvent
         };
     }
 
-    public function sendToBus(int $post_ID, \WP_Post $post): void
+    public function sendToBus(int $post_ID, \WP_Post $post): bool
     {
         $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? 'defaultBlogKey';
 
@@ -77,7 +77,7 @@ class ArticleEvent
                 ringier_errorlogthis($error_msg);
                 Utils::slackthat($error_msg, Enum::LOG_ERROR);
 
-                return;
+                return false;
             }
 
             // Build payload
@@ -108,7 +108,7 @@ class ArticleEvent
                 ringier_errorlogthis($error_msg);
                 Utils::slackthat($error_msg, Enum::LOG_ERROR);
 
-                return;
+                return false;
             }
 
             $responseCode = wp_remote_retrieve_response_code($response);
@@ -125,7 +125,7 @@ class ArticleEvent
                     $this->tokenManager->flushToken();
                 }
 
-                return;
+                return false;
             }
 
             // Success
@@ -145,6 +145,8 @@ class ArticleEvent
 
             Utils::slackthat($message);
 
+            return true;
+
         } catch (\Exception $exception) {
             $message = <<<EOF
                 $blogKey: [ALERT] ArticleEvent: An error occurred for article (ID: $post_ID)
@@ -156,6 +158,8 @@ class ArticleEvent
 
             // Force token refresh on next run if something went wrong
             $this->tokenManager->flushToken();
+
+            return false;
         }
     }
 

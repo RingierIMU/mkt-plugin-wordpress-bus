@@ -67,53 +67,57 @@ class BusTokenManager
 
     public function acquireToken(): bool
     {
-        $this->authToken = get_transient(Enum::CACHE_KEY);
+        $cached = get_transient(Enum::CACHE_KEY);
 
-        if ($this->authToken === false) {
-            $this->authToken = null;
+        // Validate cached token is a non-empty string (guards against stale null/empty transients)
+        if (is_string($cached) && $cached !== '') {
+            $this->authToken = $cached;
 
-            $response = wp_remote_post(
-                trailingslashit($this->endpoint) . 'login',
-                [
-                    'headers' => [
-                        'Accept' => 'application/json',
-                        'Content-Type' => 'application/json',
-                    ],
-                    'body' => wp_json_encode([
-                        'username' => $this->username,
-                        'password' => $this->password,
-                        'node_id' => $this->ventureConfig,
-                    ]),
-                    'timeout' => 15,
-                ]
-            );
+            return true;
+        }
 
-            if (is_wp_error($response)) {
-                $this->flushToken();
-                ringier_errorlogthis('[auth_api] could not get a token from BUS Login Endpoint: ' . $response->get_error_message());
+        // No valid cached token — fetch from the BUS login endpoint
+        $this->authToken = null;
 
-                return false;
-            }
+        $response = wp_remote_post(
+            trailingslashit($this->endpoint) . 'login',
+            [
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => wp_json_encode([
+                    'username' => $this->username,
+                    'password' => $this->password,
+                    'node_id' => $this->ventureConfig,
+                ]),
+                'timeout' => 15,
+            ]
+        );
 
-            $responseCode = wp_remote_retrieve_response_code($response);
-            $bodyArray = json_decode(wp_remote_retrieve_body($response), true);
-
-            if (isset($bodyArray['token'])) {
-                $this->authToken = $bodyArray['token'];
-                set_transient(Enum::CACHE_KEY, $this->authToken, DAY_IN_SECONDS);
-
-                return true;
-            }
-
-            // Log failure details so we know why token acquisition failed
-            $error_msg = "[auth_api] Failed to acquire BUS token (HTTP $responseCode)";
-            ringier_errorlogthis($error_msg);
-            Utils::slackthat($error_msg, Enum::LOG_ERROR);
+        if (is_wp_error($response)) {
+            $this->flushToken();
+            ringier_errorlogthis('[auth_api] could not get a token from BUS Login Endpoint: ' . $response->get_error_message());
 
             return false;
         }
 
-        return true;
+        $responseCode = wp_remote_retrieve_response_code($response);
+        $bodyArray = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (isset($bodyArray['token']) && is_string($bodyArray['token']) && $bodyArray['token'] !== '') {
+            $this->authToken = $bodyArray['token'];
+            set_transient(Enum::CACHE_KEY, $this->authToken, DAY_IN_SECONDS);
+
+            return true;
+        }
+
+        // Log failure details so we know why token acquisition failed
+        $error_msg = "[auth_api] Failed to acquire BUS token (HTTP $responseCode)";
+        ringier_errorlogthis($error_msg);
+        Utils::slackthat($error_msg, Enum::LOG_ERROR);
+
+        return false;
     }
 
     public function getVentureId(): string
