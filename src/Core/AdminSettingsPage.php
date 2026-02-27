@@ -11,19 +11,35 @@ namespace RingierBusPlugin;
 
 class AdminSettingsPage
 {
-    public function __construct()
+    /**
+     * Returns the plugin options array, cached for the duration of the request.
+     */
+    private static function getOptions(): array
     {
+        static $options = null;
+
+        if ($options === null) {
+            $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME, []);
+        }
+
+        return is_array($options) ? $options : [];
     }
 
     /**
      * Main method for handling the admin pages
      */
-    public function handleAdminUI()
+    public function handleAdminUI(): void
     {
         $this->addAdminPages();
 
         // Register a new setting for our page.
-        register_setting(Enum::SETTINGS_PAGE_OPTION_GROUP, Enum::SETTINGS_PAGE_OPTION_NAME);
+        register_setting(
+            Enum::SETTINGS_PAGE_OPTION_GROUP,
+            Enum::SETTINGS_PAGE_OPTION_NAME,
+            [
+                'sanitize_callback' => [self::class, 'sanitizeSettings'],
+            ]
+        );
 
         // Register a new section in our page.
         add_settings_section(
@@ -34,12 +50,93 @@ class AdminSettingsPage
         );
     }
 
-    public static function settingsSectionCallback($args)
+    /**
+     * Sanitize all settings before they are saved to the database.
+     *
+     * @param array $input
+     */
+    public static function sanitizeSettings(array $input): array
+    {
+        $sanitized = [];
+
+        // On/off dropdowns — whitelist to 'on'/'off'
+        $on_off_fields = [
+            Enum::FIELD_BUS_STATUS,
+            Enum::FIELD_VALIDATION_PUBLICATION_REASON,
+            Enum::FIELD_VALIDATION_ARTICLE_LIFETIME,
+            Enum::FIELD_STATUS_ALTERNATE_PRIMARY_CATEGORY,
+        ];
+        foreach ($on_off_fields as $field) {
+            $sanitized[$field] = isset($input[$field]) && $input[$field] === 'on' ? 'on' : 'off';
+        }
+
+        // Checkboxes — only stored when checked
+        $checkbox_fields = [
+            Enum::FIELD_ENABLE_QUICK_EDIT,
+            Enum::FIELD_ALLOW_CUSTOM_POST_TYPES,
+            Enum::FIELD_ENABLE_AUTHOR_EVENTS,
+            Enum::FIELD_ENABLE_TERMS_EVENTS,
+        ];
+        foreach ($checkbox_fields as $field) {
+            if (!empty($input[$field]) && $input[$field] === 'on') {
+                $sanitized[$field] = 'on';
+            }
+        }
+
+        // Text fields
+        $text_fields = [
+            Enum::FIELD_APP_LOCALE,
+            Enum::FIELD_APP_KEY,
+            Enum::FIELD_VENTURE_CONFIG,
+            Enum::FIELD_API_USERNAME,
+            Enum::FIELD_API_PASSWORD,
+            Enum::FIELD_SLACK_CHANNEL_NAME,
+            Enum::FIELD_SLACK_BOT_NAME,
+            Enum::FIELD_TEXT_ALTERNATE_PRIMARY_CATEGORY,
+            Enum::FIELD_GOOGLE_YOUTUBE_API_KEY,
+        ];
+        foreach ($text_fields as $field) {
+            if (isset($input[$field])) {
+                $sanitized[$field] = sanitize_text_field($input[$field]);
+            }
+        }
+
+        // URL fields
+        $url_fields = [
+            Enum::FIELD_API_ENDPOINT,
+            Enum::FIELD_SLACK_HOOK_URL,
+        ];
+        foreach ($url_fields as $field) {
+            if (isset($input[$field])) {
+                $sanitized[$field] = esc_url_raw($input[$field]);
+            }
+        }
+
+        // Integer fields
+        if (isset($input[Enum::FIELD_BACKOFF_DURATION])) {
+            $sanitized[Enum::FIELD_BACKOFF_DURATION] = absint($input[Enum::FIELD_BACKOFF_DURATION]);
+        }
+
+        // Custom post type list (array of checkboxes)
+        if (isset($input[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST]) && is_array($input[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST])) {
+            $sanitized[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] = [];
+            foreach ($input[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] as $post_type => $value) {
+                $sanitized_key = sanitize_key($post_type);
+                if ($value === 'on') {
+                    $sanitized[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST][$sanitized_key] = 'on';
+                }
+            }
+        }
+
+        return $sanitized;
+    }
+
+    public static function settingsSectionCallback(array $args): void
     {
         //silence for now
     }
 
-    public function addAdminPages()
+    public function addAdminPages(): void
     {
         //The "Ringier Bus API Settings" main-PAGE
         add_menu_page(
@@ -65,7 +162,7 @@ class AdminSettingsPage
     }
 
     /**
-     * We’re using the renderSettingsPage() callback in add_menu_page() to explicitly define a render method
+     * We're using the renderSettingsPage() callback in add_menu_page() to explicitly define a render method
      * for the top-level admin menu. This prevents WordPress from falling back to a slug derived from the menu
      * title (e.g., toplevel_page_ringier-bus) and ensures consistent, predictable hook suffixes
      * (like ringier-bus-api_page_ringier-bus-sync-page). Even if the method outputs nothing,
@@ -73,14 +170,12 @@ class AdminSettingsPage
      */
     public static function renderParentPage(): void
     {
-        //echo '<div class="wrap"><h1>Ringier BUS Settings</h1><p>Select a section from the submenu.</p></div>';
-        return;
     }
 
     /**
      * Handle & Render our Admin Settings Page
      */
-    public static function renderSettingsPage()
+    public static function renderSettingsPage(): void
     {
         global $title;
 
@@ -94,7 +189,7 @@ class AdminSettingsPage
         );
     }
 
-    public function addFieldsViaSettingsAPI()
+    public function addFieldsViaSettingsAPI(): void
     {
         $this->add_field_bus_status();
         $this->add_field_app_locale();
@@ -121,7 +216,7 @@ class AdminSettingsPage
     /**
      * FIELD - bus_status
      */
-    public function add_field_bus_status()
+    public function add_field_bus_status(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_BUS_STATUS,
@@ -148,9 +243,9 @@ class AdminSettingsPage
      *
      * @param array $args
      */
-    public static function field_bus_status_callback($args)
+    public static function field_bus_status_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_selected_value'] = $options[$args['label_for']] ?? '';
@@ -164,7 +259,7 @@ class AdminSettingsPage
     /**
      * FIELD - VENTURE CONFIG
      */
-    public function add_field_venture_config()
+    public function add_field_venture_config(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_VENTURE_CONFIG,
@@ -186,7 +281,7 @@ class AdminSettingsPage
      *
      * @param array $args
      */
-    public static function field_venture_config_callback($args)
+    public static function field_venture_config_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-venture-config.php');
     }
@@ -194,7 +289,7 @@ class AdminSettingsPage
     /**
      * FIELD - API Locale
      */
-    public function add_field_app_locale()
+    public function add_field_app_locale(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_APP_LOCALE,
@@ -211,7 +306,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_app_locale_callback($args)
+    public static function field_app_locale_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-app-locale.php');
     }
@@ -219,7 +314,7 @@ class AdminSettingsPage
     /**
      * FIELD - APP KEY
      */
-    public function add_field_app_key()
+    public function add_field_app_key(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_APP_KEY,
@@ -236,7 +331,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_app_key_callback($args)
+    public static function field_app_key_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-app-key.php');
     }
@@ -244,7 +339,7 @@ class AdminSettingsPage
     /**
      * FIELD - API USERNAME
      */
-    public function add_field_api_username()
+    public function add_field_api_username(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_USERNAME,
@@ -261,7 +356,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_api_username_callback($args)
+    public static function field_api_username_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-api-username.php');
     }
@@ -269,7 +364,7 @@ class AdminSettingsPage
     /**
      * FIELD - API PASSWORD
      */
-    public function add_field_api_password()
+    public function add_field_api_password(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_PASSWORD,
@@ -286,7 +381,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_api_password_callback($args)
+    public static function field_api_password_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-api-password.php');
     }
@@ -294,7 +389,7 @@ class AdminSettingsPage
     /**
      * FIELD - API Endpoint
      */
-    public function add_field_api_endpoint()
+    public function add_field_api_endpoint(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_API_ENDPOINT,
@@ -311,7 +406,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_api_endpoint_callback($args)
+    public static function field_api_endpoint_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-api-endpoint.php');
     }
@@ -319,7 +414,7 @@ class AdminSettingsPage
     /**
      * FIELD - Slack Hook URL
      */
-    public function add_field_slack_hoook_url()
+    public function add_field_slack_hoook_url(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_SLACK_HOOK_URL,
@@ -336,7 +431,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_slack_hook_url_callback($args)
+    public static function field_slack_hook_url_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-slack-hook-url.php');
     }
@@ -344,7 +439,7 @@ class AdminSettingsPage
     /**
      * FIELD - Slack Channel Name
      */
-    public function add_field_slack_channel_name()
+    public function add_field_slack_channel_name(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_SLACK_CHANNEL_NAME,
@@ -361,7 +456,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_slack_channel_name_callback($args)
+    public static function field_slack_channel_name_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-slack-channel-name.php');
     }
@@ -369,7 +464,7 @@ class AdminSettingsPage
     /**
      * FIELD - Slack Bot Name
      */
-    public function add_field_slack_bot_name()
+    public function add_field_slack_bot_name(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_SLACK_BOT_NAME,
@@ -386,7 +481,7 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_slack_bot_name_callback($args)
+    public static function field_slack_bot_name_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-slack-bot-name.php');
     }
@@ -394,7 +489,7 @@ class AdminSettingsPage
     /**
      * FIELD - Backoff Strategy (in Minutes)
      */
-    public function add_field_backoff_duration()
+    public function add_field_backoff_duration(): void
     {
         add_settings_field(
             'wp_bus_' . Enum::FIELD_BACKOFF_DURATION,
@@ -411,20 +506,20 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_backoff_duration_callback($args)
+    public static function field_backoff_duration_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-backoff-duration.php');
     }
 
     /**
-     * REFACTORED METHODS
+     * Renders a standard text-input field template.
      *
-     * @param $args
-     * @param $tpl_name
+     * @param array $args Field arguments from add_settings_field()
+     * @param string $tpl_name Template filename in views/admin/
      */
-    private static function render_field_tpl($args, $tpl_name): void
+    private static function render_field_tpl(array $args, string $tpl_name): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $field_value = $options[$args['label_for']] ?? '';
 
@@ -460,16 +555,11 @@ class AdminSettingsPage
     /**
      * field_validation_publication_reason callback function.
      *
-     * WordPress has magic interaction with the following keys: label_for, class.
-     * - the "label_for" key value is used for the "for" attribute of the <label>.
-     * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
-     * Note: you can add custom key value pairs to be used inside your callbacks.
-     *
      * @param array $args
      */
-    public static function field_validation_publication_reason_callback($args): void
+    public static function field_validation_publication_reason_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_selected_value'] = $options[$args['label_for']] ?? '';
@@ -501,18 +591,13 @@ class AdminSettingsPage
     }
 
     /**
-     * field_validation_article_lifetimes callback function.
-     *
-     * WordPress has magic interaction with the following keys: label_for, class.
-     * - the "label_for" key value is used for the "for" attribute of the <label>.
-     * - the "class" key value is used for the "class" attribute of the <tr> containing the field.
-     * Note: you can add custom key value pairs to be used inside your callbacks.
+     * field_validation_article_lifetime callback function.
      *
      * @param array $args
      */
-    public static function field_validation_article_lifetime_callback($args): void
+    public static function field_validation_article_lifetime_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_selected_value'] = $options[$args['label_for']] ?? '';
@@ -544,13 +629,13 @@ class AdminSettingsPage
     }
 
     /**
-     * field bus status callback function.
+     * field_alt_primary_category_selectbox callback function.
      *
-     * @param $args
+     * @param array $args
      */
-    public static function field_alt_primary_category_selectbox_callback($args)
+    public static function field_alt_primary_category_selectbox_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $args['field_bus_status_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_selected_value'] = $options[$args['label_for']] ?? '';
@@ -582,15 +667,15 @@ class AdminSettingsPage
     }
 
     /**
-     * field field_text_alt_primary_category status callback function.
+     * field_alt_primary_category_textbox callback function.
      *
-     * @param $args
+     * @param array $args
      */
-    public static function field_alt_primary_category_textbox_callback($args): void
+    public static function field_alt_primary_category_textbox_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
-        $field_value = $options[$args['label_for']] ?? parse_url(get_site_url(), PHP_URL_HOST);
+        $field_value = $options[$args['label_for']] ?? parse_url(get_site_url(), PHP_URL_HOST) ?? '';
 
         $args['field_name'] = Enum::SETTINGS_PAGE_OPTION_NAME . '[' . $args['label_for'] . ']';
         $args['field_value'] = $field_value;
@@ -622,11 +707,11 @@ class AdminSettingsPage
     }
 
     /**
-     * field field_google_youtube_api_key callback
+     * field_google_youtube_api_key callback function.
      *
-     * @param $args
+     * @param array $args
      */
-    public static function field_google_youtube_api_key_callback($args): void
+    public static function field_google_youtube_api_key_callback(array $args): void
     {
         self::render_field_tpl($args, 'field-google-youtube-api-key.php');
     }
@@ -657,7 +742,7 @@ class AdminSettingsPage
      */
     public static function field_enable_quick_edit_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
         $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
@@ -667,7 +752,7 @@ class AdminSettingsPage
     }
 
     /**
-     * field field_enable_custom_post_type_events
+     * FIELD - field_enable_custom_post_type_events
      */
     public function add_field_enable_custom_post_type_events(): void
     {
@@ -685,9 +770,9 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_enable_custom_post_type_events_callback($args): void
+    public static function field_enable_custom_post_type_events_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
 
         $args['master_checked'] = !empty($options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES]) && $options[Enum::FIELD_ALLOW_CUSTOM_POST_TYPES] === 'on';
         $args['allowed_post_types'] = $options[Enum::FIELD_ENABLED_CUSTOM_POST_TYPE_LIST] ?? [];
@@ -699,7 +784,7 @@ class AdminSettingsPage
     }
 
     /**
-     * field field_enable_author_events
+     * FIELD - field_enable_author_events
      */
     public function add_field_enable_author_events(): void
     {
@@ -717,9 +802,9 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_enable_author_events_callback($args): void
+    public static function field_enable_author_events_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
         $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
@@ -729,7 +814,7 @@ class AdminSettingsPage
     }
 
     /**
-     * field field_enable_terms_events
+     * FIELD - field_enable_terms_events
      */
     public function add_field_enable_terms_events(): void
     {
@@ -747,9 +832,9 @@ class AdminSettingsPage
         );
     }
 
-    public static function field_enable_terms_events_callback($args): void
+    public static function field_enable_terms_events_callback(array $args): void
     {
-        $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
+        $options = self::getOptions();
         $args['is_checked'] = isset($options[$args['label_for']]) && $options[$args['label_for']] === 'on';
 
         Utils::load_tpl(
