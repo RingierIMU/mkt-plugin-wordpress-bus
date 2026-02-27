@@ -37,21 +37,14 @@ class AdminSyncPage
             wp_die('Invalid nonce specified', 'Error', ['response' => 403]);
         }
 
-        global $wpdb;
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$wpdb->options}
-             WHERE option_name LIKE %s
-             OR option_name LIKE %s",
-                '_transient_%' . Enum::CACHE_KEY,
-                '_transient_timeout_%' . Enum::CACHE_KEY
-            )
-        );
+        delete_transient(Enum::CACHE_KEY);
 
-        // Redirect back with notice
-        wp_safe_redirect(
-            add_query_arg('flush_success', '1', wp_get_referer())
+        // Redirect back to the sync page with a success notice
+        $redirect_url = add_query_arg(
+            ['page' => Enum::ADMIN_SYNC_EVENTS_MENU_SLUG, 'flush_success' => '1'],
+            admin_url('admin.php')
         );
+        wp_safe_redirect($redirect_url);
         exit;
     }
 
@@ -184,6 +177,10 @@ class AdminSyncPage
         // Now we fetch the full object for just this ONE term
         $next_term = get_term($next_term_id, 'category');
 
+        if (!$next_term || is_wp_error($next_term)) {
+            wp_send_json_error("Could not load category term for ID {$next_term_id}");
+        }
+
         try {
             BusHelper::triggerTermCreatedEvent(
                 $next_term->term_id,
@@ -238,6 +235,10 @@ class AdminSyncPage
 
         // Fetch the full object for this specific tag
         $next_term = get_term($next_term_id, 'post_tag');
+
+        if (!$next_term || is_wp_error($next_term)) {
+            wp_send_json_error("Could not load tag term for ID {$next_term_id}");
+        }
 
         try {
             BusHelper::triggerTermCreatedEvent(
