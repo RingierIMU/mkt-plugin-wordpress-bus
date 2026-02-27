@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts. Added `Utils::get_reliable_permalink()` which falls back to `get_permalink()` and strips the `__trashed` slug suffix WordPress appends during trash.
 * (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
 
+### Improved ###
+* (settings) Added `sanitize_callback` to `register_setting()` — all settings are now sanitized server-side before saving (text fields via `sanitize_text_field()`, URLs via `esc_url_raw()`, backoff duration via `absint()`, on/off dropdowns whitelisted, checkboxes validated, custom post type keys via `sanitize_key()`)
+* (settings) Cached `get_option()` in `AdminSettingsPage` — single DB read per request instead of 13 redundant calls
+* (code) Added parameter type declarations (`array`) and return type declarations (`: void`) across all `AdminSettingsPage` methods
+* (code) Fixed stale/incorrect docblocks in `AdminSettingsPage` (wrong callback descriptions, duplicated boilerplate comments)
+* (code) Removed empty constructor and unnecessary `return;` in `AdminSettingsPage::renderParentPage()`
+* (code) Added null fallback on `parse_url()` in `field_alt_primary_category_textbox_callback()`
+
 
 ## [3.6.0] - 2026-02-18 ##
 
