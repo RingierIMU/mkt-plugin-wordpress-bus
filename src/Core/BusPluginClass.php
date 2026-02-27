@@ -36,12 +36,27 @@ class BusPluginClass
     }
 
     /**
-     * triggered when a user has deactivated the plugin
+     * triggered when the plugin is deleted (uninstalled)
      */
     public static function plugin_uninstall()
     {
+        // Clean up plugin options
         delete_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         delete_option(Enum::PLUGIN_KEY);
+
+        // Clean up transients (safety net in case deactivation didn't run)
+        delete_transient(Enum::CACHE_KEY);
+
+        // Clean up YouTube video cache transients
+        global $wpdb;
+        $wpdb->query(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_timeout_ringier_bus_youtube_video_%'"
+        );
+
+        // Clean up scheduled cron events (safety net in case deactivation didn't run)
+        wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
     }
 
     /**

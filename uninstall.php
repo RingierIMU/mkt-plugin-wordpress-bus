@@ -31,7 +31,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
  */
 define('RINGIER_BUS_DS', DIRECTORY_SEPARATOR);
 define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
-require_once RINGIER_BUS_PLUGIN_DIR . DIRECTORY_SEPARATOR . 'includes/vendor/autoload.php';
+require_once RINGIER_BUS_PLUGIN_DIR . 'includes/vendor/autoload.php';
 
 //Call our uninstall-cleanup process
 \RingierBusPlugin\BusPluginClass::plugin_uninstall();
