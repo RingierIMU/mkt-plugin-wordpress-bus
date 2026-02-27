@@ -639,11 +639,48 @@ class BusHelper
         }
 
         $post_ID = Utils::getParentPostId($post->ID);
+
+        // Unschedule any pending ArticleCreated/ArticleUpdated cron events for this article
+        // to prevent stale events firing after the article has been deleted
+        self::unscheduleArticleEvents($post_ID);
+
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
 
         //delete custom fields
         delete_post_meta($post_ID, Enum::ACF_IS_POST_NEW_KEY);
         delete_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY);
+        delete_post_meta($post_ID, Enum::FIELD_PUBLICATION_REASON_KEY);
+    }
+
+    /**
+     * Unschedule all pending cron events for a specific article.
+     *
+     * Iterates the WP cron array and removes any scheduled bus events
+     * where the post ID (second arg) matches the given article.
+     *
+     * @param int $post_ID
+     */
+    private static function unscheduleArticleEvents(int $post_ID): void
+    {
+        $hook = Enum::HOOK_NAME_SCHEDULED_EVENTS;
+        $crons = _get_cron_array();
+
+        if (empty($crons)) {
+            return;
+        }
+
+        foreach ($crons as $timestamp => $cron) {
+            if (!isset($cron[$hook])) {
+                continue;
+            }
+
+            foreach ($cron[$hook] as $key => $event) {
+                // Args are: [$articleTriggerMode, $post_ID, $countCalled]
+                if (isset($event['args'][1]) && (int) $event['args'][1] === $post_ID) {
+                    wp_unschedule_event($timestamp, $hook, $event['args']);
+                }
+            }
+        }
     }
 
     /**
