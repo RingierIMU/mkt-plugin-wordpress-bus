@@ -748,8 +748,10 @@ class Utils
      * Get a reliable permalink for a post, even when it has been trashed.
      *
      * wp_get_canonical_url() returns false for non-public posts (e.g. trashed),
-     * so we fall back to get_permalink() which still works but appends __trashed
-     * to the slug — we strip that suffix to recover the original URL.
+     * and get_permalink() returns the ugly ?p=ID format for trashed posts.
+     *
+     * For trashed posts we reconstruct the URL from the post_name (slug) stored
+     * in the DB, stripping the __trashed suffix that WordPress appends.
      *
      * @param int|null $post_id
      *
@@ -757,14 +759,26 @@ class Utils
      */
     public static function get_reliable_permalink(?int $post_id): string
     {
+        if (empty($post_id)) {
+            return '';
+        }
+
         // Try the canonical URL first (works for public posts)
         $url = wp_get_canonical_url($post_id);
         if (is_string($url) && !empty($url)) {
             return $url;
         }
 
-        // Fallback: get_permalink() still works for trashed posts
-        // but WordPress appends __trashed to the slug — strip it
+        // For trashed posts, get_permalink() returns ?p=ID.
+        // Instead, reconstruct the URL from the post_name slug in the DB.
+        $post = get_post($post_id);
+        if ($post && !empty($post->post_name)) {
+            $clean_slug = str_replace('__trashed', '', $post->post_name);
+
+            return home_url(user_trailingslashit('/' . $clean_slug));
+        }
+
+        // Last resort fallback
         $url = get_permalink($post_id);
         if (is_string($url) && !empty($url)) {
             return str_replace('__trashed', '', $url);
