@@ -59,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (cleanup) Added transient cleanup on plugin uninstall — deletes auth token transient and YouTube video cache transients
 * (cleanup) Added cron event cleanup on plugin uninstall as a safety net (in case deactivation hook didn't run)
 * (code) Added strict `true` to `in_array()` in `admin-sync-page.php` post type exclusion check
+* (settings) Changed activation defaults for "Publication reason" and "Article lifetime" validation toggles from `on` to `off` — also updated `Fields.php` fallbacks so unset values default to `off`
+* (settings) Replaced hardcoded `MUUK-STAGING` activation defaults for App Key and Slack Bot Name with dynamic values derived from the site's domain (e.g., `mysite-com-env-type`, `mysite-com-slack`)
 
 
 ## [3.6.0] - 2026-02-18 ##
