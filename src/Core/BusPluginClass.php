@@ -69,13 +69,14 @@ class BusPluginClass
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF
+            $siteKey = sanitize_title(parse_url(get_site_url(), PHP_URL_HOST) ?? 'site');
             update_option(
                 Enum::SETTINGS_PAGE_OPTION_NAME,
                 [
                     Enum::FIELD_BUS_STATUS => 'off',
                     Enum::FIELD_APP_LOCALE => 'en_KE',
-                    Enum::FIELD_APP_KEY => 'MUUK-STAGING',
-                    Enum::FIELD_SLACK_BOT_NAME => 'MUUK-STAGING',
+                    Enum::FIELD_APP_KEY => $siteKey . '-env-type',
+                    Enum::FIELD_SLACK_BOT_NAME => $siteKey . '-slack',
                     Enum::FIELD_BACKOFF_DURATION => 30,
                     Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'off',
                     Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'off',
