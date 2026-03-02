@@ -33,6 +33,7 @@ class BusPluginClass
     public static function plugin_deactivation()
     {
         wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
+        delete_transient(Enum::CACHE_KEY);
     }
 
     /**
