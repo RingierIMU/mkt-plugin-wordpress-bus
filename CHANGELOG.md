@@ -33,10 +33,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (escaping) Replaced raw `echo $args['checked']` with WordPress `checked()` helper in 3 checkbox templates
 * (escaping) Replaced raw `echo $args['field_custom_data_selected_*']` with WordPress `selected()` helper in 4 dropdown templates
 * (escaping) Added `esc_attr()` and `esc_html()` to all meta box HTML output in `BusPluginClass::doSelectBox()` and `renderHtmlForHiddenPostStatusField()`
+* (redirect) Fixed open redirect in `AdminSyncPage::handleFlushAllTransients()` — replaced user-controlled `wp_get_referer()` with a known admin URL built from `admin_url()`
 
 ### Fixed ###
-* (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts. Added `Utils::get_reliable_permalink()` which falls back to `get_permalink()` and strips the `__trashed` slug suffix WordPress appends during trash.
+* (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts, and `get_permalink()` returns `?p=ID` format. Rewrote `Utils::get_reliable_permalink()` to reconstruct the URL from the post's `post_name` slug (stripping the `__trashed` suffix) using `home_url()` with `user_trailingslashit()`.
+* (bug) Stale `ArticleUpdated` events could fire after `ArticleDeleted` — when an article was deleted before its scheduled cron event fired, the scheduled event would still dispatch. Added `BusHelper::unscheduleArticleEvents()` to cancel all pending bus cron events for the post before sending the delete event.
+* (bug) `ArticleEvent::sendToBus()` returned `void` — all failure paths (no token, WP_Error, bad HTTP status, exception) logged errors but returned silently, so `BusHelper::sendToBus()` always saw success and never re-queued failed events via `scheduleSendToBus()`. Changed return type to `bool` with explicit `false` on all failure paths.
+* (bug) `BusTokenManager::acquireToken()` accepted stale/falsy cached tokens — if the transient contained a falsy-but-not-`false` value (e.g., `null`, `''`), the method returned success but `getToken()` returned null. Rewrote with positive validation: `is_string($cached) && $cached !== ''`.
 * (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
+* (bug) `Utils::buildAuthorInfo()` initialized `$created_at` to the literal string `'todo'` which could leak to the BUS API as a date value; removed dead initializer
+* (bug) `Utils::buildAuthorInfo()` did not check for `get_userdata()` returning `false` for non-existent users, risking a fatal error; added null guard
+* (bug) `Utils::get_youtube_ids_from_urls()` passed `null` to `parse_str()` when URLs had no query string — PHP 8.1+ deprecation warning; added `?? ''` fallback
+* (bug) `get_term()` return value not guarded in `AdminSyncPage` category and tag sync handlers — accessed `$next_term->term_id` without checking for `null` or `WP_Error`
+* (bug) Double directory separator in `uninstall.php` autoload path — `plugin_dir_path()` already returns trailing slash; removed redundant `DIRECTORY_SEPARATOR`
 
 ### Improved ###
 * (settings) Added `sanitize_callback` to `register_setting()` — all settings are now sanitized server-side before saving (text fields via `sanitize_text_field()`, URLs via `esc_url_raw()`, backoff duration via `absint()`, on/off dropdowns whitelisted, checkboxes validated, custom post type keys via `sanitize_key()`)
@@ -45,6 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (code) Fixed stale/incorrect docblocks in `AdminSettingsPage` (wrong callback descriptions, duplicated boilerplate comments)
 * (code) Removed empty constructor and unnecessary `return;` in `AdminSettingsPage::renderParentPage()`
 * (code) Added null fallback on `parse_url()` in `field_alt_primary_category_textbox_callback()`
+* (cleanup) Added `publication_reason` meta cleanup on article deletion (alongside existing `lifetime` and `is_post_new` cleanup)
+* (cleanup) Replaced raw SQL transient flush in `AdminSyncPage::handleFlushAllTransients()` with `delete_transient(Enum::CACHE_KEY)`
+* (cleanup) Added transient cleanup on plugin uninstall — deletes auth token transient and YouTube video cache transients
+* (cleanup) Added cron event cleanup on plugin uninstall as a safety net (in case deactivation hook didn't run)
+* (code) Added strict `true` to `in_array()` in `admin-sync-page.php` post type exclusion check
 
 
 ## [3.6.0] - 2026-02-18 ##
