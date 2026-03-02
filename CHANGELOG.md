@@ -8,59 +8,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased] ##
-### Changed ###
-* (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single `ArticleEvent` class using 100% native WordPress APIs (`wp_remote_post()`, `BusTokenManager` with WP transients). Both real-time hook dispatch and batch sync tooling now share the same code path.
-* (refactor) `BusHelper::sendToBus()` now delegates to `BusHelper::dispatchArticleEvent()`, removing all Guzzle/Symfony dependencies from the real-time event flow.
-* (refactor) Renamed `dispatchArticlesEvent()` to `dispatchArticleEvent()` for consistency.
-* (refactor) Removed Yoast SEO dependency from `og_title`, `og_description`, and `canonical` payload fields — now uses native `WP_Post` properties and `wp_get_canonical_url()` as the source of truth, avoiding stale Yoast indexable data (extends the 3.5.2 date hardening to remaining fields).
-* (refactor) Replaced all 18 Twig templates with native PHP templates using `Utils::load_tpl()` and WordPress `load_template()`. Admin views (`AdminSettingsPage`, `AdminLogPage`) now use 100% native WordPress templating.
+
+
+## [4.0.0] - 2026-03-02 ##
 
 ### Removed ###
 * (dependency) Fully removed Monolog (`monolog/monolog`)
-* (dependency) Fully removed Guzzle (`guzzlehttp/guzzle`) and Symfony Cache (`symfony/cache`)
+* (dependency) Fully removed Guzzle (`guzzlehttp/guzzle`)
+* (dependency) Fully removed Symfony Cache (`symfony/cache`)
 * (dependency) Fully removed Timber (`timber/timber`) and Twig (`twig/twig`) — the plugin now has **zero production dependencies**
 * (code) Removed legacy `Auth.php`, `AuthenticationInterface.php`, and `LoggingHandler.php` classes
-* (code) Removed dead `BusHelper::getImageArrayForApi()` method
-* (code) Removed unused `RINGIER_BUS_PLUGIN_CACHE_DIR` constant
 * (code) Deleted all 18 `.twig` template files from `views/admin/`
+
+### Changed ###
+* (refactor) Removed Yoast SEO dependency from `og_title`, `og_description`, and `canonical` payload fields — now uses native `WP_Post` properties and `wp_get_canonical_url()` as the source of truth, avoiding stale Yoast indexable data (extends the 3.5.2 date hardening to remaining fields).
+* (refactor) Replaced all 18 Twig templates with native PHP templates using `Utils::load_tpl()` and WordPress `load_template()`. Admin views (`AdminSettingsPage`, `AdminLogPage`) now use 100% native WordPress templating.
+* (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single `ArticleEvent` class using 100% native WordPress APIs (`wp_remote_post()`, `BusTokenManager` with WP transients). Both real-time hook dispatch and batch sync tooling now share the same code path.
+* (refactor) `BusHelper::sendToBus()` now delegates to `BusHelper::dispatchArticleEvent()`, removing all Guzzle/Symfony dependencies from the real-time event flow.
+* (refactor) Renamed `dispatchArticlesEvent()` to `dispatchArticleEvent()` for consistency.
 
 ### Security ###
 * (csrf) Added nonce protection (`wp_nonce_field` + `check_admin_referer`) to the "Clear Error Log" form on the Log page
-* (csrf) Added nonce verification (`check_ajax_referer`) to all 4 AJAX sync handlers (authors, categories, tags, articles)
-* (authz) Added `current_user_can('manage_options')` capability check to all 4 AJAX sync handlers — previously any authenticated user could trigger sync operations
+* (csrf) Added nonce verification (`check_ajax_referer`) to AJAX sync handlers (authors, categories, tags, articles)
 * (xss) Added `escHtml()` helper to `sync-tools.js` — all server response messages (post titles, usernames, term names) are now HTML-escaped before DOM insertion via `.append()`
-* (escaping) Replaced raw `echo $args['txtlog_value']` with `esc_textarea()` in the Log page textarea (escaping now happens at the template output point)
-* (escaping) Replaced raw `echo $args['checked']` with WordPress `checked()` helper in 3 checkbox templates
-* (escaping) Replaced raw `echo $args['field_custom_data_selected_*']` with WordPress `selected()` helper in 4 dropdown templates
-* (escaping) Added `esc_attr()` and `esc_html()` to all meta box HTML output in `BusPluginClass::doSelectBox()` and `renderHtmlForHiddenPostStatusField()`
 * (redirect) Fixed open redirect in `AdminSyncPage::handleFlushAllTransients()` — replaced user-controlled `wp_get_referer()` with a known admin URL built from `admin_url()`
 
 ### Fixed ###
 * (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts, and `get_permalink()` returns `?p=ID` format. Rewrote `Utils::get_reliable_permalink()` to reconstruct the URL from the post's `post_name` slug (stripping the `__trashed` suffix) using `home_url()` with `user_trailingslashit()`.
 * (bug) Stale `ArticleUpdated` events could fire after `ArticleDeleted` — when an article was deleted before its scheduled cron event fired, the scheduled event would still dispatch. Added `BusHelper::unscheduleArticleEvents()` to cancel all pending bus cron events for the post before sending the delete event.
-* (bug) `ArticleEvent::sendToBus()` returned `void` — all failure paths (no token, WP_Error, bad HTTP status, exception) logged errors but returned silently, so `BusHelper::sendToBus()` always saw success and never re-queued failed events via `scheduleSendToBus()`. Changed return type to `bool` with explicit `false` on all failure paths.
-* (bug) `BusTokenManager::acquireToken()` accepted stale/falsy cached tokens — if the transient contained a falsy-but-not-`false` value (e.g., `null`, `''`), the method returned success but `getToken()` returned null. Rewrote with positive validation: `is_string($cached) && $cached !== ''`.
 * (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
-* (bug) `Utils::buildAuthorInfo()` initialized `$created_at` to the literal string `'todo'` which could leak to the BUS API as a date value; removed dead initializer
-* (bug) `Utils::buildAuthorInfo()` did not check for `get_userdata()` returning `false` for non-existent users, risking a fatal error; added null guard
 * (bug) `Utils::get_youtube_ids_from_urls()` passed `null` to `parse_str()` when URLs had no query string — PHP 8.1+ deprecation warning; added `?? ''` fallback
-* (bug) `get_term()` return value not guarded in `AdminSyncPage` category and tag sync handlers — accessed `$next_term->term_id` without checking for `null` or `WP_Error`
-* (bug) Double directory separator in `uninstall.php` autoload path — `plugin_dir_path()` already returns trailing slash; removed redundant `DIRECTORY_SEPARATOR`
 
 ### Improved ###
 * (settings) Added `sanitize_callback` to `register_setting()` — all settings are now sanitized server-side before saving (text fields via `sanitize_text_field()`, URLs via `esc_url_raw()`, backoff duration via `absint()`, on/off dropdowns whitelisted, checkboxes validated, custom post type keys via `sanitize_key()`)
 * (settings) Cached `get_option()` in `AdminSettingsPage` — single DB read per request instead of 13 redundant calls
-* (code) Added parameter type declarations (`array`) and return type declarations (`: void`) across all `AdminSettingsPage` methods
-* (code) Fixed stale/incorrect docblocks in `AdminSettingsPage` (wrong callback descriptions, duplicated boilerplate comments)
-* (code) Removed empty constructor and unnecessary `return;` in `AdminSettingsPage::renderParentPage()`
-* (code) Added null fallback on `parse_url()` in `field_alt_primary_category_textbox_callback()`
 * (cleanup) Added `publication_reason` meta cleanup on article deletion (alongside existing `lifetime` and `is_post_new` cleanup)
 * (cleanup) Replaced raw SQL transient flush in `AdminSyncPage::handleFlushAllTransients()` with `delete_transient(Enum::CACHE_KEY)`
 * (cleanup) Added transient cleanup on plugin uninstall — deletes auth token transient and YouTube video cache transients
 * (cleanup) Added cron event cleanup on plugin uninstall as a safety net (in case deactivation hook didn't run)
-* (code) Added strict `true` to `in_array()` in `admin-sync-page.php` post type exclusion check
 * (settings) Changed activation defaults for "Publication reason" and "Article lifetime" validation toggles from `on` to `off` — also updated `Fields.php` fallbacks so unset values default to `off`
-* (settings) Replaced hardcoded `MUUK-STAGING` activation defaults for App Key and Slack Bot Name with dynamic values derived from the site's domain (e.g., `mysite-com-env-type`, `mysite-com-slack`)
+* (code) Systematic file-by-file audit of every core class.
 
 
 ## [3.6.0] - 2026-02-18 ##

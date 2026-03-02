@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9
-Stable tag: 3.6.0
+Stable tag: 4.0.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -160,6 +160,38 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [4.0.0] - 2026-03-02 ###
+
+#### Changed ####
+* (refactor) Removed Yoast SEO dependency from `og_title`, `og_description`, and `canonical` payload fields — now uses native WP_Post properties as source of truth.
+* (refactor) Replaced all 18 Twig templates with native PHP templates.
+* (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single class using 100% native WordPress APIs. Both real-time hook dispatch and batch sync now share the same code path.
+
+#### Removed ####
+* (dependency) Fully removed Monolog, Guzzle, Symfony Cache, Timber, and Twig — the plugin now has **zero production dependencies**.
+* (code) Removed legacy `Auth.php`, `AuthenticationInterface.php`, `LoggingHandler.php` and all `.twig` template files.
+
+#### Security ####
+* (csrf) Added nonce protection to the "Clear Error Log" form and all 4 AJAX sync handlers.
+* (xss) HTML-escaped all server response messages in `sync-tools.js` before DOM insertion.
+* (escaping) Replaced raw `echo` with WordPress `checked()`, `selected()`, `esc_attr()`, `esc_html()`, and `esc_textarea()` helpers across all templates and meta boxes.
+* (redirect) Fixed open redirect in `handleFlushAllTransients()`.
+
+#### Fixed ####
+* (bug) Stale `ArticleUpdated` events could fire after `ArticleDeleted` — now cancels all pending cron events before sending delete.
+* (bug) Failed article events were never re-queued — `sendToBus()` now returns `bool` so failures trigger `scheduleSendToBus()` retry.
+* (bug) Backoff duration was never applied on retry in `scheduleSendToBus()`.
+* (bug) Multiple null-safety, PHP 8.1+ deprecation and error handling fixes across all core classes.
+
+#### Improved ####
+* (settings) Added `sanitize_callback` to `register_setting()` for server-side input sanitization.
+* (settings) Cached `get_option()` — single DB read per request instead of 13 calls.
+* (settings) Sensible activation defaults derived from site domain instead of hardcoded values.
+* (code) PHP 8.1+ modernization: `str_contains()`, `match` expressions, strict comparisons, null coalescing, type declarations across the codebase.
+* (code) Systematic file-by-file audit of every core class.
+* (cleanup) Plugin deactivation now cleans up cron events and auth token transients. Uninstall cleans up all plugin data.
+
 
 ### [3.6.0] - 2026-02-18 ###
 
