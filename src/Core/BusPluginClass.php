@@ -77,8 +77,8 @@ class BusPluginClass
                     Enum::FIELD_APP_KEY => 'MUUK-STAGING',
                     Enum::FIELD_SLACK_BOT_NAME => 'MUUK-STAGING',
                     Enum::FIELD_BACKOFF_DURATION => 30,
-                    Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'on',
-                    Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'on',
+                    Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'off',
+                    Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'off',
                 ]
             );
         }

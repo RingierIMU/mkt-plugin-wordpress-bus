@@ -73,8 +73,8 @@ class Fields
         $this->field_bus_api_password = '';
         $this->field_bus_api_endpoint = '';
         $this->field_bus_backoff_duration = 0;
-        $this->field_validation_publication_reason = 'on';
-        $this->field_validation_article_lifetime = 'on';
+        $this->field_validation_publication_reason = 'off';
+        $this->field_validation_article_lifetime = 'off';
         $this->field_google_youtube_api_key = '';
 
         $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG] ?? '';
@@ -84,8 +84,8 @@ class Fields
         $this->field_bus_backoff_duration = (int) ($optionList[Enum::FIELD_BACKOFF_DURATION] ?? 0);
         $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE] ?? '';
         $this->field_app_key = $optionList[Enum::FIELD_APP_KEY] ?? '';
-        $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON] ?? 'on';
-        $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME] ?? 'on';
+        $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON] ?? 'off';
+        $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME] ?? 'off';
         $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
 
         $error = '';
