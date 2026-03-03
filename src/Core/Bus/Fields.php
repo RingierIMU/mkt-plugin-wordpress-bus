@@ -41,9 +41,10 @@ class Fields
 
         $this->field_bus_status = 'off';
         $this->is_bus_enabled = false;
+        $this->is_slack_enabled = false;
 
-        if (is_array($optionList) && (Utils::notEmptyOrNull($optionList))) {
-            $this->field_bus_status = $optionList['field_bus_status'];
+        if (is_array($optionList) && !empty($optionList)) {
+            $this->field_bus_status = $optionList['field_bus_status'] ?? 'off';
         }
 
         if ($this->field_bus_status === 'on') {
@@ -59,13 +60,11 @@ class Fields
      * Populate all fields that the BUS API Class needs
      * If any of those fields is empty, BUS sync will be turned OFF
      *
-     * @param $optionList
-     *
-     * @throws \Exception
+     * @param array $optionList
      *
      * @return bool
      */
-    public function initBusFields($optionList)
+    public function initBusFields(array $optionList): bool
     {
         $this->field_bus_locale = '';
         $this->field_app_key = '';
@@ -74,80 +73,51 @@ class Fields
         $this->field_bus_api_password = '';
         $this->field_bus_api_endpoint = '';
         $this->field_bus_backoff_duration = 0;
-        $this->field_validation_publication_reason = 'on';
-        $this->field_validation_article_lifetime = 'on';
+        $this->field_validation_publication_reason = 'off';
+        $this->field_validation_article_lifetime = 'off';
         $this->field_google_youtube_api_key = '';
 
-        if ($this->is_bus_enabled === true) {
-            if (isset($optionList[Enum::FIELD_VENTURE_CONFIG])) {
-                $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG];
-            }
-            if (isset($optionList[Enum::FIELD_API_USERNAME])) {
-                $this->field_bus_api_username = $optionList[Enum::FIELD_API_USERNAME];
-            }
-            if (isset($optionList[Enum::FIELD_API_PASSWORD])) {
-                $this->field_bus_api_password = $optionList[Enum::FIELD_API_PASSWORD];
-            }
-            if (isset($optionList[Enum::FIELD_API_ENDPOINT])) {
-                $this->field_bus_api_endpoint = $optionList[Enum::FIELD_API_ENDPOINT];
-            }
-            if (isset($optionList[Enum::FIELD_BACKOFF_DURATION])) {
-                $this->field_bus_backoff_duration = $optionList[Enum::FIELD_BACKOFF_DURATION];
-            }
-            if (isset($optionList[Enum::FIELD_APP_LOCALE])) {
-                $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE];
-            }
-            if (isset($optionList[Enum::FIELD_APP_KEY])) {
-                $this->field_app_key = $optionList[Enum::FIELD_APP_KEY];
-            }
+        $this->field_venture_config = $optionList[Enum::FIELD_VENTURE_CONFIG] ?? '';
+        $this->field_bus_api_username = $optionList[Enum::FIELD_API_USERNAME] ?? '';
+        $this->field_bus_api_password = $optionList[Enum::FIELD_API_PASSWORD] ?? '';
+        $this->field_bus_api_endpoint = $optionList[Enum::FIELD_API_ENDPOINT] ?? '';
+        $this->field_bus_backoff_duration = (int) ($optionList[Enum::FIELD_BACKOFF_DURATION] ?? 0);
+        $this->field_bus_locale = $optionList[Enum::FIELD_APP_LOCALE] ?? '';
+        $this->field_app_key = $optionList[Enum::FIELD_APP_KEY] ?? '';
+        $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON] ?? 'off';
+        $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME] ?? 'off';
+        $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] ?? '';
 
-            if (isset($optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON])) {
-                $this->field_validation_publication_reason = $optionList[Enum::FIELD_VALIDATION_PUBLICATION_REASON];
-            }
-            if (isset($optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME])) {
-                $this->field_validation_article_lifetime = $optionList[Enum::FIELD_VALIDATION_ARTICLE_LIFETIME];
-            }
-
-            if (isset($optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY])) {
-                $this->field_google_youtube_api_key = $optionList[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY];
-            }
-
-            $error = '';
-            if (!Utils::notEmptyOrNull($this->field_venture_config)) {
-                $error .= 'Venture ID empty ||';
-            }
-            if (!Utils::notEmptyOrNull($this->field_bus_api_username)) {
-                $error .= 'API Username empty ||';
-            }
-            if (!Utils::notEmptyOrNull($this->field_bus_api_password)) {
-                $error .= 'API Password empty ||';
-            }
-            if (!Utils::notEmptyOrNull($this->field_bus_api_endpoint)) {
-                $error .= 'API Endpoint empty ||';
-            }
-
-            if (mb_strlen($error) > 0) {
-                $this->is_bus_enabled = false;
-                ringier_errorlogthis('[API] - Turning BUS Process OFF because:');
-                ringier_errorlogthis($error);
-
-                return false;
-            }
-
-            if (!Utils::notEmptyOrNull($this->field_bus_backoff_duration)) {
-                $error .= 'field_bus_backoff_duration|';
-                $this->field_bus_backoff_duration = 30;
-            }
-
-            if (!Utils::notEmptyOrNull($this->field_bus_locale)) {
-                $error .= 'field_bus_locale|';
-                $this->field_bus_locale = 'en_KE';
-            }
-
-            return true;
+        $error = '';
+        if (!Utils::notEmptyOrNull($this->field_venture_config)) {
+            $error .= 'Venture ID empty ||';
+        }
+        if (!Utils::notEmptyOrNull($this->field_bus_api_username)) {
+            $error .= 'API Username empty ||';
+        }
+        if (!Utils::notEmptyOrNull($this->field_bus_api_password)) {
+            $error .= 'API Password empty ||';
+        }
+        if (!Utils::notEmptyOrNull($this->field_bus_api_endpoint)) {
+            $error .= 'API Endpoint empty ||';
         }
 
-        return false;
+        if (mb_strlen($error) > 0) {
+            $this->is_bus_enabled = false;
+            ringier_errorlogthis('[API] - Turning BUS Process OFF because: ' . $error);
+
+            return false;
+        }
+
+        if (!Utils::notEmptyOrNull($this->field_bus_backoff_duration)) {
+            $this->field_bus_backoff_duration = 30;
+        }
+
+        if (!Utils::notEmptyOrNull($this->field_bus_locale)) {
+            $this->field_bus_locale = 'en_KE';
+        }
+
+        return true;
     }
 
     /**
@@ -155,56 +125,41 @@ class Fields
      * This channel will be sent messages in case of error.
      * If any of those fields is empty, Slack sync will be turned OFF
      *
-     * @param $optionList
-     *
-     * @throws \Exception
+     * @param array $optionList
      *
      * @return bool
      */
-    public function initSlackFields($optionList)
+    public function initSlackFields(array $optionList): bool
     {
         $this->field_bus_slack_hook_url = '';
         $this->field_bus_slack_channel_name = '';
         $this->field_bus_slack_bot_name = '';
-        $this->is_slack_enabled = true;
+        $this->is_slack_enabled = false;
 
-        if ($this->is_bus_enabled === true) {
-            $this->field_bus_slack_hook_url = $optionList[Enum::FIELD_SLACK_HOOK_URL];
-            $this->field_bus_slack_channel_name = $optionList[Enum::FIELD_SLACK_CHANNEL_NAME];
-            $this->field_bus_slack_bot_name = $optionList[Enum::FIELD_SLACK_BOT_NAME];
+        $this->field_bus_slack_hook_url = $optionList[Enum::FIELD_SLACK_HOOK_URL] ?? '';
+        $this->field_bus_slack_channel_name = $optionList[Enum::FIELD_SLACK_CHANNEL_NAME] ?? '';
+        $this->field_bus_slack_bot_name = $optionList[Enum::FIELD_SLACK_BOT_NAME] ?? '';
 
-            $error = '';
-            if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url)) {
-                $error .= 'Field Slack Hook URL || ';
-            }
-            if (!Utils::notEmptyOrNull($this->field_bus_slack_channel_name)) {
-                $error .= 'Field Slack Channel Name';
-            }
-
-            if (mb_strlen($error) > 0) {
-                $this->is_slack_enabled = false;
-
-                return false;
-            }
-
-            if (!Utils::notEmptyOrNull($this->field_bus_slack_bot_name)) {
-                $error .= 'field_bus_slack_bot_name|';
-                $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
-            }
-
-            return true;
+        if (!Utils::notEmptyOrNull($this->field_bus_slack_hook_url) || !Utils::notEmptyOrNull($this->field_bus_slack_channel_name)) {
+            return false;
         }
 
-        return false;
+        if (!Utils::notEmptyOrNull($this->field_bus_slack_bot_name)) {
+            $this->field_bus_slack_bot_name = 'DEFAULT_BLOG_BOT';
+        }
+
+        $this->is_slack_enabled = true;
+
+        return true;
     }
 
     /**
      * Load all fields onto the global $_ENV
      * Will only load if bus is enabled..etc
      */
-    public function load_vars_into_env()
+    public function load_vars_into_env(): void
     {
-        if ($this->is_bus_enabled === true) {
+        if ($this->is_bus_enabled) {
             $_ENV[Enum::ENV_BUS_ENDPOINT] = $this->field_bus_api_endpoint;
             $_ENV[Enum::ENV_BACKOFF_FOR_MINUTES] = $this->field_bus_backoff_duration;
             $_ENV[Enum::ENV_VENTURE_CONFIG] = $this->field_venture_config;
@@ -212,10 +167,10 @@ class Fields
             $_ENV[Enum::ENV_BUS_API_PASSWORD] = $this->field_bus_api_password;
             $_ENV[Enum::ENV_BUS_API_LOCALE] = $this->field_bus_locale;
             $_ENV[Enum::ENV_BUS_APP_KEY] = $this->field_app_key;
-            $_ENV[Enum::FIELD_GOOGLE_YOUTUBE_API_KEY] = $this->field_google_youtube_api_key;
+            $_ENV[Enum::ENV_GOOGLE_YOUTUBE_API_KEY] = $this->field_google_youtube_api_key;
         }
 
-        if ($this->is_slack_enabled === true) {
+        if ($this->is_slack_enabled) {
             $_ENV[Enum::ENV_SLACK_ENABLED] = 'ON';
             $_ENV[Enum::ENV_SLACK_HOOK_URL] = $this->field_bus_slack_hook_url;
             $_ENV[Enum::ENV_SLACK_CHANNEL_NAME] = $this->field_bus_slack_channel_name;

@@ -3,14 +3,14 @@
  * ringier-bus
  *
  * @author Wasseem Khayrattee
- * @copyright 2024-2025 Ringier
+ * @copyright 2024-2026 Ringier
  * @license GPL-2.0-or-later
  *
  * @wordpress-plugin
  * Plugin Name: Ringier Bus
  * Plugin URI: https://github.com/RingierIMU/mkt-plugin-wordpress-bus
  * Description: A plugin to push events to Ringier CDE via the BUS API whenever an article is created, updated or deleted
- * Version: 3.6.0
+ * Version: 4.0.0
  * Requires at least: 6.0
  * Author: Ringier SA, Wasseem Khayrattee
  * Author URI: https://www.ringier.com/
@@ -49,13 +49,12 @@ if (!function_exists('add_action')) {
  * Some global constants for our use-case
  */
 define('RINGIER_BUS_DS', DIRECTORY_SEPARATOR);
-define('RINGIER_BUS_PLUGIN_VERSION', '3.6.0');
+define('RINGIER_BUS_PLUGIN_VERSION', '4.0.0');
 define('RINGIER_BUS_PLUGIN_MINIMUM_WP_VERSION', '6.0');
 define('RINGIER_BUS_PLUGIN_DIR_URL', plugin_dir_url(__FILE__)); //has trailing slash at end
 define('RINGIER_BUS_PLUGIN_DIR', plugin_dir_path(__FILE__)); //has trailing slash at end
 define('RINGIER_BUS_PLUGIN_BASENAME', plugin_basename(RINGIER_BUS_PLUGIN_DIR));
 define('RINGIER_BUS_PLUGIN_VIEWS', RINGIER_BUS_PLUGIN_DIR . 'views' . RINGIER_BUS_DS);
-define('RINGIER_BUS_PLUGIN_CACHE_DIR', WP_CONTENT_DIR . RINGIER_BUS_DS . 'cache' . RINGIER_BUS_DS);
 define('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE', WP_CONTENT_DIR . DIRECTORY_SEPARATOR . 'ringier_bus_plugin_error.log');
 
 /**
@@ -65,6 +64,11 @@ register_shutdown_function(function () {
     $error = error_get_last();
 
     if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        // Only log errors originating from this plugin's files
+        if (!defined('RINGIER_BUS_PLUGIN_DIR') || mb_strpos($error['file'], RINGIER_BUS_PLUGIN_DIR) !== 0) {
+            return;
+        }
+
         $message = sprintf(
             '[Fatal Error] %s in %s on line %d',
             $error['message'],
@@ -72,10 +76,6 @@ register_shutdown_function(function () {
             $error['line']
         );
 
-        // Log to PHP error log
-        error_log($message);
-
-        // Also log to our custom log file
         if (defined('RINGIER_BUS_PLUGIN_ERROR_LOG_FILE')) {
             @file_put_contents(
                 RINGIER_BUS_PLUGIN_ERROR_LOG_FILE,
@@ -96,7 +96,7 @@ if (!defined('_S_CACHE_NONCE')) {
 /**
  * load our main file now with composer autoloading
  */
-require_once RINGIER_BUS_PLUGIN_DIR . RINGIER_BUS_DS . 'includes/vendor/autoload.php';
+require_once RINGIER_BUS_PLUGIN_DIR . 'includes/vendor/autoload.php';
 
 /**
  * Register main Hooks

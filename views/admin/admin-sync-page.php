@@ -93,7 +93,9 @@ $exclude = [
 
     <div class="post-types-selector" style="margin-bottom: 15px; background: #fff; padding: 15px; border: 1px solid #ccd0d4;">
         <?php foreach ($post_types as $pt): ?>
-            <?php if (in_array($pt->name, $exclude)) continue; ?>
+            <?php if (in_array($pt->name, $exclude, true)) {
+                continue;
+            } ?>
             <label style="margin-right: 15px; display: inline-block; margin-bottom: 5px;">
                 <input type="radio" name="bus_sync_post_type" value="<?php echo esc_attr($pt->name); ?>"
                     <?php checked($pt->name, 'post'); ?> />

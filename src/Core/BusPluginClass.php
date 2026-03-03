@@ -32,16 +32,36 @@ class BusPluginClass
      */
     public static function plugin_deactivation()
     {
-        // TODO: Remove any scheduled cron jobs?
+        wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
+        delete_transient(Enum::CACHE_KEY);
     }
 
     /**
-     * triggered when a user has deactivated the plugin
+     * triggered when the plugin is deleted (uninstalled)
      */
     public static function plugin_uninstall()
     {
+        // Clean up plugin options
         delete_option(Enum::SETTINGS_PAGE_OPTION_NAME);
         delete_option(Enum::PLUGIN_KEY);
+
+        // Clean up transients (safety net in case deactivation didn't run)
+        delete_transient(Enum::CACHE_KEY);
+
+        // Clean up plugin-created transients
+        global $wpdb;
+        $wpdb->query(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_timeout_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_triggered_bus_event_%'
+             OR option_name LIKE '_transient_timeout_triggered_bus_event_%'
+             OR option_name LIKE '_transient_bus_user_update_%'
+             OR option_name LIKE '_transient_timeout_bus_user_update_%'"
+        );
+
+        // Clean up scheduled cron events (safety net in case deactivation didn't run)
+        wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
     }
 
     /**
@@ -54,16 +74,17 @@ class BusPluginClass
             delete_option(Enum::PLUGIN_KEY);
 
             //initially turn the BUS_API OFF
+            $siteKey = sanitize_title(parse_url(get_site_url(), PHP_URL_HOST) ?? 'site');
             update_option(
                 Enum::SETTINGS_PAGE_OPTION_NAME,
                 [
                     Enum::FIELD_BUS_STATUS => 'off',
                     Enum::FIELD_APP_LOCALE => 'en_KE',
-                    Enum::FIELD_APP_KEY => 'MUUK-STAGING',
-                    Enum::FIELD_SLACK_BOT_NAME => 'MUUK-STAGING',
+                    Enum::FIELD_APP_KEY => $siteKey . '-env-type',
+                    Enum::FIELD_SLACK_BOT_NAME => $siteKey . '-slack',
                     Enum::FIELD_BACKOFF_DURATION => 30,
-                    Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'on',
-                    Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'on',
+                    Enum::FIELD_VALIDATION_PUBLICATION_REASON => 'off',
+                    Enum::FIELD_VALIDATION_ARTICLE_LIFETIME => 'off',
                 ]
             );
         }
@@ -97,11 +118,6 @@ class BusPluginClass
             add_action('post_row_actions', [self::class, 'hide_quick_edit_button'], PHP_INT_MAX);
         }
 
-        /*
-         * Register Bus API Mechanism
-         * Note: commented out because we are now fetching values from the UI (dashboard) itself
-         */
-        //        BusHelper::load_vars_into_env();
     }
 
     /**
@@ -139,20 +155,9 @@ class BusPluginClass
 
     public static function add_meta_boxes_for_custom_fields(string $post_type, WP_Post $post)
     {
-        // to show meta box on all current & future custom post_type
-        $args = [
-            'post_type' => 'page',
-            'public' => false,
-        ];
-        $screens = get_post_types($args, 'names', 'not'); //pay attention to the operator (last param)
-        // we do not want to show it on "Page"
-        if (in_array('page', $screens)) {
-            unset($screens['page']);
-        }
-        // Remove any other non desired custom post_type that came through
-        if (in_array('attachment', $screens)) {
-            unset($screens['attachment']);
-        }
+        // to show meta box on all current & future public post types (excluding page and attachment)
+        $screens = get_post_types(['public' => false], 'names', 'not');
+        unset($screens['page'], $screens['attachment']);
         add_meta_box('event_bus_meta_box', __('Ringier BUS'), [self::class, 'render_meta_box_for_custom_fields'], $screens, 'side');
     }
 
@@ -166,21 +171,18 @@ class BusPluginClass
 
     public static function renderHtmlForArticleLifetimeField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::ACF_ARTICLE_LIFETIME_KEY);
-        $field_key_list = Enum::ACF_ARTICLE_LIFETIME_VALUES;
-        self::doSelectBox($post, 'Article lifetime', $field_key, $field_key_list);
+        self::doSelectBox($post, 'Article lifetime', Enum::ACF_ARTICLE_LIFETIME_KEY, Enum::ACF_ARTICLE_LIFETIME_VALUES);
     }
+
     public static function renderHtmlForPublicationReasonField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::FIELD_PUBLICATION_REASON_KEY);
-        $field_key_list = Enum::FIELD_PUBLICATION_REASON_VALUES;
-        self::doSelectBox($post, 'Publication reason', $field_key, $field_key_list);
+        self::doSelectBox($post, 'Publication reason', Enum::FIELD_PUBLICATION_REASON_KEY, Enum::FIELD_PUBLICATION_REASON_VALUES);
     }
 
     public static function renderHtmlForHiddenPostStatusField(WP_Post $post)
     {
-        $field_key = sanitize_text_field(Enum::ACF_IS_POST_NEW_KEY);
-        $input_value = Enum::ACF_IS_POST_VALUE_NEW; //'is_new';
+        $field_key = Enum::ACF_IS_POST_NEW_KEY;
+        $input_value = Enum::ACF_IS_POST_VALUE_NEW;
 
         $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
         if (!empty($field_from_db)) {
@@ -188,16 +190,16 @@ class BusPluginClass
         }
 
         //parent div
-        echo '<div class="bus-hidden-text-field" data-name="' . $field_key . '" data-type="text" data-key="' . $field_key . '" style="margin: 10px 0;display:none">';
+        echo '<div class="bus-hidden-text-field" data-name="' . esc_attr($field_key) . '" data-type="text" data-key="' . esc_attr($field_key) . '" style="margin: 10px 0;display:none">';
 
         //label
         echo '<div class="bus-label bus-hidden" style="color: #a29f9f">';
-        echo '<label for="' . $field_key . '">Article status (internal use)</label>';
+        echo '<label for="' . esc_attr($field_key) . '">Article status (internal use)</label>';
         echo '</div>';
 
         //field
         echo '<div class="bus-text">';
-        echo '<input type="text" disabled id="' . $field_key . '" name="' . $field_key . '" value="' . $input_value . '">';
+        echo '<input type="text" disabled id="' . esc_attr($field_key) . '" name="' . esc_attr($field_key) . '" value="' . esc_attr($input_value) . '">';
         echo '</div>';
 
         //close parent div
@@ -217,21 +219,17 @@ class BusPluginClass
         $field_from_db = sanitize_text_field(get_post_meta($post->ID, $field_key, true));
 
         //parent div
-        echo '<div class="bus-select-field" data-name="' . $field_key . '" data-type="select" data-key="' . $field_key . '" style="margin-bottom:20px;">';
-        echo '<label class="components-base-control__label" for="' . $field_key . '">' . $label . '</label>';
+        echo '<div class="bus-select-field" data-name="' . esc_attr($field_key) . '" data-type="select" data-key="' . esc_attr($field_key) . '" style="margin-bottom:20px;">';
+        echo '<label class="components-base-control__label" for="' . esc_attr($field_key) . '">' . esc_html($label) . '</label>';
 
         //select field
         echo '<div class="bus-select">';
-        echo '<select id="' . $field_key . '" name="' . $field_key . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;border-color:#2b689e;font-size:14px;line-height:1.4">';
+        echo '<select id="' . esc_attr($field_key) . '" name="' . esc_attr($field_key) . '" style="width:100%;padding:4px 5px;margin:0;margin-top:5px;box-sizing:border-box;border-color:#2b689e;font-size:14px;line-height:1.4">';
 
         echo '<option value="-1">- Select -</option>';
         foreach ($field_key_list as $field_value) {
             $field_value = sanitize_text_field($field_value);
-            $is_field_selected = '';
-            if (strcmp($field_from_db, $field_value) == 0) {
-                $is_field_selected = 'selected="selected"';
-            }
-            echo '<option value="' . $field_value . '" ' . $is_field_selected . '>' . $field_value . '</option>';
+            echo '<option value="' . esc_attr($field_value) . '" ' . selected($field_from_db, $field_value, false) . '>' . esc_html($field_value) . '</option>';
         }
 
         echo '</select>';
@@ -254,14 +252,14 @@ class BusPluginClass
             $screen = get_current_screen();
 
             // load on NEW & EDIT screens of all post types
-            if (('post' === $screen->base) && ($screen->post_type != 'page')) {
+            if (('post' === $screen->base) && ($screen->post_type !== 'page')) {
                 //Publication reason
-                if ($fieldsObject->field_validation_publication_reason != 'off') {
+                if ($fieldsObject->field_validation_publication_reason !== 'off') {
                     wp_enqueue_script('ringier-validation-publication-reason', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-publication_reason.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
 
                 //Article lifetime
-                if ($fieldsObject->field_validation_article_lifetime != 'off') {
+                if ($fieldsObject->field_validation_article_lifetime !== 'off') {
                     wp_enqueue_script('ringier-validation-article-lifetime', RINGIER_BUS_PLUGIN_DIR_URL . 'assets/js/validation-article_lifetime.js', ['jquery', 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-editor', 'wp-edit-post', 'word-count'], _S_CACHE_NONCE);
                 }
             }

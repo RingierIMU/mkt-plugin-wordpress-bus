@@ -7,45 +7,12 @@
 
 namespace RingierBusPlugin\Bus;
 
-use Exception;
-use GuzzleHttp\Exception\GuzzleException;
-use Monolog\Handler\MissingExtensionException;
-use Psr\Cache\InvalidArgumentException;
 use RingierBusPlugin\Enum;
 use RingierBusPlugin\Utils;
 use WP_Post;
 
 class BusHelper
 {
-    /**
-     * Used in in ArticleEvent class
-     *
-     * @param int $post_ID
-     * @param string $image_size_name
-     * @param string $isHero
-     *
-     * @return array
-     */
-    public static function getImageArrayForApi(int $post_ID, string $image_size_name = 'large_rectangle', string $isHero = 'false'): array
-    {
-        $image_id = get_post_thumbnail_id($post_ID);
-        $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
-        $imageUrl = get_the_post_thumbnail_url(get_post($post_ID), $image_size_name);
-        //        $image_title = get_the_title($image_id);
-
-        if ($image_size_name == 'large_rectangle') {
-            $isHero = 'true';
-        }
-
-        return [
-            'url' => Utils::returnEmptyOnNullorFalse($imageUrl),
-            'size' => $image_size_name,
-            'alt_text' => Utils::returnEmptyOnNullorFalse($image_alt),
-            'hero' => $isHero,
-            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($imageUrl)),
-        ];
-    }
-
     /**
      * Registers the BUS API action within WordPress
      */
@@ -63,8 +30,6 @@ class BusHelper
             /**
              * Article events
              */
-            //            add_action('transition_post_status', [self::class, 'cater_for_custom_post'], 10, 3);
-            //            add_action('rest_after_insert_post', [self::class, 'triggerArticleEvent'], 10, 1);
             add_action('transition_post_status', [self::class, 'trigger_bus_event_on_post_change'], 10, 3);
             add_action('future_to_publish', [self::class, 'cater_for_manually_scheduled_post'], 10, 1);
             add_action('publish_to_trash', [self::class, 'triggerArticleDeletedEvent'], 10, 3);
@@ -72,8 +37,8 @@ class BusHelper
 
             // Fetch some options from the settings page
             $options = get_option(Enum::SETTINGS_PAGE_OPTION_NAME);
-            $enable_author_events = isset($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS], 'on') === 0;
-            $enable_terms_events = isset($options[Enum::FIELD_ENABLE_TERMS_EVENTS]) && strcmp($options[Enum::FIELD_ENABLE_TERMS_EVENTS], 'on') === 0;
+            $enable_author_events = ($options[Enum::FIELD_ENABLE_AUTHOR_EVENTS] ?? '') === 'on';
+            $enable_terms_events = ($options[Enum::FIELD_ENABLE_TERMS_EVENTS] ?? '') === 'on';
 
             /**
              * Author events
@@ -140,6 +105,7 @@ class BusHelper
         $term_type = match (mb_strtolower($taxonomy)) {
             Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
             Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
+            'post_tag' => Enum::TERM_TYPE_TAG,
             default => mb_strtolower($term->taxonomy),
         };
 
@@ -200,10 +166,7 @@ class BusHelper
             return;
         }
 
-        update_term_meta($term_id, Enum::DB_UPDATED_AT, current_time('mysql'));
-
-        $term = $deleted_term;
-        if (!($term instanceof \WP_Term) || is_wp_error($term)) {
+        if (!($deleted_term instanceof \WP_Term) || is_wp_error($deleted_term)) {
             return;
         }
 
@@ -211,15 +174,15 @@ class BusHelper
             Enum::TERM_TYPE_CATEGORY => Enum::TERM_TYPE_CATEGORY,
             Enum::TERM_TYPE_TAG => Enum::TERM_TYPE_TAG,
             'post_tag' => Enum::TERM_TYPE_TAG,
-            default => mb_strtolower($term->taxonomy),
+            default => mb_strtolower($deleted_term->taxonomy),
         };
 
-        self::dispatchTermEvent($term, $term_type, Enum::EVENT_TOPIC_DELETED);
+        self::dispatchTermEvent($deleted_term, $term_type, Enum::EVENT_TOPIC_DELETED);
     }
 
     protected static function dispatchTermEvent(\WP_Term $term, string $term_type, string $event_type): void
     {
-        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT];
+        $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
         if (empty($endpointUrl)) {
             ringier_errorlogthis($term_type . '-Event: endpointUrl is empty');
             Utils::pushToSlack($term_type . '-Event: endpointUrl is empty', Enum::LOG_ERROR);
@@ -228,7 +191,12 @@ class BusHelper
         }
 
         $busToken = new BusTokenManager();
-        $busToken->setParameters($endpointUrl, $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $busToken->setParameters(
+            $endpointUrl,
+            $_ENV[Enum::ENV_VENTURE_CONFIG] ?? '',
+            $_ENV[Enum::ENV_BUS_API_USERNAME] ?? '',
+            $_ENV[Enum::ENV_BUS_API_PASSWORD] ?? ''
+        );
         $result = $busToken->acquireToken();
         if (!$result) {
             ringier_errorlogthis($term_type . '-Event: a problem with Bus Token');
@@ -238,7 +206,7 @@ class BusHelper
         }
 
         $page_status = Enum::JSON_FIELD_STATUS_ONLINE;
-        if (strcmp($event_type, Enum::EVENT_TOPIC_DELETED) === 0) {
+        if ($event_type === Enum::EVENT_TOPIC_DELETED) {
             $page_status = Enum::JSON_FIELD_STATUS_OFFLINE;
         }
 
@@ -327,8 +295,6 @@ class BusHelper
      * Triggered by hook: delete_user
      *
      * @param int $user_id
-     * @param \WP_User $old_user_data
-     * @param array $userdata
      */
     public static function triggerUserDeletedEvent(int $user_id): void
     {
@@ -417,12 +383,10 @@ class BusHelper
      * @param int $post_id
      * @param WP_Post $post
      * @param bool $update
-     *
-     * @throws Exception
      */
     public static function save_custom_fields(int $post_id, WP_Post $post, bool $update): void
     {
-        if (strcmp($post->post_type, 'page') == 0) {
+        if ($post->post_type === 'page') {
             return;
         }
         if (empty($post->post_type)) {
@@ -433,7 +397,7 @@ class BusHelper
         }
 
         $wordpress_post_status = $post->post_status;
-        if (in_array($wordpress_post_status, ['auto-draft', 'inherit', 'trash'])) {
+        if (in_array($wordpress_post_status, ['auto-draft', 'inherit', 'trash'], true)) {
             return;
         }
 
@@ -444,13 +408,13 @@ class BusHelper
         }
 
         //MKTC-1750 - should now allow saving when 'saving draft' and 'scheduled' posting
-        if (in_array($wordpress_post_status, ['publish', 'draft', 'future'])) {
+        if (in_array($wordpress_post_status, ['publish', 'draft', 'future'], true)) {
             $post_id = Utils::getParentPostId($post_id);
 
             //save custom field: article_lifetime
             if (isset($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY])) {
                 $article_lifetime_value = sanitize_text_field($_POST[Enum::ACF_ARTICLE_LIFETIME_KEY]);
-                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES)) {
+                if (in_array($article_lifetime_value, Enum::ACF_ARTICLE_LIFETIME_VALUES, true)) {
                     update_post_meta($post_id, Enum::ACF_ARTICLE_LIFETIME_KEY, $article_lifetime_value);
                 }
             }
@@ -458,7 +422,7 @@ class BusHelper
             //save custom field: publication_reason
             if (isset($_POST[Enum::FIELD_PUBLICATION_REASON_KEY])) {
                 $publication_reason_value = sanitize_text_field($_POST[Enum::FIELD_PUBLICATION_REASON_KEY]);
-                if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES)) {
+                if (in_array($publication_reason_value, Enum::FIELD_PUBLICATION_REASON_VALUES, true)) {
                     update_post_meta($post_id, Enum::FIELD_PUBLICATION_REASON_KEY, $publication_reason_value);
                 }
             }
@@ -496,7 +460,7 @@ class BusHelper
         }
 
         // Bail if we're working on a draft or trashed item
-        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+        if (in_array($new_status, ['auto-draft', 'draft', 'inherit', 'trash'], true)) {
             return;
         }
 
@@ -508,7 +472,7 @@ class BusHelper
         if ($new_status === 'publish') {
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
 
             /*
              * This conditioning helps us get context if the post is in mode NEW or EDIT
@@ -530,7 +494,7 @@ class BusHelper
             set_transient('triggered_bus_event_' . $post->ID, true, 25);
 
             //for CIET purposes we need to push event fast on new article creation
-            if (($articleTriggerMode == Enum::EVENT_ARTICLE_CREATED)) {
+            if ($articleTriggerMode === Enum::EVENT_ARTICLE_CREATED) {
                 //Attempt to send the event immediately, queue it if it fails
                 self::sendToBus($articleTriggerMode, $post_ID, get_post($post_ID), 0);
                 //push to SLACK
@@ -564,11 +528,11 @@ class BusHelper
     public static function cater_for_custom_post(string $new_status, string $old_status, WP_Post $post): void
     {
         //bail if a page
-        if (strcmp($post->post_type, 'page') == 0) {
+        if ($post->post_type === 'page') {
             return;
         }
         //bail is normal post, we are catering for custom posts
-        if (strcmp($post->post_type, 'post') == 0) {
+        if ($post->post_type === 'post') {
             return;
         }
         if (empty($post->post_type)) {
@@ -576,7 +540,7 @@ class BusHelper
         }
 
         // Bail if we're working on a draft or trashed item
-        if ($new_status == 'auto-draft' || $new_status == 'draft' || $new_status == 'inherit' || $new_status == 'trash') {
+        if ($new_status === 'auto-draft' || $new_status === 'draft' || $new_status === 'inherit' || $new_status === 'trash') {
             return;
         }
 
@@ -609,7 +573,7 @@ class BusHelper
         $wordpress_post_status = $post->post_status;
 
         //we don't want to trigger the event if it is a draft, only when in public
-        if (strcmp($wordpress_post_status, 'publish') == 0) {
+        if ($wordpress_post_status === 'publish') {
             $post_ID = $post->ID;
 
             $post_ID = Utils::getParentPostId($post_ID);
@@ -619,7 +583,7 @@ class BusHelper
              * There is no other way around this as of this date of coding (Apr 2021)
              * Hope in the future WordPress exposes a better way for us to get this context
              */
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             if (Utils::isPostNew($post_ID) === true) {
                 $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
             } else {
@@ -646,11 +610,11 @@ class BusHelper
     public static function cater_for_manually_scheduled_post(WP_Post $post): void
     {
         $wordpress_post_status = $post->post_status;
-        if (strcmp($wordpress_post_status, 'publish') == 0) {
-            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        if ($wordpress_post_status === 'publish') {
+            $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
             $post_ID = $post->ID;
             $post_ID = Utils::getParentPostId($post_ID);
-            $articleTriggerMode = 'ArticleCreated';
+            $articleTriggerMode = Enum::EVENT_ARTICLE_CREATED;
             self::scheduleSendToBus($articleTriggerMode, $post_ID, 0, 1);
             self::pushToSLACK($blogKey, $articleTriggerMode, $post_ID);
         }
@@ -675,11 +639,48 @@ class BusHelper
         }
 
         $post_ID = Utils::getParentPostId($post->ID);
+
+        // Unschedule any pending ArticleCreated/ArticleUpdated cron events for this article
+        // to prevent stale events firing after the article has been deleted
+        self::unscheduleArticleEvents($post_ID);
+
         self::sendToBus(Enum::EVENT_ARTICLE_DELETED, $post_ID, $post);
 
         //delete custom fields
         delete_post_meta($post_ID, Enum::ACF_IS_POST_NEW_KEY);
         delete_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY);
+        delete_post_meta($post_ID, Enum::FIELD_PUBLICATION_REASON_KEY);
+    }
+
+    /**
+     * Unschedule all pending cron events for a specific article.
+     *
+     * Iterates the WP cron array and removes any scheduled bus events
+     * where the post ID (second arg) matches the given article.
+     *
+     * @param int $post_ID
+     */
+    private static function unscheduleArticleEvents(int $post_ID): void
+    {
+        $hook = Enum::HOOK_NAME_SCHEDULED_EVENTS;
+        $crons = _get_cron_array();
+
+        if (empty($crons)) {
+            return;
+        }
+
+        foreach ($crons as $timestamp => $cron) {
+            if (!isset($cron[$hook])) {
+                continue;
+            }
+
+            foreach ($cron[$hook] as $key => $event) {
+                // Args are: [$articleTriggerMode, $post_ID, $countCalled]
+                if (isset($event['args'][1]) && (int) $event['args'][1] === $post_ID) {
+                    wp_unschedule_event($timestamp, $hook, $event['args']);
+                }
+            }
+        }
     }
 
     /**
@@ -689,14 +690,11 @@ class BusHelper
      * @param int $post_ID
      * @param int $countCalled
      *
-     * @throws GuzzleException
-     * @throws InvalidArgumentException
-     *
      * @author Wasseem<wasseemk@ringier.co.za>
      */
     public static function cronSendToBusScheduled(string $articleTriggerMode, int $post_ID, int $countCalled): void
     {
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
         $message = <<<EOF
             $blogKey: Now attempting push events for article (ID: $post_ID).
                     
@@ -717,32 +715,12 @@ class BusHelper
      * @param int $post_ID
      * @param WP_Post $post
      * @param int $countCalled to keep track of how many times this function was called by the cron
-     *
-     * @throws GuzzleException|MissingExtensionException|InvalidArgumentException
      */
     public static function sendToBus(string $articleTriggerMode, int $post_ID, WP_Post $post, int $countCalled = 1): void
     {
-        try {
-            $authClient = new Auth();
-            $authClient->setParameters($_ENV[Enum::ENV_BUS_ENDPOINT], $_ENV[Enum::ENV_VENTURE_CONFIG], $_ENV[Enum::ENV_BUS_API_USERNAME], $_ENV[Enum::ENV_BUS_API_PASSWORD]);
+        $success = self::dispatchArticleEvent($post_ID, $post, $articleTriggerMode);
 
-            $result = $authClient->acquireToken();
-            if ($result === true) {
-                $articleEvent = new ArticleEvent($authClient);
-
-                // Internal to some of the ventures, so not all will have this object, hence the check
-                if (class_exists('Brand_settings')) {
-                    $articleEvent->brandSettings = new \Brand_settings();
-                }
-
-                $articleEvent->setEventType($articleTriggerMode);
-                $articleEvent->sendToBus($post_ID, $post);
-            } else {
-                ringier_errorlogthis('A problem with Auth Token');
-
-                throw new Exception('A problem with Auth Token');
-            }
-        } catch (Exception $exception) {
+        if (!$success) {
             self::scheduleSendToBus($articleTriggerMode, $post_ID, $countCalled);
         }
     }
@@ -755,16 +733,15 @@ class BusHelper
      * @param int $post_ID
      * @param int $countCalled
      * @param mixed $run_after_minutes
-     *
-     * @throws MissingExtensionException
      */
     public static function scheduleSendToBus(string $articleTriggerMode, int $post_ID, int $countCalled = 1, mixed $run_after_minutes = false): void
     {
         if ($run_after_minutes === false) {
-            $minutesToRun = getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30;
+            $minutesToRun = (int) (getenv(Enum::ENV_BACKOFF_FOR_MINUTES) ?: 30);
+        } else {
+            $minutesToRun = (int) $run_after_minutes;
         }
-        $minutesToRun = (int) $run_after_minutes;
-        $timestampNow = date_timestamp_get(date_create()); //get a UNIX Timestamp for NOW
+        $timestampNow = time();
 
         /*
          * We use WordPress Time Constants
@@ -788,7 +765,7 @@ class BusHelper
         }
         wp_schedule_single_event($currentTimestampForAction, $hookSendToBus, $args, true);
 
-        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY];
+        $blogKey = $_ENV[Enum::ENV_BUS_APP_KEY] ?? '';
         $message = <<<EOF
             $blogKey: [Queuing] Push-to-BUS for article (ID: $post_ID) has just been queued.
             And will run in the next ($minutesToRun)mins.
@@ -873,7 +850,7 @@ class BusHelper
 
     /**
      * Dispatch an Article event to the BUS.
-     * Used by Batch Sync tools and immediate triggers
+     * Used by both real-time hooks and batch sync tooling.
      *
      * @param int $post_id
      * @param WP_Post $post
@@ -881,7 +858,7 @@ class BusHelper
      *
      * @return bool
      */
-    public static function dispatchArticlesEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
+    public static function dispatchArticleEvent(int $post_id, WP_Post $post, string $event_type = Enum::EVENT_ARTICLE_CREATED): bool
     {
         $endpointUrl = $_ENV[Enum::ENV_BUS_ENDPOINT] ?? '';
 
@@ -910,22 +887,14 @@ class BusHelper
             return false;
         }
 
-        $articlesEvent = new ArticlesEvent($busToken, $endpointUrl);
-        $articlesEvent->setEventType($event_type);
+        $articleEvent = new ArticleEvent($busToken, $endpointUrl);
+        $articleEvent->setEventType($event_type);
 
         // Handle Brand Settings if available (mainly for ringier internal blogs)
         if (class_exists('Brand_settings')) {
-            $articlesEvent->brandSettings = new \Brand_settings();
+            $articleEvent->brandSettings = new \Brand_settings();
         }
 
-        try {
-            $articlesEvent->sendToBus($post_id, $post);
-
-            return true;
-        } catch (\Throwable $e) {
-            ringier_errorlogthis("ArticleEvent ($post_id) Exception: " . $e->getMessage());
-
-            return false;
-        }
+        return $articleEvent->sendToBus($post_id, $post);
     }
 }

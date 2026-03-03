@@ -9,8 +9,6 @@
 
 namespace RingierBusPlugin;
 
-use Timber\Timber;
-
 class AdminLogPage
 {
     public function __construct()
@@ -20,17 +18,17 @@ class AdminLogPage
     /**
      * Main method for handling the admin pages
      */
-    public function handleAdminUI()
+    public function handleAdminUI(): void
     {
         $this->addAdminPages();
     }
 
-    public static function logSectionCallback($args)
+    public static function logSectionCallback(array $args): void
     {
         //silence for now
     }
 
-    public function addAdminPages()
+    public function addAdminPages(): void
     {
         //The "Log" sub-PAGE
         add_submenu_page(
@@ -46,7 +44,7 @@ class AdminLogPage
     /**
      * Handle & Render our Admin LOG Page
      */
-    public static function renderLogPage()
+    public static function renderLogPage(): void
     {
         global $title;
         $error_log_file = RINGIER_BUS_PLUGIN_ERROR_LOG_FILE;
@@ -58,19 +56,20 @@ class AdminLogPage
 
         //Clear error log
         if (isset($_POST['clearlog_btn'])) {
+            check_admin_referer('ringier_bus_clear_log');
             $error_msg = self::clearErrorLog($error_log_file);
         }
 
-        $log_page_tpl = RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page_log.twig';
         $txtlog_value = self::fetchLogData($error_log_file);
 
-        if (file_exists($log_page_tpl)) {
-            $context['admin_page_title'] = $title;
-            $context['error_msg'] = $error_msg;
-            $context['txtlog_value'] = $txtlog_value;
-
-            Timber::render($log_page_tpl, $context);
-        }
+        Utils::load_tpl(
+            RINGIER_BUS_PLUGIN_VIEWS . 'admin' . RINGIER_BUS_DS . 'page-log.php',
+            [
+                'admin_page_title' => $title,
+                'error_msg' => $error_msg,
+                'txtlog_value' => $txtlog_value,
+            ]
+        );
     }
 
     /**
@@ -81,11 +80,11 @@ class AdminLogPage
      *
      * @return string
      */
-    public static function fetchLogData($log_file_path)
+    public static function fetchLogData(string $log_file_path): string
     {
         $log_file = $log_file_path;
-        $max_lines = 10;
-        $log_data = '';
+        $max_lines = 100;
+        $tail_bytes = 467000; // ~456KB — plenty for 100 log entries
 
         if (!file_exists($log_file)) {
             return 'The log seems empty!';
@@ -95,27 +94,39 @@ class AdminLogPage
             return '[NOTICE] the log is not writable. Please chmod it to 0777';
         }
 
-        $log_data_array = file($log_file, FILE_SKIP_EMPTY_LINES);
-
-        if ($log_data_array === false) {
-            return 'Unable to open the log for read operation!';
-        }
-
-        $lines = count($log_data_array);
-        if ($lines == 0) {
+        $file_size = filesize($log_file);
+        if ($file_size === 0) {
             return 'The log is empty.';
         }
 
-        //We only want to display the latest 10 entries
-        if ($max_lines < $lines) {
-            for ($i = 0; $i < ($lines - $max_lines); ++$i) {
-                unset($log_data_array[$i]);
-            }
+        // Only read the tail of the file — O(1) memory regardless of file size
+        $fp = fopen($log_file, 'r');
+        if ($fp === false) {
+            return 'Unable to open the log for read operation!';
         }
 
-        //now fetch all lines
-        foreach ($log_data_array as $line) {
-            $log_data .= htmlentities($line . "\n");
+        $read_bytes = min($file_size, $tail_bytes);
+        fseek($fp, -$read_bytes, SEEK_END);
+        $tail = fread($fp, $read_bytes);
+        fclose($fp);
+
+        if ($tail === false) {
+            return 'Unable to read the log file!';
+        }
+
+        $lines = explode("\n", $tail);
+        $lines = array_filter($lines, fn ($line) => $line !== '');
+
+        if (count($lines) === 0) {
+            return 'The log is empty.';
+        }
+
+        // Take only the last N lines
+        $lines = array_slice($lines, -$max_lines);
+
+        $log_data = '';
+        foreach ($lines as $line) {
+            $log_data .= $line . "\n";
         }
 
         return $log_data;
@@ -128,7 +139,7 @@ class AdminLogPage
      *
      * @return string|void
      */
-    public static function clearErrorLog($log_file_path)
+    public static function clearErrorLog(string $log_file_path): string
     {
         if (!file_exists($log_file_path)) {
             return 'The log seems empty!';

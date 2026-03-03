@@ -33,6 +33,7 @@ class Enum
     const ENV_SLACK_CHANNEL_NAME = 'RBP_SLACK_CHANNEL_NAME';
     const ENV_SLACK_BOT_NAME = 'RBP_SLACK_BOT_NAME';
     const ENV_SLACK_ENABLED = 'RBP_SLACK_ENABLED';
+    const ENV_GOOGLE_YOUTUBE_API_KEY = 'RBP_GOOGLE_YOUTUBE_API_KEY';
 
     //ADMIN SETTINGS PAGE
     const ADMIN_SETTINGS_PAGE_TITLE = 'Ringier Event Bus Settings';
@@ -128,4 +129,17 @@ class Enum
     public const RUN_LAST = PHP_INT_MAX;
     public const TERM_TYPE_CATEGORY = 'category';
     public const TERM_TYPE_TAG = 'tag';
+
+    // Taxonomies excluded from article payload tag/category collection
+    public const TAXONOMY_BLACKLIST = [
+        'post_format',
+        'sailthru_user_type',
+        'sailthru_user_status',
+        'sailthru_property_type',
+        'sailthru_experience_level',
+        'sailthru_functions',
+        'content_style',
+        'content_author',
+        'article_intent',
+    ];
 }

@@ -8,10 +8,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased] ##
+
+
+## [4.0.0] - 2026-03-02 ##
+
 ### Removed ###
-* (dependency) Fully remove Monolog
-* (dependency) Fully remove Guzzle/Symfony dependencies
-* (dependency) Fully remove Timber/Twig
+* (dependency) Fully removed Monolog (`monolog/monolog`)
+* (dependency) Fully removed Guzzle (`guzzlehttp/guzzle`)
+* (dependency) Fully removed Symfony Cache (`symfony/cache`)
+* (dependency) Fully removed Timber (`timber/timber`) and Twig (`twig/twig`) — the plugin now has **zero production dependencies**
+* (code) Removed legacy `Auth.php`, `AuthenticationInterface.php`, and `LoggingHandler.php` classes
+* (code) Deleted all 18 `.twig` template files from `views/admin/`
+
+### Changed ###
+* (refactor) Removed Yoast SEO dependency from `og_title`, `og_description`, and `canonical` payload fields — now uses native `WP_Post` properties and `wp_get_canonical_url()` as the source of truth, avoiding stale Yoast indexable data (extends the 3.5.2 date hardening to remaining fields).
+* (refactor) Replaced all 18 Twig templates with native PHP templates using `Utils::load_tpl()` and WordPress `load_template()`. Admin views (`AdminSettingsPage`, `AdminLogPage`) now use 100% native WordPress templating.
+* (refactor) Unified `ArticleEvent` and `ArticlesEvent` into a single `ArticleEvent` class using 100% native WordPress APIs (`wp_remote_post()`, `BusTokenManager` with WP transients). Both real-time hook dispatch and batch sync tooling now share the same code path.
+* (refactor) `BusHelper::sendToBus()` now delegates to `BusHelper::dispatchArticleEvent()`, removing all Guzzle/Symfony dependencies from the real-time event flow.
+* (refactor) Renamed `dispatchArticlesEvent()` to `dispatchArticleEvent()` for consistency.
+
+### Security ###
+* (csrf) Added nonce protection (`wp_nonce_field` + `check_admin_referer`) to the "Clear Error Log" form on the Log page
+* (csrf) Added nonce verification (`check_ajax_referer`) to AJAX sync handlers (authors, categories, tags, articles)
+* (xss) Added `escHtml()` helper to `sync-tools.js` — all server response messages (post titles, usernames, term names) are now HTML-escaped before DOM insertion via `.append()`
+* (redirect) Fixed open redirect in `AdminSyncPage::handleFlushAllTransients()` — replaced user-controlled `wp_get_referer()` with a known admin URL built from `admin_url()`
+
+### Fixed ###
+* (bug) `ArticleDeleted` payload sent `false`/empty for `url` and `canonical` fields — `wp_get_canonical_url()` returns `false` for trashed (non-public) posts, and `get_permalink()` returns `?p=ID` format. Rewrote `Utils::get_reliable_permalink()` to reconstruct the URL from the post's `post_name` slug (stripping the `__trashed` suffix) using `home_url()` with `user_trailingslashit()`.
+* (bug) Stale `ArticleUpdated` events could fire after `ArticleDeleted` — when an article was deleted before its scheduled cron event fired, the scheduled event would still dispatch. Added `BusHelper::unscheduleArticleEvents()` to cancel all pending bus cron events for the post before sending the delete event.
+* (bug) `BusHelper::scheduleSendToBus()` — the admin-configured backoff duration was never applied on retry; `$minutesToRun` was unconditionally overwritten to `0` instead of using the configured value
+* (bug) `Utils::get_youtube_ids_from_urls()` passed `null` to `parse_str()` when URLs had no query string — PHP 8.1+ deprecation warning; added `?? ''` fallback
+
+### Improved ###
+* (settings) Added `sanitize_callback` to `register_setting()` — all settings are now sanitized server-side before saving (text fields via `sanitize_text_field()`, URLs via `esc_url_raw()`, backoff duration via `absint()`, on/off dropdowns whitelisted, checkboxes validated, custom post type keys via `sanitize_key()`)
+* (settings) Cached `get_option()` in `AdminSettingsPage` — single DB read per request instead of 13 redundant calls
+* (cleanup) Added `publication_reason` meta cleanup on article deletion (alongside existing `lifetime` and `is_post_new` cleanup)
+* (cleanup) Replaced raw SQL transient flush in `AdminSyncPage::handleFlushAllTransients()` with `delete_transient(Enum::CACHE_KEY)`
+* (cleanup) Added transient cleanup on plugin uninstall — deletes auth token transient and YouTube video cache transients
+* (cleanup) Added cron event cleanup on plugin uninstall as a safety net (in case deactivation hook didn't run)
+* (settings) Changed activation defaults for "Publication reason" and "Article lifetime" validation toggles from `on` to `off` — also updated `Fields.php` fallbacks so unset values default to `off`
+* (code) Systematic file-by-file audit of every core class.
 
 
 ## [3.6.0] - 2026-02-18 ##

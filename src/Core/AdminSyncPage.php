@@ -37,21 +37,14 @@ class AdminSyncPage
             wp_die('Invalid nonce specified', 'Error', ['response' => 403]);
         }
 
-        global $wpdb;
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM {$wpdb->options}
-             WHERE option_name LIKE %s
-             OR option_name LIKE %s",
-                '_transient_%' . Enum::CACHE_KEY,
-                '_transient_timeout_%' . Enum::CACHE_KEY
-            )
-        );
+        delete_transient(Enum::CACHE_KEY);
 
-        // Redirect back with notice
-        wp_safe_redirect(
-            add_query_arg('flush_success', '1', wp_get_referer())
+        // Redirect back to the sync page with a success notice
+        $redirect_url = add_query_arg(
+            ['page' => Enum::ADMIN_SYNC_EVENTS_MENU_SLUG, 'flush_success' => '1'],
+            admin_url('admin.php')
         );
+        wp_safe_redirect($redirect_url);
         exit;
     }
 
@@ -82,6 +75,7 @@ class AdminSyncPage
             'SyncAuthorsAjax',
             [
                 'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('ringier_bus_sync'),
                 'role_list' => Enum::AUTHOR_ROLE_LIST,
             ]
         );
@@ -94,6 +88,11 @@ class AdminSyncPage
 
     public static function handleAuthorsSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         $offset = isset($_POST['offset']) ? (int) $_POST['offset'] : 0;
         $perPage = 1;
 
@@ -143,6 +142,11 @@ class AdminSyncPage
 
     public static function handleCategoriesSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         // Use global $wpdb for a precise, lightweight query
         global $wpdb;
 
@@ -173,6 +177,10 @@ class AdminSyncPage
         // Now we fetch the full object for just this ONE term
         $next_term = get_term($next_term_id, 'category');
 
+        if (!$next_term || is_wp_error($next_term)) {
+            wp_send_json_error("Could not load category term for ID {$next_term_id}");
+        }
+
         try {
             BusHelper::triggerTermCreatedEvent(
                 $next_term->term_id,
@@ -194,6 +202,11 @@ class AdminSyncPage
 
     public static function handleTagsSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         global $wpdb;
 
         $last_id = isset($_POST['last_id']) ? (int) $_POST['last_id'] : 0;
@@ -223,6 +236,10 @@ class AdminSyncPage
         // Fetch the full object for this specific tag
         $next_term = get_term($next_term_id, 'post_tag');
 
+        if (!$next_term || is_wp_error($next_term)) {
+            wp_send_json_error("Could not load tag term for ID {$next_term_id}");
+        }
+
         try {
             BusHelper::triggerTermCreatedEvent(
                 $next_term->term_id,
@@ -251,6 +268,11 @@ class AdminSyncPage
      */
     public static function handleArticlesSync(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized', 403);
+        }
+        check_ajax_referer('ringier_bus_sync', 'nonce');
+
         global $wpdb;
 
         // Get parameters
@@ -295,7 +317,7 @@ class AdminSyncPage
         }
 
         try {
-            $success = BusHelper::dispatchArticlesEvent(
+            $success = BusHelper::dispatchArticleEvent(
                 $post_object->ID,
                 $post_object
             );

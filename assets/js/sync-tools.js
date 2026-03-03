@@ -4,6 +4,19 @@ jQuery(document).ready(function ($) {
     const progressDivTag = $('#sync-progress-tag');
     const progressDivArticle = $('#sync-progress-article');
 
+    /**
+     * Escape HTML special characters to prevent XSS when inserting
+     * server response data into the DOM via .append().
+     */
+    function escHtml(str) {
+        if (typeof str !== 'string') {
+            return String(str);
+        }
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
     function syncAuthors() {
         let offset = 0;
         let successCount = 0;
@@ -12,7 +25,7 @@ jQuery(document).ready(function ($) {
         progressDiv.show();
         progressDiv.html(`
             <h3>Starting to sync all authors having the following roles:</h3>
-            <pre><code>${SyncAuthorsAjax.role_list.join(', ')}</code></pre>
+            <pre><code>${escHtml(SyncAuthorsAjax.role_list.join(', '))}</code></pre>
             <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window until the sync is completed.</p>
             <hr />
         `);
@@ -20,6 +33,7 @@ jQuery(document).ready(function ($) {
         function syncNextAuthor() {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_authors',
+                nonce: SyncAuthorsAjax.nonce,
                 offset: offset
             }, function (response) {
                 if (response.success && response.data) {
@@ -39,10 +53,10 @@ jQuery(document).ready(function ($) {
                         // If NOT done, means we definitely processed a user row.
                         if (skipped) {
                             skippedCount++;
-                            progressDiv.append(`<div style="color: red; font-weight: bold;">${message}</div>`);
+                            progressDiv.append(`<div style="color: red; font-weight: bold;">${escHtml(message)}</div>`);
                         } else {
                             successCount++;
-                            progressDiv.append(`<div>${message}</div>`);
+                            progressDiv.append(`<div>${escHtml(message)}</div>`);
                         }
 
                         // Move to next offset and recurse
@@ -50,10 +64,10 @@ jQuery(document).ready(function ($) {
                         syncNextAuthor();
                     }
                 } else {
-                    progressDiv.append(`<div style="color: red;">Error: ${response.data}</div>`);
+                    progressDiv.append(`<div style="color: red;">Error: ${escHtml(response.data)}</div>`);
                 }
             }).fail(function (xhr) {
-                progressDiv.append(`<div style="color:red;">AJAX Error: ${xhr.status} - ${xhr.statusText}</div>`);
+                progressDiv.append(`<div style="color:red;">AJAX Error: ${escHtml(xhr.status)} - ${escHtml(xhr.statusText)}</div>`);
             });
         }
 
@@ -73,6 +87,7 @@ jQuery(document).ready(function ($) {
         function syncNextCategory(currentId) {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_categories',
+                nonce: SyncAuthorsAjax.nonce,
                 last_id: currentId
             }, function (response) {
                 if (response.success && response.data) {
@@ -90,14 +105,14 @@ jQuery(document).ready(function ($) {
                     } else {
                         syncedCount++;
 
-                        progressDivCat.append(`<div style="color: teal;">[${syncedCount}] ${message}</div>`);
+                        progressDivCat.append(`<div style="color: teal;">[${syncedCount}] ${escHtml(message)}</div>`);
                         syncNextCategory(last_id);
                     }
                 } else {
-                    progressDivCat.append('<div style="color:red;">Error syncing category: ' + (response.data || 'Unknown error') + '</div>');
+                    progressDivCat.append(`<div style="color:red;">Error syncing category: ${escHtml(response.data || 'Unknown error')}</div>`);
                 }
             }).fail(function(xhr) {
-                progressDivCat.append('<div style="color:red;">Network/Server Error: ' + xhr.status + ' ' + xhr.statusText + '</div>');
+                progressDivCat.append(`<div style="color:red;">Network/Server Error: ${escHtml(xhr.status)} ${escHtml(xhr.statusText)}</div>`);
             });
         }
 
@@ -117,6 +132,7 @@ jQuery(document).ready(function ($) {
         function syncNextTag(currentId) {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_tags',
+                nonce: SyncAuthorsAjax.nonce,
                 last_id: currentId
             }, function (response) {
                 if (response.success && response.data) {
@@ -134,17 +150,17 @@ jQuery(document).ready(function ($) {
                     } else {
                         // Not done: Increment count and display row
                         syncedCount++;
-                        progressDivTag.append(`<div style="color: purple;">[${syncedCount}] ${message}</div>`);
+                        progressDivTag.append(`<div style="color: purple;">[${syncedCount}] ${escHtml(message)}</div>`);
 
                         // Recurse with new ID
                         syncNextTag(last_id);
                     }
                 } else {
-                    progressDivTag.append(`<div style="color:red;">Error syncing tag: ${response.data || 'Unknown error'}</div>`);
+                    progressDivTag.append(`<div style="color:red;">Error syncing tag: ${escHtml(response.data || 'Unknown error')}</div>`);
                 }
             }).fail(function(xhr) {
                 // Catch Network/Server Errors
-                progressDivTag.append(`<div style="color:red;">Network/Server Error: ${xhr.status} - ${xhr.statusText}</div>`);
+                progressDivTag.append(`<div style="color:red;">Network/Server Error: ${escHtml(xhr.status)} - ${escHtml(xhr.statusText)}</div>`);
             });
         }
 
@@ -174,7 +190,7 @@ jQuery(document).ready(function ($) {
 
         progressDivArticle.html(`
             <h3>${startMsg}</h3>
-            <p><strong>Type:</strong> ${selectedType}</p>
+            <p><strong>Type:</strong> ${escHtml(selectedType)}</p>
             <p style="font-weight: bold; color: #0073aa;">Please do NOT close this window.</p>
             <hr />
         `);
@@ -183,6 +199,7 @@ jQuery(document).ready(function ($) {
         function syncNextArticle(lastIdCursor) {
             $.post(SyncAuthorsAjax.ajax_url, {
                 action: 'sync_articles',
+                nonce: SyncAuthorsAjax.nonce,
                 last_id: lastIdCursor,
                 post_types: [selectedType]
             }, function (response) {
@@ -200,15 +217,15 @@ jQuery(document).ready(function ($) {
                         `);
                     } else {
                         syncedCount++;
-                        progressDivArticle.append(`<div style="color: #333;">[${syncedCount}] ${message}</div>`);
+                        progressDivArticle.append(`<div style="color: #333;">[${syncedCount}] ${escHtml(message)}</div>`);
                         progressDivArticle.scrollTop(progressDivArticle[0].scrollHeight);
                         syncNextArticle(last_id);
                     }
                 } else {
-                    progressDivArticle.append(`<div style="color:red;">Error: ${response.data || 'Unknown'}</div>`);
+                    progressDivArticle.append(`<div style="color:red;">Error: ${escHtml(response.data || 'Unknown')}</div>`);
                 }
             }).fail(function(xhr) {
-                progressDivArticle.append(`<div style="color:red;">Server Error: ${xhr.status} ${xhr.statusText}</div>`);
+                progressDivArticle.append(`<div style="color:red;">Server Error: ${escHtml(xhr.status)} ${escHtml(xhr.statusText)}</div>`);
             });
         }
 

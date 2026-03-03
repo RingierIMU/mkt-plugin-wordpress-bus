@@ -1,5 +1,5 @@
 <?php
-/**p
+/**
  * @author Wasseem Khayrattee <wasseemk@ringier.co.za>
  *
  * @github wkhayrattee
@@ -21,7 +21,7 @@ class Utils
      *
      * @return int|string
      */
-    public static function returnEmptyOnNullorFalse($string, $is_id = false)
+    public static function returnEmptyOnNullorFalse(mixed $string, bool $is_id = false): int|string
     {
         if (($string === false) || is_null($string)) {
             if ($is_id === true) {
@@ -35,38 +35,60 @@ class Utils
     }
 
     /**
-     * Send an md5 hash of the image content
-     * Mainly used as part of the Bus API request
+     * Return an md5 hash of the original image file.
+     * Tries the local filesystem first (fastest), falls back to HTTP download
+     * for S3/CDN-hosted images. Caches per attachment ID so each unique image
+     * is hashed only once regardless of how many size variants are requested.
      *
-     * @param $image_url
+     * @param int $attachment_id WordPress attachment ID
      *
-     * @return string
+     * @return string MD5 hash, or empty string on failure
      */
-    public static function hashImage($image_url): string
+    public static function hashImage(int $attachment_id): string
     {
-        if (empty($image_url) || is_null($image_url)) {
+        static $cache = [];
+
+        if ($attachment_id <= 0) {
             return '';
         }
 
-        $ch = curl_init($image_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Set a timeout
-
-        $imagelink = curl_exec($ch);
-
-        if ($imagelink === false) {
-            $error = curl_error($ch);
-            error_log('Curl error: ' . $error);
-            $imagelink = ''; // or any other fallback value
+        if (isset($cache[$attachment_id])) {
+            return $cache[$attachment_id];
         }
 
-        curl_close($ch);
+        // Try local filesystem first (fastest)
+        $file_path = get_attached_file($attachment_id);
+        if (!empty($file_path) && file_exists($file_path)) {
+            $cache[$attachment_id] = md5_file($file_path);
 
-        if ($imagelink === false) {
+            return $cache[$attachment_id];
+        }
+
+        // Fallback: download via HTTP (for S3/CDN-hosted images)
+        $url = wp_get_attachment_url($attachment_id);
+        if (empty($url)) {
+            $cache[$attachment_id] = '';
+
             return '';
         }
 
-        return md5($imagelink);
+        $response = wp_remote_get($url, ['timeout' => 10]);
+        if (is_wp_error($response)) {
+            $cache[$attachment_id] = '';
+
+            return '';
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        if (empty($body)) {
+            $cache[$attachment_id] = '';
+
+            return '';
+        }
+
+        $cache[$attachment_id] = md5($body);
+
+        return $cache[$attachment_id];
     }
 
     /**
@@ -77,7 +99,7 @@ class Utils
      *
      * @return int
      */
-    public static function getParentPostId($post_ID)
+    public static function getParentPostId(int $post_ID): int
     {
         $parent_id = wp_is_post_revision($post_ID);
         if ($parent_id !== false) {
@@ -108,7 +130,7 @@ class Utils
      *
      * @return mixed
      */
-    public static function getPrimaryCategoryProperty($post_id, $property): string
+    public static function getPrimaryCategoryProperty(int $post_id, string $property): string
     {
         //some post_ids are simply revisions, so make sure we are actually using the parent id
         $post_id = self::getParentPostId($post_id);
@@ -141,32 +163,11 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return bool
      */
-    public static function isPostNew($post_ID): bool
+    public static function isPostNew(int $post_ID): bool
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::ACF_IS_POST_NEW_KEY
-            );
-            $results = $wpdb->get_row($sql);
-
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    return false;
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
-        }
-
-        return true;
+        return !metadata_exists('post', $post_ID, Enum::ACF_IS_POST_NEW_KEY);
     }
 
     /**
@@ -174,41 +175,26 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return string
      */
-    public static function getPublicationReason($post_ID): string
+    public static function getPublicationReason(int $post_ID): string
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::FIELD_PUBLICATION_REASON_KEY
-            );
-            $results = $wpdb->get_row($sql);
+        $value = get_post_meta($post_ID, Enum::FIELD_PUBLICATION_REASON_KEY, true);
 
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    $publication_reason = sanitize_text_field($results->meta_value);
+        if (!empty($value)) {
+            $publication_reason = sanitize_text_field($value);
 
-                    /**
-                     * Gets the publication reason for a post.
-                     *
-                     * @hook ringier_bus_get_publication_reason
-                     *
-                     * @param string $publication_reason The publication reason.
-                     * @param int $post_ID The ID of the post.
-                     *
-                     * @return string The publication reason.
-                     */
-                    return apply_filters('ringier_bus_get_publication_reason', $publication_reason, $post_ID);
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
+            /**
+             * Gets the publication reason for a post.
+             *
+             * @hook ringier_bus_get_publication_reason
+             *
+             * @param string $publication_reason The publication reason.
+             * @param int $post_ID The ID of the post.
+             *
+             * @return string The publication reason.
+             */
+            return apply_filters('ringier_bus_get_publication_reason', $publication_reason, $post_ID);
         }
 
         return 'none';
@@ -219,41 +205,26 @@ class Utils
      *
      * @param $post_ID
      *
-     * @throws \Exception
-     *
      * @return string
      */
-    public static function getArticleLifetime($post_ID): string
+    public static function getArticleLifetime(int $post_ID): string
     {
-        global $wpdb;
-        try {
-            $sql = $wpdb->prepare(
-                "SELECT pm.meta_value FROM {$wpdb->prefix}postmeta pm
-            WHERE pm.post_id = %s AND pm.meta_key = %s",
-                $post_ID,
-                Enum::ACF_ARTICLE_LIFETIME_KEY
-            );
-            $results = $wpdb->get_row($sql);
+        $value = get_post_meta($post_ID, Enum::ACF_ARTICLE_LIFETIME_KEY, true);
 
-            if (is_object($results)) {
-                if (isset($results->meta_value)) {
-                    $article_lifetime = sanitize_text_field($results->meta_value);
+        if (!empty($value)) {
+            $article_lifetime = sanitize_text_field($value);
 
-                    /**
-                     * Gets the article lifetime for a post.
-                     *
-                     * @hook ringier_bus_get_article_lifetime
-                     *
-                     * @param string $article_lifetime The article lifetime.
-                     * @param int $post_ID The ID of the post.
-                     *
-                     * @return string The article lifetime.
-                     */
-                    return apply_filters('ringier_bus_get_article_lifetime', $article_lifetime, $post_ID);
-                }
-            }
-        } catch (\Exception $exception) {
-            ringier_errorlogthis($exception->errorMessage());
+            /**
+             * Gets the article lifetime for a post.
+             *
+             * @hook ringier_bus_get_article_lifetime
+             *
+             * @param string $article_lifetime The article lifetime.
+             * @param int $post_ID The ID of the post.
+             *
+             * @return string The article lifetime.
+             */
+            return apply_filters('ringier_bus_get_article_lifetime', $article_lifetime, $post_ID);
         }
 
         return 'none';
@@ -268,7 +239,7 @@ class Utils
     public static function slackthat($message, string $logLevel = 'alert'): void
     {
         //Enable logging to Slack ONLY IF it was enabled
-        if (isset($_ENV[Enum::ENV_SLACK_ENABLED]) && ($_ENV[Enum::ENV_SLACK_ENABLED] == 'ON')) {
+        if (($_ENV[Enum::ENV_SLACK_ENABLED] ?? '') === 'ON') {
             self::pushToSlack($message, $logLevel);
         }
     }
@@ -373,7 +344,7 @@ class Utils
      *
      * @return int
      */
-    public static function getContentWordCount($content): int
+    public static function getContentWordCount(string $content): int
     {
         return str_word_count($content, 0, 'éëïöçñÉËÏÖÇÑ');
     }
@@ -385,13 +356,13 @@ class Utils
      *
      * @return bool
      */
-    public static function notEmptyOrNull($value): bool
+    public static function notEmptyOrNull(mixed $value): bool
     {
         if (is_object($value) && !is_null($value)) {
             return true;
         }
         if (is_array($value)) {
-            if (count($value) == 1) { //to cope with [''] and [' '] arrays
+            if (count($value) === 1) { //to cope with [''] and [' '] arrays
                 if (self::isAssociative($value)) {
                     return true;
                 } elseif (isset($value[0]) && self::notEmptyOrNull($value[0])) {
@@ -404,7 +375,7 @@ class Utils
                 return true;
             }
 
-            return true;
+            return false;
         } else {
             if ((is_string($value) || is_int($value)) && ($value != '') && ($value != 'NULL') && (mb_strlen(trim($value)) > 0)) {
                 return true;
@@ -421,7 +392,7 @@ class Utils
      *
      * @return bool
      */
-    public static function isAssociative($thatArray): bool
+    public static function isAssociative(array $thatArray): bool
     {
         foreach ($thatArray as $key => $value) {
             if ($key !== (int) $key) {
@@ -440,7 +411,7 @@ class Utils
      *
      * @return string
      */
-    public static function formatDate($date, string $format = \DATE_RFC3339): string
+    public static function formatDate(?string $date, string $format = \DATE_RFC3339): string
     {
         // Handle empty or null inputs immediately
         if (empty($date) || $date === '0000-00-00 00:00:00') {
@@ -493,7 +464,11 @@ class Utils
         }
 
         // If no cached data, proceed to fetching data via API request
-        $url = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id={$video_id}&key={$api_key}";
+        $url = 'https://www.googleapis.com/youtube/v3/videos?' . http_build_query([
+            'part' => 'snippet,contentDetails',
+            'id' => $video_id,
+            'key' => $api_key,
+        ]);
 
         // Add headers to the request since somehow a blank referer is being forwarded to the API - we restrict in referer for security reasons
         $args = [
@@ -504,15 +479,7 @@ class Utils
 
         $response = wp_remote_get($url, $args);
         if (is_wp_error($response)) {
-            //log error to our custom log file - viewable via Admin UI
-            ringier_errorlogthis('[Youtube API] ERROR occurred, below error thrown:');
-
-            // Convert WP_Error to string
-            $error_message = $response->get_error_message();
-            ringier_errorlogthis($error_message);
-
-            $request_headers = wp_remote_retrieve_headers($response);
-            ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
+            ringier_errorlogthis('[Youtube API] ERROR occurred: ' . $response->get_error_message());
 
             return [];
         }
@@ -523,18 +490,11 @@ class Utils
         if (empty($data['items'])) {
             ringier_errorlogthis('[Youtube API] Warning - data was empty, below details:');
 
-            // Decode the response body to extract the error message
-            $body = wp_remote_retrieve_body($response);
-            $decoded_body = json_decode($body, true);
-
-            if (isset($decoded_body['error'])) {
-                $error_message = $decoded_body['error']['message'];
-                $error_details = isset($decoded_body['error']['errors']) ? json_encode($decoded_body['error']['errors']) : 'No further error details';
+            if (isset($data['error'])) {
+                $error_message = $data['error']['message'] ?? 'Unknown error';
+                $error_details = isset($data['error']['errors']) ? json_encode($data['error']['errors']) : 'No further error details';
                 ringier_errorlogthis('Error Message: ' . $error_message);
                 ringier_errorlogthis('Error Details: ' . $error_details);
-
-                $request_headers = wp_remote_retrieve_headers($response);
-                ringier_errorlogthis('Request Headers: ' . json_encode($request_headers));
             } else {
                 ringier_errorlogthis('No error details available in response body.');
             }
@@ -549,7 +509,7 @@ class Utils
             'reference' => $video_id,
             'content_url' => "https://www.youtube.com/watch?v={$video_id}",
             'embed_url' => "https://www.youtube.com/embed/{$video_id}",
-            'thumbnail' => $video['snippet']['thumbnails']['standard']['url'],
+            'thumbnail' => $video['snippet']['thumbnails']['standard']['url'] ?? $video['snippet']['thumbnails']['high']['url'] ?? $video['snippet']['thumbnails']['default']['url'] ?? '',
             'title' => $video['snippet']['title'],
             'description' => $video['snippet']['description'],
             'duration' => self::convert_youtube_duration($video['contentDetails']['duration']),
@@ -589,7 +549,7 @@ class Utils
 
         // no matches found
         if (empty($matches[1])) {
-            return []; // Return an empty array if
+            return [];
         }
 
         // Remove any duplicate IDs
@@ -609,7 +569,7 @@ class Utils
 
         foreach ($urls as $url) {
             if (!empty($url)) {
-                parse_str(parse_url($url, PHP_URL_QUERY), $query);
+                parse_str(parse_url($url, PHP_URL_QUERY) ?? '', $query);
                 if (isset($query['v'])) {
                     $video_ids[] = $query['v'];
                 }
@@ -683,11 +643,11 @@ class Utils
         /**
          * Get Author professional Name
          */
-        $first_name = isset($userdata['first_name']) ? sanitize_text_field($userdata['first_name']) : '';
-        $last_name = isset($userdata['last_name']) ? sanitize_text_field($userdata['last_name']) : '';
+        $first_name = sanitize_text_field($userdata['first_name'] ?? '');
+        $last_name = sanitize_text_field($userdata['last_name'] ?? '');
         $professional_name = trim($first_name . ' ' . $last_name);
         if (empty($professional_name)) {
-            $professional_name = isset($userdata['display_name']) ? sanitize_text_field($userdata['display_name']) : '';
+            $professional_name = sanitize_text_field($userdata['display_name'] ?? '');
         }
 
         /**
@@ -698,12 +658,11 @@ class Utils
         /**
          * Get author creation date
          */
-        $created_at = 'todo';
         if (isset($userdata['user_registered'])) {
             $created_at = Utils::formatDate($userdata['user_registered']);
         } else {
             $user = get_userdata($user_id);
-            $created_at = $user->user_registered;
+            $created_at = $user ? Utils::formatDate($user->user_registered) : '';
         }
 
         /**
@@ -781,19 +740,50 @@ class Utils
      */
     public static function get_canonical_url(?int $post_id): string
     {
-        $post = get_post($post_id);
+        return self::get_reliable_permalink($post_id);
+    }
 
-        // If Yoast is active and has overridden canonical URL
-        if (has_filter('wpseo_canonical')) {
-            $yoast_canonical = apply_filters('wpseo_canonical', false, $post);
-            if (is_string($yoast_canonical) && !empty($yoast_canonical)) {
-                return $yoast_canonical;
-            }
+    /**
+     * Get a reliable permalink for a post, even when it has been trashed.
+     *
+     * wp_get_canonical_url() returns false for non-public posts (e.g. trashed),
+     * and get_permalink() returns the ugly ?p=ID format for trashed posts.
+     *
+     * For trashed posts we reconstruct the URL from the post_name (slug) stored
+     * in the DB, stripping the __trashed suffix that WordPress appends.
+     *
+     * @param int|null $post_id
+     *
+     * @return string
+     */
+    public static function get_reliable_permalink(?int $post_id): string
+    {
+        if (empty($post_id)) {
+            return '';
         }
 
-        $canonical = wp_get_canonical_url($post);
+        // Try the canonical URL first (works for public posts)
+        $url = wp_get_canonical_url($post_id);
+        if (is_string($url) && !empty($url)) {
+            return $url;
+        }
 
-        return is_string($canonical) ? $canonical : '';
+        // For trashed posts, get_permalink() returns ?p=ID.
+        // Instead, reconstruct the URL from the post_name slug in the DB.
+        $post = get_post($post_id);
+        if ($post && !empty($post->post_name)) {
+            $clean_slug = str_replace('__trashed', '', $post->post_name);
+
+            return home_url(user_trailingslashit('/' . $clean_slug));
+        }
+
+        // Last resort fallback
+        $url = get_permalink($post_id);
+        if (is_string($url) && !empty($url)) {
+            return str_replace('__trashed', '', $url);
+        }
+
+        return '';
     }
 
 }
