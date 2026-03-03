@@ -48,12 +48,16 @@ class BusPluginClass
         // Clean up transients (safety net in case deactivation didn't run)
         delete_transient(Enum::CACHE_KEY);
 
-        // Clean up YouTube video cache transients
+        // Clean up plugin-created transients
         global $wpdb;
         $wpdb->query(
             "DELETE FROM {$wpdb->options}
              WHERE option_name LIKE '_transient_ringier_bus_youtube_video_%'
-             OR option_name LIKE '_transient_timeout_ringier_bus_youtube_video_%'"
+             OR option_name LIKE '_transient_timeout_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_triggered_bus_event_%'
+             OR option_name LIKE '_transient_timeout_triggered_bus_event_%'
+             OR option_name LIKE '_transient_bus_user_update_%'
+             OR option_name LIKE '_transient_timeout_bus_user_update_%'"
         );
 
         // Clean up scheduled cron events (safety net in case deactivation didn't run)
