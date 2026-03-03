@@ -3,7 +3,7 @@
         'name' => 'ringierimu/ringier-bus',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '5b98a56114acff7a77032e4d63b8d2ce1d97edef',
+        'reference' => '4fbbcfb17785e640491ae611caca2c61d85b03c8',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'ringierimu/ringier-bus' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '5b98a56114acff7a77032e4d63b8d2ce1d97edef',
+            'reference' => '4fbbcfb17785e640491ae611caca2c61d85b03c8',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../../',
             'aliases' => array(),
