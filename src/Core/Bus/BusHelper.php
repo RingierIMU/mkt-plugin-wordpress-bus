@@ -276,6 +276,26 @@ class BusHelper
         if (get_transient('bus_user_update_' . $user_id)) {
             return;
         }
+
+        /*
+         * Check shouldDispatchAuthorEvent BEFORE setting the transient.
+         *
+         * When the Ringier Author Addon is active, META_SHOW_PROFILE_PAGE_KEY is saved
+         * by save_data_onsubmit (hooked to personal_options_update / edit_user_profile_update),
+         * which fires AFTER profile_update. This means:
+         *   1. profile_update fires (from edit_user) → we check the meta → old/unset value → false
+         *   2. save_data_onsubmit runs → saves the new meta value
+         *   3. save_data_onsubmit calls wp_update_user() → fires another profile_update
+         *
+         * If we set the transient in step 1, step 3's profile_update is blocked by it and the
+         * AuthorUpdated event is never dispatched, even when the admin enabled the author profile.
+         *
+         * By returning here WITHOUT setting the transient, step 3 is free to dispatch the event.
+         */
+        if (!self::shouldDispatchAuthorEvent($user_id)) {
+            return;
+        }
+
         // Set a transient to mark this hook as processed for this user
         set_transient('bus_user_update_' . $user_id, true, 5); // 5 seconds validity
 

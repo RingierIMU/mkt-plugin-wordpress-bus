@@ -2,8 +2,8 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.9
-Stable tag: 4.0.0
+Tested up to: 6.9.4
+Stable tag: 4.0.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -160,6 +160,11 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [4.0.1] - 2026-04-16 ###
+
+#### Fixed ####
+* (bug) `AuthorUpdated` event not dispatched when `ringier-author-addon` is active — `shouldDispatchAuthorEvent()` was evaluated inside `dispatchAuthorEvent()`, after the duplicate-guard transient was already set. If the meta `ringier_show_author_profile_page` was `'off'` or unset at the time of the first `profile_update` (before `save_data_onsubmit` had written the new value), the transient was stamped with a stale result, blocking all subsequent `profile_update` calls from dispatching. Fixed by moving the `shouldDispatchAuthorEvent()` check to before `set_transient()` in `triggerUserUpdatedEvent()` — if the check returns `false`, the method returns early without touching the transient, leaving subsequent calls free to dispatch once the correct meta value is in the DB.
 
 ### [4.0.0] - 2026-03-02 ###
 
