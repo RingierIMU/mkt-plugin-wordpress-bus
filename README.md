@@ -150,7 +150,7 @@ This filter gives you full flexibility to:
 
 You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
 
-The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`), `wp-image-<id>` classes, and upload URLs for `<img>` tags carrying neither. This filter receives the resolved attachment IDs, in order of appearance, just before they are turned into payload entries.
+The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`), `wp-image-<id>` classes, and upload URLs for `<img>` tags carrying neither. This filter receives the resolved attachment IDs just before they are turned into payload entries.
 
 The featured image is **not** in this list — it is dispatched separately as the hero entry.
 
