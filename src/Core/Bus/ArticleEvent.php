@@ -432,6 +432,12 @@ class ArticleEvent
      * Resolving by attachment ID removes both failure modes: an ID in the body means
      * the image is in the article, and nothing else does.
      *
+     * An ID is only believed when it agrees with the `<img src>` it sits on. Content
+     * migrated from another property keeps the *source* site's `wp-image-<id>` class,
+     * which locally points at an unrelated picture; trusting it would dispatch an
+     * image the article has never shown. Where they disagree the URL wins, because
+     * the URL is what the reader sees.
+     *
      * The featured image is excluded — it is dispatched separately as the hero.
      *
      * @param int $post_ID
@@ -450,15 +456,21 @@ class ArticleEvent
          */
         $visibleContent = $this->stripNonBlockHtmlComments($content);
 
+        //Reconciles each `wp-image-<id>` class against the `src` of its own tag
+        $tagResolution = $this->collectImgTagImageIds($visibleContent);
+
         $candidateIdList = array_merge(
-            $this->collectBlockImageIds(parse_blocks($content)),
-            $this->collectClassImageIds($visibleContent),
-            $this->collectBareUrlImageIds($visibleContent)
+            $tagResolution['ids'],
+            $this->collectBlockImageIds(parse_blocks($content))
         );
 
         $imageIdList = [];
         foreach ($candidateIdList as $candidateId) {
             if ($candidateId <= 0 || $candidateId === $featuredImageId) {
+                continue;
+            }
+            //Contradicted by the `src` of the tag it was read from
+            if (in_array($candidateId, $tagResolution['rejected'], true)) {
                 continue;
             }
             if (isset($imageIdList[$candidateId]) || !$this->isImageAttachment($candidateId)) {
@@ -557,76 +569,171 @@ class ArticleEvent
     }
 
     /**
-     * Collect attachment IDs from `wp-image-<id>` classes.
+     * Resolve one attachment ID per `<img>` tag, reconciling the `wp-image-<id>`
+     * class against the `src` of the same tag.
      *
-     * This is how WordPress itself resolves images in content
-     * (see `wp_filter_content_tags()` in wp-includes/media.php) and it covers the
-     * classic editor, freeform blocks and `[caption]` shortcodes.
+     * Reading the class is how WordPress itself identifies an image in content
+     * (`wp_filter_content_tags()` in wp-includes/media.php), and it covers the
+     * classic editor, freeform blocks and `[caption]` shortcodes. Core only uses
+     * the ID to decorate the tag it found it on, though — it never swaps the URL.
+     * This payload does swap it (`wp_get_attachment_image_url()`), so the ID has to
+     * be shown to describe that `src` before it can be believed.
      *
-     * Core applies its regex per `<img>` tag; this runs over the whole content, so
-     * the class name is anchored to avoid matching inside a longer class such as
-     * `not-a-wp-image-12`.
+     * Content migrated between properties keeps the source site's IDs, where the
+     * same number means a different picture. Such an ID is returned under
+     * `rejected` so that the block-attribute pass cannot reinstate it, and the
+     * `src` is resolved against this site's own media instead.
+     *
+     * The class name is anchored because this does not parse HTML — without it a
+     * longer class such as `not-a-wp-image-12` reads as attachment 12.
      *
      * @param string $content
      *
-     * @return int[]
+     * @return array{ids: int[], rejected: int[]}
      */
-    private function collectClassImageIds(string $content): array
+    private function collectImgTagImageIds(string $content): array
     {
-        if (!preg_match_all('/(?<![\w-])wp-image-([0-9]+)/i', $content, $matches)) {
-            return [];
+        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
+            return ['ids' => [], 'rejected' => []];
         }
 
-        return array_map('absint', $matches[1]);
+        $imageIdList = [];
+        $rejectedIdList = [];
+
+        foreach ($tagMatches[0] as $tag) {
+            $classImageId = preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $tag, $classMatch)
+                ? absint($classMatch[1])
+                : 0;
+            $imageUrl = preg_match('/\ssrc=["\']([^"\']+)["\']/i', $tag, $srcMatch)
+                ? $srcMatch[1]
+                : '';
+
+            //Nothing to contradict the class with
+            if ($classImageId > 0 && ($imageUrl === '' || $this->attachmentMatchesUrl($classImageId, $imageUrl))) {
+                $imageIdList[] = $classImageId;
+                continue;
+            }
+
+            if ($classImageId > 0) {
+                $rejectedIdList[] = $classImageId;
+            }
+
+            $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
+            if ($urlImageId > 0) {
+                $imageIdList[] = $urlImageId;
+            }
+        }
+
+        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList];
     }
 
     /**
-     * Last-resort resolution for `<img>` tags carrying neither a block attribute
-     * nor a `wp-image-<id>` class — typically very old, hand-written markup.
+     * Does this attachment hold the file the given URL points at?
      *
-     * Only URLs pointing inside this site's uploads directory are looked up, so
-     * externally hosted images never hit the database.
+     * Compares file names rather than full URLs so that a sub-size, a `-scaled`
+     * original and a host that is not this one all still recognise their own image.
      *
-     * @param string $content
+     * @param int $attachmentId
+     * @param string $imageUrl
      *
-     * @return int[]
+     * @return bool
      */
-    private function collectBareUrlImageIds(string $content): array
+    private function attachmentMatchesUrl(int $attachmentId, string $imageUrl): bool
     {
-        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
-            return [];
+        $attachedFile = (string) get_post_meta($attachmentId, '_wp_attached_file', true);
+        if ($attachedFile === '') {
+            return false;
+        }
+
+        $attachmentName = $this->normaliseImageFileName(basename($attachedFile));
+        $urlName = $this->normaliseImageFileName(basename((string) parse_url($imageUrl, PHP_URL_PATH)));
+
+        return $attachmentName !== '' && $attachmentName === $urlName;
+    }
+
+    /**
+     * Find the attachment holding the file an `<img src>` points at.
+     *
+     * The host is ignored: migrated content routinely references this site's own
+     * uploads through the domain it came from, and only the path below
+     * `wp-content/uploads/` identifies the file. A URL that is not an upload of
+     * ours at all resolves to nothing, which is the intended outcome — an image
+     * hosted elsewhere is not in our media library and has no attachment to send.
+     *
+     * @param string $imageUrl
+     *
+     * @return int attachment ID, or 0
+     */
+    private function resolveAttachmentFromUrl(string $imageUrl): int
+    {
+        if ($imageUrl === '') {
+            return 0;
         }
 
         $uploadDir = wp_get_upload_dir();
-        $uploadBaseUrl = $uploadDir['baseurl'] ?? '';
-        if (empty($uploadBaseUrl)) {
-            return [];
-        }
-        //Match http/https and protocol-relative URLs alike
-        $uploadPath = preg_replace('#^https?:#i', '', $uploadBaseUrl);
-
-        $imageIdList = [];
-        foreach ($tagMatches[0] as $tag) {
-            if (preg_match('/wp-image-[0-9]+/i', $tag)) {
-                continue;
-            }
-            if (!preg_match('/\ssrc=["\']([^"\']+)["\']/i', $tag, $srcMatch)) {
-                continue;
-            }
-
-            $imageUrl = $srcMatch[1];
-            if (!str_contains(preg_replace('#^https?:#i', '', $imageUrl), $uploadPath)) {
-                continue;
-            }
-
-            //`attachment_url_to_postid()` cannot read a protocol-relative URL
-            $imageId = (int) attachment_url_to_postid(set_url_scheme($imageUrl));
-            if ($imageId > 0) {
-                $imageIdList[] = $imageId;
-            }
+        $uploadBaseUrl = (string) ($uploadDir['baseurl'] ?? '');
+        if ($uploadBaseUrl === '') {
+            return 0;
         }
 
-        return $imageIdList;
+        $uploadPath = (string) parse_url($uploadBaseUrl, PHP_URL_PATH);
+        $imagePath = (string) parse_url($imageUrl, PHP_URL_PATH);
+        if ($uploadPath === '' || $imagePath === '') {
+            return 0;
+        }
+
+        $marker = rtrim($uploadPath, '/') . '/';
+        $markerPosition = strpos($imagePath, $marker);
+        if ($markerPosition === false) {
+            return 0;
+        }
+
+        $relativePath = substr($imagePath, $markerPosition + strlen($marker));
+        if ($relativePath === '') {
+            return 0;
+        }
+
+        /*
+         * `attachment_url_to_postid()` matches `_wp_attached_file` exactly, so a
+         * sub-size URL has to be reduced to the name of the original first.
+         */
+        $candidateList = [$relativePath];
+        $originalPath = preg_replace('/-\d+x\d+(\.[A-Za-z0-9]+)$/', '$1', $relativePath);
+        if ($originalPath !== null && $originalPath !== $relativePath) {
+            $candidateList[] = $originalPath;
+        }
+
+        foreach ($candidateList as $candidatePath) {
+            $attachmentId = (int) attachment_url_to_postid(rtrim($uploadBaseUrl, '/') . '/' . $candidatePath);
+            if ($attachmentId > 0) {
+                return $attachmentId;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Reduce an image file name to the original upload it belongs to, dropping the
+     * sub-size (`-1024x768`), large-image (`-scaled`) and edited (`-e1699999999`)
+     * suffixes WordPress appends.
+     *
+     * @param string $fileName
+     *
+     * @return string
+     */
+    private function normaliseImageFileName(string $fileName): string
+    {
+        $fileName = strtolower($fileName);
+        $extension = (string) pathinfo($fileName, PATHINFO_EXTENSION);
+        $name = (string) pathinfo($fileName, PATHINFO_FILENAME);
+
+        do {
+            $previousName = $name;
+            $name = (string) preg_replace('/-(?:\d+x\d+|scaled|e\d+)$/', '', $name);
+        } while ($name !== $previousName);
+
+        return $extension === '' ? $name : $name . '.' . $extension;
     }
 
     /**
