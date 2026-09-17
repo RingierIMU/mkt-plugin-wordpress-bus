@@ -185,6 +185,19 @@ This plugin requires *PHP version >= 8.1*.
 
 == Changelog ==
 
+### [4.0.2] - 2026-09-17 ###
+
+#### Fixed ####
+* (bug) Stale and missing images in the `images[]` array of `ArticleCreated` / `ArticleUpdated` payloads. Images were enumerated by attachment ownership (`get_attached_media()`), and WordPress never detaches an image when an editor removes it from an article (core #30691). The slug-substring safeguard failed in both directions because WordPress appends a collision suffix to the slug and the filename independently — dispatching images the editor had removed, while omitting the ones that replaced them. Images are now resolved by attachment ID from the article body itself.
+
+#### Changed ####
+* (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship. The featured image stays a separate hero entry, and `images[]` is now ordered by appearance in the body.
+
+#### Added ####
+* (filter) `ringier_bus_article_image_ids` — adjust the non-hero attachment IDs an article dispatches.
+
+Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Plan a bulk re-sync accordingly.
+
 ### [4.0.1] - 2026-04-16 ###
 
 #### Fixed ####
