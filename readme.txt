@@ -189,6 +189,9 @@ This plugin requires *PHP version >= 8.1*.
 
 #### Fixed ####
 * (bug) Stale and missing images in the `images[]` array of `ArticleCreated` / `ArticleUpdated` payloads. Images were enumerated by attachment ownership (`get_attached_media()`), and WordPress never detaches an image when an editor removes it from an article (core #30691). The slug-substring safeguard failed in both directions because WordPress appends a collision suffix to the slug and the filename independently — dispatching images the editor had removed, while omitting the ones that replaced them. Images are now resolved by attachment ID from the article body itself.
+* (bug) A `wp-image-<id>` class left behind by a content migration was believed over the `<img src>` it sits on, so an article could dispatch photographs belonging to a different article. Each attachment ID is now reconciled against the `src` of its own tag; where they disagree the URL wins.
+* (bug) Images were resolved from `get_the_content()`, which returns only the teaser for a body carrying `<!--more-->` and only page one for `<!--nextpage-->`, silently dropping every image below the cut. Resolution now reads the stored post content.
+* (bug) Commented-out markup, protocol-relative `<img src>` URLs and over-broad `wp-image-` class matching each produced a wrong or missing image; all three are fixed.
 
 #### Changed ####
 * (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship, reconciling each attachment ID against the `src` of its own `<img>` tag so that a stale ID left by a content migration cannot substitute an unrelated picture. The featured image stays a separate hero entry.
@@ -196,7 +199,7 @@ This plugin requires *PHP version >= 8.1*.
 #### Added ####
 * (filter) `ringier_bus_article_image_ids` — adjust the non-hero attachment IDs an article dispatches.
 
-Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Plan a bulk re-sync accordingly.
+Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2544 images restored across 797 articles. Plan a bulk re-sync accordingly.
 
 ### [4.0.1] - 2026-04-16 ###
 
