@@ -304,6 +304,26 @@ class ArticleEvent
     }
 
     /**
+     * The stored article body, used to work out which images the article contains.
+     *
+     * Deliberately not `get_the_content()`: that returns the teaser only when the
+     * body carries a `<!--more-->` tag, the first page only when it carries
+     * `<!--nextpage-->`, and the password form for a protected post. Those are
+     * reasonable for rendering, but images are resolved from this string alone, so
+     * a truncated view silently drops every image below the cut.
+     *
+     * @param int $post_ID
+     *
+     * @return string
+     */
+    private function fetchImageResolutionContent(int $post_ID): string
+    {
+        $post = get_post($post_ID);
+
+        return $post instanceof \WP_Post ? (string) $post->post_content : '';
+    }
+
+    /**
      * Reconcile featured image list with the rest of the images in the article (post)
      *
      * @param int $post_ID
@@ -446,7 +466,7 @@ class ArticleEvent
      */
     private function resolveContentImageIds(int $post_ID): array
     {
-        $content = $this->fetchArticleContent($post_ID);
+        $content = $this->fetchImageResolutionContent($post_ID);
         $featuredImageId = (int) get_post_thumbnail_id($post_ID);
 
         /*
