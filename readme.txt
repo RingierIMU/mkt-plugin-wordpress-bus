@@ -49,7 +49,7 @@ You also have the flexibility to clear the log file via the UI itself.
 
 ## CUSTOM FILTERS ##
 
-The plugin exposes three custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
+The plugin exposes five custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
 
 ### 1. Modifying the Publication Reason ###
 
@@ -127,6 +127,30 @@ This filter gives you full flexibility to:
 - Force syncing regardless of profile visibility
 - Apply environment-specific rules (e.g., staging vs production)
 - Implement client-specific dispatch policies
+
+### 5. Modifying the Article Images ###
+
+You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
+
+The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`), `wp-image-<id>` classes, and upload URLs for `<img>` tags carrying neither. This filter receives the resolved attachment IDs, in order of appearance, just before they are turned into payload entries.
+
+The featured image is **not** in this list — it is dispatched separately as the hero entry.
+
+Example:
+```
+add_filter('ringier_bus_article_image_ids', function (array $image_id_list, int $post_ID, string $content): array {
+
+    // Example: never dispatch a specific attachment
+    $image_id_list = array_diff($image_id_list, [1234]);
+
+    // Example: append an image the body does not reference
+    $image_id_list[] = (int) get_post_meta($post_ID, 'my_extra_image_id', true);
+
+    return $image_id_list;
+}, 10, 3);
+```
+
+Anything returned is still sanitised afterwards — non-numeric values, zeros and duplicates are dropped.
 
 ## Contributing ##
 

@@ -475,7 +475,8 @@ class ArticleEvent
          */
         $imageIdList = apply_filters('ringier_bus_article_image_ids', $imageIdList, $post_ID, $content);
 
-        return array_values(array_unique(array_filter(array_map('intval', (array) $imageIdList))));
+        //The filter is free to add or reorder IDs, so re-sanitise whatever comes back
+        return array_values(array_unique(array_filter(array_map('absint', (array) $imageIdList))));
     }
 
     /**
