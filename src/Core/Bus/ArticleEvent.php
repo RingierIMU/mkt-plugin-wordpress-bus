@@ -382,7 +382,7 @@ class ArticleEvent
     }
 
     /**
-     * The non-hero images of an article, in the order they appear in the body.
+     * The non-hero images of an article.
      *
      * The list is derived from the article content itself (block attributes,
      * `wp-image-<id>` classes, and — as a last resort — upload URLs), never from
@@ -436,17 +436,24 @@ class ArticleEvent
      *
      * @param int $post_ID
      *
-     * @return int[] unique attachment IDs, in order of appearance
+     * @return int[] unique attachment IDs
      */
     private function resolveContentImageIds(int $post_ID): array
     {
         $content = $this->fetchArticleContent($post_ID);
         $featuredImageId = (int) get_post_thumbnail_id($post_ID);
 
+        /*
+         * Markup the editor commented out is not in the article, so it must not
+         * contribute images. Block delimiters are HTML comments too, and
+         * `parse_blocks()` needs them, so it reads the untouched content.
+         */
+        $visibleContent = $this->stripNonBlockHtmlComments($content);
+
         $candidateIdList = array_merge(
             $this->collectBlockImageIds(parse_blocks($content)),
-            $this->collectClassImageIds($content),
-            $this->collectBareUrlImageIds($content)
+            $this->collectClassImageIds($visibleContent),
+            $this->collectBareUrlImageIds($visibleContent)
         );
 
         $imageIdList = [];
@@ -467,7 +474,7 @@ class ArticleEvent
          *
          * @hook ringier_bus_article_image_ids
          *
-         * @param int[] $imageIdList Attachment IDs, in order of appearance in the body.
+         * @param int[] $imageIdList The resolved attachment IDs.
          * @param int $post_ID The ID of the post.
          * @param string $content The raw article content the IDs were resolved from.
          *
@@ -520,11 +527,45 @@ class ArticleEvent
     }
 
     /**
+     * Remove HTML comments, except the `<!-- wp:… -->` delimiters that carry the
+     * block structure and the `<!--more-->` / `<!--nextpage-->` markers.
+     *
+     * Anything an editor commented out is not part of the article and must not
+     * contribute an image.
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    private function stripNonBlockHtmlComments(string $content): string
+    {
+        return (string) preg_replace_callback(
+            '/<!--(.*?)-->/s',
+            static function (array $match): string {
+                $commentBody = ltrim($match[1]);
+
+                foreach (['wp:', '/wp:', 'more', 'nextpage', 'noteaser'] as $keptPrefix) {
+                    if (str_starts_with($commentBody, $keptPrefix)) {
+                        return $match[0];
+                    }
+                }
+
+                return '';
+            },
+            $content
+        );
+    }
+
+    /**
      * Collect attachment IDs from `wp-image-<id>` classes.
      *
      * This is how WordPress itself resolves images in content
      * (see `wp_filter_content_tags()` in wp-includes/media.php) and it covers the
      * classic editor, freeform blocks and `[caption]` shortcodes.
+     *
+     * Core applies its regex per `<img>` tag; this runs over the whole content, so
+     * the class name is anchored to avoid matching inside a longer class such as
+     * `not-a-wp-image-12`.
      *
      * @param string $content
      *
@@ -532,7 +573,7 @@ class ArticleEvent
      */
     private function collectClassImageIds(string $content): array
     {
-        if (!preg_match_all('/wp-image-([0-9]+)/i', $content, $matches)) {
+        if (!preg_match_all('/(?<![\w-])wp-image-([0-9]+)/i', $content, $matches)) {
             return [];
         }
 
@@ -578,7 +619,8 @@ class ArticleEvent
                 continue;
             }
 
-            $imageId = (int) attachment_url_to_postid($imageUrl);
+            //`attachment_url_to_postid()` cannot read a protocol-relative URL
+            $imageId = (int) attachment_url_to_postid(set_url_scheme($imageUrl));
             if ($imageId > 0) {
                 $imageIdList[] = $imageId;
             }
