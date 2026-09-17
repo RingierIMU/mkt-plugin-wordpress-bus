@@ -132,7 +132,7 @@ This filter gives you full flexibility to:
 
 You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
 
-The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`), `wp-image-<id>` classes, and upload URLs for `<img>` tags carrying neither. This filter receives the resolved attachment IDs just before they are turned into payload entries.
+The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`) and `wp-image-<id>` classes, each reconciled against the `src` of its own `<img>` tag, falling back to resolving that URL against the media library. This filter receives the resolved attachment IDs just before they are turned into payload entries.
 
 The featured image is **not** in this list — it is dispatched separately as the hero entry.
 
@@ -191,7 +191,7 @@ This plugin requires *PHP version >= 8.1*.
 * (bug) Stale and missing images in the `images[]` array of `ArticleCreated` / `ArticleUpdated` payloads. Images were enumerated by attachment ownership (`get_attached_media()`), and WordPress never detaches an image when an editor removes it from an article (core #30691). The slug-substring safeguard failed in both directions because WordPress appends a collision suffix to the slug and the filename independently — dispatching images the editor had removed, while omitting the ones that replaced them. Images are now resolved by attachment ID from the article body itself.
 
 #### Changed ####
-* (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship. The featured image stays a separate hero entry.
+* (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship, reconciling each attachment ID against the `src` of its own `<img>` tag so that a stale ID left by a content migration cannot substitute an unrelated picture. The featured image stays a separate hero entry.
 
 #### Added ####
 * (filter) `ringier_bus_article_image_ids` — adjust the non-hero attachment IDs an article dispatches.
