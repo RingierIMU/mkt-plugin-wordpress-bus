@@ -382,6 +382,12 @@ class ArticleEvent
     }
 
     /**
+     * The non-hero images of an article, in the order they appear in the body.
+     *
+     * The list is derived from the article content itself (block attributes,
+     * `wp-image-<id>` classes, and — as a last resort — upload URLs), never from
+     * the attachment/post relationship.
+     *
      * @param int $post_ID
      *
      * @return array
@@ -389,44 +395,212 @@ class ArticleEvent
     private function fetchPostImages(int $post_ID): array
     {
         $finalImageList = [];
-        $featuredImageId = get_post_thumbnail_id($post_ID);
-        $imageList = get_attached_media('image', $post_ID);
         $imageSizes = $this->imageSizeList();
+        $imageIdList = $this->resolveContentImageIds($post_ID);
 
-        //Remove the featured image in the list since we are already catering for it prior to this
-        if (!empty($imageList) && isset($imageList[$featuredImageId])) {
-            unset($imageList[$featuredImageId]);
-        }
-
-        $articleContent = $this->fetchArticleContent($post_ID);
-
-        foreach ($imageList as $image) {
-            $primaryImageSlug = sanitize_title($image->post_name);
-            /**
-             * There is an anomaly in WordPress, when an image is "removed" from a post,
-             * it is not updated in an unattached state automatically.
-             * ref: https://core.trac.wordpress.org/ticket/30691#comment:12
-             *
-             * So I am having to check if the post content actually has that image
-             * (Wasseem)
-             */
-            if (!$this->isImageAttachedAndStillUsed($primaryImageSlug, $articleContent)) {
-                continue;
-            }
-
-            $imageId = $image->ID;
+        foreach ($imageIdList as $imageId) {
             $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
 
             foreach ($imageSizes as $size) {
                 $imageUrl = wp_get_attachment_image_url($imageId, $size);
 
                 if ($imageUrl) {
-                    $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, (int) $imageId);
+                    $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, $imageId);
                 }
             }
         }
 
         return $finalImageList;
+    }
+
+    /**
+     * Resolve the attachment IDs of every image genuinely used in the article body.
+     *
+     * Historically this list came from `get_attached_media()`, i.e. from *ownership*
+     * (the attachment's `post_parent`) rather than *usage*. WordPress never resets
+     * `post_parent` when an editor removes an image from an article
+     * (ref: https://core.trac.wordpress.org/ticket/30691#comment:12), so the list had
+     * to be filtered by a substring check of the attachment slug against the content.
+     * That check failed in both directions, because WordPress appends a collision
+     * suffix to the slug and to the filename independently:
+     *
+     *  - false positive: a removed image slugged `uzucapiune` is a substring of its
+     *    replacement `uzucapiunea`, so the dead image was dispatched forever;
+     *  - false negative: a live image slugged `bloc-2` is stored as `bloc.jpg`, the
+     *    slug appears nowhere in the content, so the image was never dispatched.
+     *
+     * Resolving by attachment ID removes both failure modes: an ID in the body means
+     * the image is in the article, and nothing else does.
+     *
+     * The featured image is excluded — it is dispatched separately as the hero.
+     *
+     * @param int $post_ID
+     *
+     * @return int[] unique attachment IDs, in order of appearance
+     */
+    private function resolveContentImageIds(int $post_ID): array
+    {
+        $content = $this->fetchArticleContent($post_ID);
+        $featuredImageId = (int) get_post_thumbnail_id($post_ID);
+
+        $candidateIdList = array_merge(
+            $this->collectBlockImageIds(parse_blocks($content)),
+            $this->collectClassImageIds($content),
+            $this->collectBareUrlImageIds($content)
+        );
+
+        $imageIdList = [];
+        foreach ($candidateIdList as $candidateId) {
+            if ($candidateId <= 0 || $candidateId === $featuredImageId) {
+                continue;
+            }
+            if (isset($imageIdList[$candidateId]) || !$this->isImageAttachment($candidateId)) {
+                continue;
+            }
+            $imageIdList[$candidateId] = $candidateId;
+        }
+
+        $imageIdList = array_values($imageIdList);
+
+        /**
+         * The attachment IDs of the non-hero images dispatched for an article.
+         *
+         * @hook ringier_bus_article_image_ids
+         *
+         * @param int[] $imageIdList Attachment IDs, in order of appearance in the body.
+         * @param int $post_ID The ID of the post.
+         * @param string $content The raw article content the IDs were resolved from.
+         *
+         * @return int[] The attachment IDs to dispatch.
+         */
+        $imageIdList = apply_filters('ringier_bus_article_image_ids', $imageIdList, $post_ID, $content);
+
+        return array_values(array_unique(array_filter(array_map('intval', (array) $imageIdList))));
+    }
+
+    /**
+     * Walk the block tree and collect every attachment ID carried in block attributes.
+     *
+     * Covers `core/image` and `core/cover` (`id`), `core/media-text` (`mediaId`),
+     * and legacy `core/gallery` (`ids`). Modern galleries nest `core/image` blocks,
+     * which are picked up through `innerBlocks`.
+     *
+     * @param array $blockList
+     *
+     * @return int[]
+     */
+    private function collectBlockImageIds(array $blockList): array
+    {
+        $imageIdList = [];
+
+        foreach ($blockList as $block) {
+            $attributes = $block['attrs'] ?? [];
+
+            foreach (['id', 'mediaId'] as $attributeName) {
+                if (isset($attributes[$attributeName]) && is_numeric($attributes[$attributeName])) {
+                    $imageIdList[] = (int) $attributes[$attributeName];
+                }
+            }
+
+            if (!empty($attributes['ids']) && is_array($attributes['ids'])) {
+                foreach ($attributes['ids'] as $galleryImageId) {
+                    if (is_numeric($galleryImageId)) {
+                        $imageIdList[] = (int) $galleryImageId;
+                    }
+                }
+            }
+
+            if (!empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
+                $imageIdList = array_merge($imageIdList, $this->collectBlockImageIds($block['innerBlocks']));
+            }
+        }
+
+        return $imageIdList;
+    }
+
+    /**
+     * Collect attachment IDs from `wp-image-<id>` classes.
+     *
+     * This is how WordPress itself resolves images in content
+     * (see `wp_filter_content_tags()` in wp-includes/media.php) and it covers the
+     * classic editor, freeform blocks and `[caption]` shortcodes.
+     *
+     * @param string $content
+     *
+     * @return int[]
+     */
+    private function collectClassImageIds(string $content): array
+    {
+        if (!preg_match_all('/wp-image-([0-9]+)/i', $content, $matches)) {
+            return [];
+        }
+
+        return array_map('absint', $matches[1]);
+    }
+
+    /**
+     * Last-resort resolution for `<img>` tags carrying neither a block attribute
+     * nor a `wp-image-<id>` class — typically very old, hand-written markup.
+     *
+     * Only URLs pointing inside this site's uploads directory are looked up, so
+     * externally hosted images never hit the database.
+     *
+     * @param string $content
+     *
+     * @return int[]
+     */
+    private function collectBareUrlImageIds(string $content): array
+    {
+        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
+            return [];
+        }
+
+        $uploadDir = wp_get_upload_dir();
+        $uploadBaseUrl = $uploadDir['baseurl'] ?? '';
+        if (empty($uploadBaseUrl)) {
+            return [];
+        }
+        //Match http/https and protocol-relative URLs alike
+        $uploadPath = preg_replace('#^https?:#i', '', $uploadBaseUrl);
+
+        $imageIdList = [];
+        foreach ($tagMatches[0] as $tag) {
+            if (preg_match('/wp-image-[0-9]+/i', $tag)) {
+                continue;
+            }
+            if (!preg_match('/\ssrc=["\']([^"\']+)["\']/i', $tag, $srcMatch)) {
+                continue;
+            }
+
+            $imageUrl = $srcMatch[1];
+            if (!str_contains(preg_replace('#^https?:#i', '', $imageUrl), $uploadPath)) {
+                continue;
+            }
+
+            $imageId = (int) attachment_url_to_postid($imageUrl);
+            if ($imageId > 0) {
+                $imageIdList[] = $imageId;
+            }
+        }
+
+        return $imageIdList;
+    }
+
+    /**
+     * Guard against IDs that no longer resolve to an image — deleted attachments,
+     * or non-image media referenced by a block.
+     *
+     * @param int $attachmentId
+     *
+     * @return bool
+     */
+    private function isImageAttachment(int $attachmentId): bool
+    {
+        if (get_post_type($attachmentId) !== 'attachment') {
+            return false;
+        }
+
+        return str_starts_with((string) get_post_mime_type($attachmentId), 'image/');
     }
 
     /**
@@ -461,19 +635,6 @@ class ArticleEvent
         }
 
         return 'text';
-    }
-
-    /**
-     * Check if article content has the specified image url
-     *
-     * @param string $post_name the main slug part of the image
-     * @param string $content
-     *
-     * @return bool
-     */
-    private function isImageAttachedAndStillUsed(string $post_name, string $content): bool
-    {
-        return str_contains($content, $post_name);
     }
 
     /**
