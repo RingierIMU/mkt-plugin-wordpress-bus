@@ -150,7 +150,7 @@ This filter gives you full flexibility to:
 
 You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
 
-The plugin resolves the non-hero images of an article from the article body itself — block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`) and `wp-image-<id>` classes, each reconciled against the `src` of its own `<img>` tag, falling back to resolving that URL against the media library. This filter receives the resolved attachment IDs just before they are turned into payload entries.
+The plugin resolves the non-hero images of an article from the article body itself. For each `<img>` it resolves the `src` against the media library first — an attachment holding that upload path wins outright — and falls back to the tag's `wp-image-<id>` class only when nothing holds the path, checking it by file name. Block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`) are reconciled the same way against the block's own `url`, which covers blocks that render no `<img>` at all. This filter receives the resolved attachment IDs just before they are turned into payload entries.
 
 The featured image is **not** in this list — it is dispatched separately as the hero entry.
 
@@ -171,7 +171,7 @@ add_filter('ringier_bus_article_image_ids', function (array $image_id_list, int 
 }, 10, 3);
 ```
 
-Anything returned is still sanitised afterwards — non-numeric values, zeros and duplicates are dropped.
+Anything returned is re-sanitised — non-numeric values, zeros and duplicates are dropped, and each remaining ID must still be an image attachment. The featured image is deliberately *not* re-excluded, so this hook can add an image the body does not reference.
 
 ## Contributing ##
 
