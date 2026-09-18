@@ -628,30 +628,122 @@ class ArticleEvent
                 ? $srcMatch[1]
                 : '';
 
-            //Nothing to contradict the class with
-            if ($classImageId > 0 && ($imageUrl === '' || $this->attachmentMatchesUrl($classImageId, $imageUrl))) {
+            /*
+             * Nothing to contradict the class with, or it names exactly the file the
+             * tag shows. The common case, and it costs no query.
+             */
+            if ($classImageId > 0 && ($imageUrl === '' || $this->attachmentHoldsUrlPath($classImageId, $imageUrl))) {
                 $imageIdList[] = $classImageId;
                 continue;
             }
 
-            if ($classImageId > 0) {
-                $rejectedIdList[] = $classImageId;
-            }
-
+            /*
+             * The URL is what the reader sees, so an attachment holding exactly that
+             * file outranks the class — including when both hold a file of the same
+             * name under different upload folders, where comparing names alone would
+             * accept the wrong one.
+             */
             $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
             if ($urlImageId > 0) {
                 $imageIdList[] = $urlImageId;
+                if ($classImageId > 0 && $classImageId !== $urlImageId) {
+                    $rejectedIdList[] = $classImageId;
+                }
+                continue;
             }
+
+            if ($classImageId <= 0) {
+                continue;
+            }
+
+            /*
+             * No attachment holds that exact path — the image is hosted elsewhere, or
+             * was moved. Fall back to the file name, which still recognises our own
+             * copy of an image served from another domain.
+             */
+            if ($this->attachmentMatchesUrl($classImageId, $imageUrl)) {
+                $imageIdList[] = $classImageId;
+                continue;
+            }
+
+            $rejectedIdList[] = $classImageId;
         }
 
         return ['ids' => $imageIdList, 'rejected' => $rejectedIdList];
     }
 
     /**
-     * Does this attachment hold the file the given URL points at?
+     * Does this attachment hold the exact file the given URL points at, folder and
+     * all?
      *
-     * Compares file names rather than full URLs so that a sub-size, a `-scaled`
-     * original and a host that is not this one all still recognise their own image.
+     * The host is ignored, so our own image served from another domain still counts,
+     * but `2010/02/logo_avocat.jpg` does not satisfy an attachment stored at
+     * `2009/12/logo_avocat.jpg` — those are two uploads, and picking the wrong one
+     * puts another article's picture in the payload.
+     *
+     * @param int $attachmentId
+     * @param string $imageUrl
+     *
+     * @return bool
+     */
+    private function attachmentHoldsUrlPath(int $attachmentId, string $imageUrl): bool
+    {
+        $attachedFile = (string) get_post_meta($attachmentId, '_wp_attached_file', true);
+        $urlPath = $this->uploadRelativePath($imageUrl);
+        if ($attachedFile === '' || $urlPath === '') {
+            return false;
+        }
+
+        $attachmentDirectory = trim((string) pathinfo($attachedFile, PATHINFO_DIRNAME), '.');
+        $urlDirectory = trim((string) pathinfo($urlPath, PATHINFO_DIRNAME), '.');
+
+        if (strtolower($attachmentDirectory) !== strtolower($urlDirectory)) {
+            return false;
+        }
+
+        return $this->normaliseImageFileName(basename($attachedFile))
+            === $this->normaliseImageFileName(basename($urlPath));
+    }
+
+    /**
+     * The part of a URL below the uploads directory, whatever host it carries.
+     *
+     * @param string $imageUrl
+     *
+     * @return string relative path, or '' when the URL is not an upload path
+     */
+    private function uploadRelativePath(string $imageUrl): string
+    {
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        $uploadDir = wp_get_upload_dir();
+        $uploadBaseUrl = (string) ($uploadDir['baseurl'] ?? '');
+        if ($uploadBaseUrl === '') {
+            return '';
+        }
+
+        $uploadPath = (string) parse_url($uploadBaseUrl, PHP_URL_PATH);
+        $imagePath = (string) parse_url($imageUrl, PHP_URL_PATH);
+        if ($uploadPath === '' || $imagePath === '') {
+            return '';
+        }
+
+        $marker = rtrim($uploadPath, '/') . '/';
+        $markerPosition = strpos($imagePath, $marker);
+        if ($markerPosition === false) {
+            return '';
+        }
+
+        return substr($imagePath, $markerPosition + strlen($marker));
+    }
+
+    /**
+     * Does this attachment hold a file of the same name as the given URL?
+     *
+     * Compares names only, ignoring the upload folder, so it is the weaker of the
+     * two tests — used when no attachment holds the URL's exact path.
      *
      * @param int $attachmentId
      * @param string $imageUrl
@@ -686,30 +778,13 @@ class ArticleEvent
      */
     private function resolveAttachmentFromUrl(string $imageUrl): int
     {
-        if ($imageUrl === '') {
-            return 0;
-        }
-
-        $uploadDir = wp_get_upload_dir();
-        $uploadBaseUrl = (string) ($uploadDir['baseurl'] ?? '');
-        if ($uploadBaseUrl === '') {
-            return 0;
-        }
-
-        $uploadPath = (string) parse_url($uploadBaseUrl, PHP_URL_PATH);
-        $imagePath = (string) parse_url($imageUrl, PHP_URL_PATH);
-        if ($uploadPath === '' || $imagePath === '') {
-            return 0;
-        }
-
-        $marker = rtrim($uploadPath, '/') . '/';
-        $markerPosition = strpos($imagePath, $marker);
-        if ($markerPosition === false) {
-            return 0;
-        }
-
-        $relativePath = substr($imagePath, $markerPosition + strlen($marker));
+        $relativePath = $this->uploadRelativePath($imageUrl);
         if ($relativePath === '') {
+            return 0;
+        }
+
+        $uploadBaseUrl = (string) (wp_get_upload_dir()['baseurl'] ?? '');
+        if ($uploadBaseUrl === '') {
             return 0;
         }
 
