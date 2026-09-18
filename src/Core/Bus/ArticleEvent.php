@@ -478,10 +478,20 @@ class ArticleEvent
 
         //Reconciles each `wp-image-<id>` class against the `src` of its own tag
         $tagResolution = $this->collectImgTagImageIds($visibleContent);
+        $blockResolution = $this->collectBlockImageIds(parse_blocks($content));
 
-        $candidateIdList = array_merge(
-            $tagResolution['ids'],
-            $this->collectBlockImageIds(parse_blocks($content))
+        $candidateIdList = array_merge($tagResolution['ids'], $blockResolution['ids']);
+
+        /*
+         * A rejection only clears when some tag or block positively confirmed that ID
+         * against a URL — the same stale class is routinely copied across several tags
+         * in one article, one of which may be the tag it is actually right for. An ID
+         * merely accepted for want of anything to check it against does not count:
+         * that is the unvalidated case, not a confirmation.
+         */
+        $rejectedIdList = array_diff(
+            array_merge($tagResolution['rejected'], $blockResolution['rejected']),
+            array_merge($tagResolution['confirmed'], $blockResolution['confirmed'])
         );
 
         $imageIdList = [];
@@ -489,8 +499,8 @@ class ArticleEvent
             if ($candidateId <= 0 || $candidateId === $featuredImageId) {
                 continue;
             }
-            //Contradicted by the `src` of the tag it was read from
-            if (in_array($candidateId, $tagResolution['rejected'], true)) {
+            //Contradicted by the URL of every tag or block that named it
+            if (in_array($candidateId, $rejectedIdList, true)) {
                 continue;
             }
             if (isset($imageIdList[$candidateId]) || !$this->isImageAttachment($candidateId)) {
@@ -514,34 +524,78 @@ class ArticleEvent
          */
         $imageIdList = apply_filters('ringier_bus_article_image_ids', $imageIdList, $post_ID, $content);
 
-        //The filter is free to add or reorder IDs, so re-sanitise whatever comes back
-        return array_values(array_unique(array_filter(array_map('absint', (array) $imageIdList))));
+        /*
+         * The filter is free to add or reorder IDs, so re-sanitise whatever comes back.
+         * The featured image is deliberately not re-excluded: adding an image the body
+         * does not reference is a documented use of this hook.
+         */
+        $imageIdList = array_unique(array_filter(array_map('absint', (array) $imageIdList)));
+
+        return array_values(array_filter($imageIdList, [$this, 'isImageAttachment']));
     }
 
     /**
-     * Walk the block tree and collect every attachment ID carried in block attributes.
+     * Walk the block tree and collect the attachment IDs carried in block attributes,
+     * reconciled against the URL the same block carries.
      *
-     * Covers `core/image` and `core/cover` (`id`), `core/media-text` (`mediaId`),
-     * and legacy `core/gallery` (`ids`). Modern galleries nest `core/image` blocks,
-     * which are picked up through `innerBlocks`.
+     * Covers `core/image` and `core/cover` (`id` + `url`), `core/media-text`
+     * (`mediaId` + `mediaLink`), and legacy `core/gallery` (`ids`). Modern galleries
+     * nest `core/image` blocks, which are picked up through `innerBlocks`.
+     *
+     * Most of these render an `<img>`, so the tag pass already covers them — this
+     * exists for the ones that do not, such as a `core/cover` drawing its image as a
+     * CSS background. Those would otherwise reach the payload with no check at all,
+     * which is the migrated-stale-ID failure this class is written to prevent.
      *
      * @param array $blockList
      *
-     * @return int[]
+     * @return array{ids: int[], rejected: int[]}
      */
     private function collectBlockImageIds(array $blockList): array
     {
         $imageIdList = [];
+        $rejectedIdList = [];
+        $confirmedIdList = [];
 
         foreach ($blockList as $block) {
             $attributes = $block['attrs'] ?? [];
 
+            $blockImageId = 0;
             foreach (['id', 'mediaId'] as $attributeName) {
                 if (isset($attributes[$attributeName]) && is_numeric($attributes[$attributeName])) {
-                    $imageIdList[] = (int) $attributes[$attributeName];
+                    $blockImageId = (int) $attributes[$attributeName];
+                    break;
                 }
             }
 
+            if ($blockImageId > 0) {
+                $blockImageUrl = '';
+                foreach (['url', 'mediaLink', 'mediaUrl'] as $urlAttribute) {
+                    if (!empty($attributes[$urlAttribute]) && is_string($attributes[$urlAttribute])) {
+                        $blockImageUrl = $attributes[$urlAttribute];
+                        break;
+                    }
+                }
+
+                $urlImageId = $this->resolveAttachmentFromUrl($blockImageUrl);
+                if ($urlImageId > 0) {
+                    $imageIdList[] = $urlImageId;
+                    $confirmedIdList[] = $urlImageId;
+                    if ($urlImageId !== $blockImageId) {
+                        $rejectedIdList[] = $blockImageId;
+                    }
+                } elseif ($blockImageUrl === '') {
+                    //No URL on the block — accepted, but it confirms nothing
+                    $imageIdList[] = $blockImageId;
+                } elseif ($this->attachmentMatchesUrl($blockImageId, $blockImageUrl)) {
+                    $imageIdList[] = $blockImageId;
+                    $confirmedIdList[] = $blockImageId;
+                } else {
+                    $rejectedIdList[] = $blockImageId;
+                }
+            }
+
+            //A legacy gallery carries bare IDs with no URL to check them against
             if (!empty($attributes['ids']) && is_array($attributes['ids'])) {
                 foreach ($attributes['ids'] as $galleryImageId) {
                     if (is_numeric($galleryImageId)) {
@@ -551,11 +605,14 @@ class ArticleEvent
             }
 
             if (!empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
-                $imageIdList = array_merge($imageIdList, $this->collectBlockImageIds($block['innerBlocks']));
+                $inner = $this->collectBlockImageIds($block['innerBlocks']);
+                $imageIdList = array_merge($imageIdList, $inner['ids']);
+                $rejectedIdList = array_merge($rejectedIdList, $inner['rejected']);
+                $confirmedIdList = array_merge($confirmedIdList, $inner['confirmed']);
             }
         }
 
-        return $imageIdList;
+        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList, 'confirmed' => $confirmedIdList];
     }
 
     /**
@@ -576,10 +633,9 @@ class ArticleEvent
             static function (array $match): string {
                 $commentBody = ltrim($match[1]);
 
-                foreach (['wp:', '/wp:', 'more', 'nextpage', 'noteaser'] as $keptPrefix) {
-                    if (str_starts_with($commentBody, $keptPrefix)) {
-                        return $match[0];
-                    }
+                //`<!--more Custom teaser-->` is valid; `<!-- moreover ... -->` is not a marker
+                if (preg_match('#^(?:/?wp:|more(?:\s|$)|nextpage\s*$|noteaser\s*$)#i', $commentBody)) {
+                    return $match[0];
                 }
 
                 return '';
@@ -614,38 +670,30 @@ class ArticleEvent
     private function collectImgTagImageIds(string $content): array
     {
         if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
-            return ['ids' => [], 'rejected' => []];
+            return ['ids' => [], 'rejected' => [], 'confirmed' => []];
         }
 
         $imageIdList = [];
         $rejectedIdList = [];
+        $confirmedIdList = [];
 
         foreach ($tagMatches[0] as $tag) {
             $classImageId = preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $tag, $classMatch)
                 ? absint($classMatch[1])
                 : 0;
-            $imageUrl = preg_match('/\ssrc=["\']([^"\']+)["\']/i', $tag, $srcMatch)
-                ? $srcMatch[1]
-                : '';
+            $imageUrl = $this->extractTagSrc($tag);
 
             /*
-             * Nothing to contradict the class with, or it names exactly the file the
-             * tag shows. The common case, and it costs no query.
-             */
-            if ($classImageId > 0 && ($imageUrl === '' || $this->attachmentHoldsUrlPath($classImageId, $imageUrl))) {
-                $imageIdList[] = $classImageId;
-                continue;
-            }
-
-            /*
-             * The URL is what the reader sees, so an attachment holding exactly that
-             * file outranks the class — including when both hold a file of the same
-             * name under different upload folders, where comparing names alone would
-             * accept the wrong one.
+             * The URL is what the reader sees, so an attachment holding that file
+             * outranks the class outright. Comparing names instead would accept a
+             * stale ID whose file merely reduces to the same name — WordPress'
+             * `-1` dedup suffix lands after the size, so `x-300x211.jpg` and
+             * `x-300x2111.jpg` are two different pictures with one stem.
              */
             $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
             if ($urlImageId > 0) {
                 $imageIdList[] = $urlImageId;
+                $confirmedIdList[] = $urlImageId;
                 if ($classImageId > 0 && $classImageId !== $urlImageId) {
                     $rejectedIdList[] = $classImageId;
                 }
@@ -657,52 +705,48 @@ class ArticleEvent
             }
 
             /*
-             * No attachment holds that exact path — the image is hosted elsewhere, or
-             * was moved. Fall back to the file name, which still recognises our own
-             * copy of an image served from another domain.
+             * No attachment holds that path — the image is hosted elsewhere, or the
+             * tag carries no usable `src`. Fall back to the class, checked by file
+             * name where there is a URL to check it against.
              */
+            if ($imageUrl === '') {
+                //Nothing to check it against — accepted, but it confirms nothing
+                $imageIdList[] = $classImageId;
+                continue;
+            }
+
             if ($this->attachmentMatchesUrl($classImageId, $imageUrl)) {
                 $imageIdList[] = $classImageId;
+                $confirmedIdList[] = $classImageId;
                 continue;
             }
 
             $rejectedIdList[] = $classImageId;
         }
 
-        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList];
+        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList, 'confirmed' => $confirmedIdList];
     }
 
     /**
-     * Does this attachment hold the exact file the given URL points at, folder and
-     * all?
+     * The `src` of an `<img>` tag, quoted or not.
      *
-     * The host is ignored, so our own image served from another domain still counts,
-     * but `2010/02/logo_avocat.jpg` does not satisfy an attachment stored at
-     * `2009/12/logo_avocat.jpg` — those are two uploads, and picking the wrong one
-     * puts another article's picture in the payload.
+     * @param string $tag
      *
-     * @param int $attachmentId
-     * @param string $imageUrl
-     *
-     * @return bool
+     * @return string
      */
-    private function attachmentHoldsUrlPath(int $attachmentId, string $imageUrl): bool
+    private function extractTagSrc(string $tag): string
     {
-        $attachedFile = (string) get_post_meta($attachmentId, '_wp_attached_file', true);
-        $urlPath = $this->uploadRelativePath($imageUrl);
-        if ($attachedFile === '' || $urlPath === '') {
-            return false;
+        if (!preg_match('/[\s"\']src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $match)) {
+            return '';
         }
 
-        $attachmentDirectory = trim((string) pathinfo($attachedFile, PATHINFO_DIRNAME), '.');
-        $urlDirectory = trim((string) pathinfo($urlPath, PATHINFO_DIRNAME), '.');
-
-        if (strtolower($attachmentDirectory) !== strtolower($urlDirectory)) {
-            return false;
+        foreach ([1, 2, 3] as $group) {
+            if (isset($match[$group]) && $match[$group] !== '') {
+                return $match[$group];
+            }
         }
 
-        return $this->normaliseImageFileName(basename($attachedFile))
-            === $this->normaliseImageFileName(basename($urlPath));
+        return '';
     }
 
     /**
@@ -796,6 +840,18 @@ class ArticleEvent
         $originalPath = preg_replace('/-\d+x\d+(\.[A-Za-z0-9]+)$/', '$1', $relativePath);
         if ($originalPath !== null && $originalPath !== $relativePath) {
             $candidateList[] = $originalPath;
+        }
+
+        /*
+         * A large upload is stored as `name-scaled.ext`, but WordPress names its
+         * sub-sizes — and keeps the untouched original — off the unscaled stem, so
+         * neither spelling above finds it.
+         */
+        foreach ($candidateList as $candidatePath) {
+            $scaledPath = preg_replace('/(\.[A-Za-z0-9]+)$/', '-scaled$1', $candidatePath);
+            if ($scaledPath !== null && $scaledPath !== $candidatePath) {
+                $candidateList[] = $scaledPath;
+            }
         }
 
         foreach ($candidateList as $candidatePath) {
