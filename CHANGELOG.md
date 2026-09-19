@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added ###
 * (filter) `ringier_bus_article_image_ids` — `(int[] $image_id_list, int $post_ID, string $content): int[]`. Adjust the non-hero attachment IDs an article dispatches, just before they are turned into payload entries. Whatever it returns is re-sanitised and re-checked against the media library; the featured image is deliberately not re-excluded, so the hook can add an image the body does not reference. See the readme.
 
+### Performance ###
+* (perf) An article's upload paths are resolved in one query instead of one per image. `attachment_url_to_postid()` compares `_wp_attached_file`, a `longtext` that no index can serve, so each call scans every attachment row — about 17ms against a 13k-attachment library, hit or miss, growing roughly 2ms per additional thousand. Collecting the paths first and resolving them together takes a mean article from 87.7ms to 34.8ms and the worst measured from 447.7ms to 73.8ms, and stops the cost growing with the number of images in an article. Two lookups that earned nothing were removed at the same time: a raw-URL call that duplicated the first rebuilt candidate, and a `LIKE` fallback for edited images that resolved none across 2452 articles.
+
 > **Note for implementers:** this fix restores images that were previously being dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2556 images restored across 803 articles (each attachment becomes 4 payload rows, so roughly 10,000 additional rows), and 77 removed across 59 articles. Every removal was audited against the decoded pixels of the files on disk: the removals are either pictures the article no longer shows, or duplicate re-uploads whose picture is still dispatched under the attachment the body actually references — no information is lost. Plan a bulk re-sync accordingly.
 
 
