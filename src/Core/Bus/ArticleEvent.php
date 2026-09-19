@@ -478,7 +478,7 @@ class ArticleEvent
 
         //Reconciles each `wp-image-<id>` class against the `src` of its own tag
         $tagResolution = $this->collectImgTagImageIds($visibleContent);
-        $blockResolution = $this->collectBlockImageIds(parse_blocks($content));
+        $blockResolution = $this->collectBlockImageIds(parse_blocks($visibleContent));
 
         $candidateIdList = array_merge($tagResolution['ids'], $blockResolution['ids']);
 
@@ -539,7 +539,7 @@ class ArticleEvent
      * reconciled against the URL the same block carries.
      *
      * Covers `core/image` and `core/cover` (`id` + `url`), `core/media-text`
-     * (`mediaId` + `mediaLink`), and legacy `core/gallery` (`ids`). Modern galleries
+     * (`mediaId`), and legacy `core/gallery` (`ids`). Modern galleries
      * nest `core/image` blocks, which are picked up through `innerBlocks`.
      *
      * Most of these render an `<img>`, so the tag pass already covers them — this
@@ -557,8 +557,17 @@ class ArticleEvent
         $rejectedIdList = [];
         $confirmedIdList = [];
 
+        /*
+         * Only blocks known to carry an *image* attachment ID. Without this, `id`
+         * means whatever a third-party block wants it to mean, and its value is
+         * dispatched with no reconciliation at all — `core/video` and `core/file`
+         * both carry an `id` and were reaching the payload on the mime check alone.
+         */
+        $imageBlockNames = ['core/image', 'core/cover', 'core/media-text', 'core/gallery'];
+
         foreach ($blockList as $block) {
-            $attributes = $block['attrs'] ?? [];
+            $blockName = (string) ($block['blockName'] ?? '');
+            $attributes = in_array($blockName, $imageBlockNames, true) ? ($block['attrs'] ?? []) : [];
 
             $blockImageId = 0;
             foreach (['id', 'mediaId'] as $attributeName) {
@@ -595,15 +604,15 @@ class ArticleEvent
                     //No URL on the block — accepted, but it confirms nothing
                     $imageIdList[] = $blockImageId;
                 } elseif ($this->attachmentMatchesUrl($blockImageId, $blockImageUrl)) {
+                    //Name-only evidence: accepted, but too weak to clear a rejection
                     $imageIdList[] = $blockImageId;
-                    $confirmedIdList[] = $blockImageId;
                 } else {
                     $rejectedIdList[] = $blockImageId;
                 }
             }
 
             //A legacy gallery carries bare IDs with no URL to check them against
-            if (!empty($attributes['ids']) && is_array($attributes['ids'])) {
+            if ($blockName === 'core/gallery' && !empty($attributes['ids']) && is_array($attributes['ids'])) {
                 foreach ($attributes['ids'] as $galleryImageId) {
                     if (is_numeric($galleryImageId)) {
                         $imageIdList[] = (int) $galleryImageId;
@@ -676,7 +685,8 @@ class ArticleEvent
      */
     private function collectImgTagImageIds(string $content): array
     {
-        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
+        $tagList = $this->extractImgTags($content);
+        if (!$tagList) {
             return ['ids' => [], 'rejected' => [], 'confirmed' => []];
         }
 
@@ -684,11 +694,9 @@ class ArticleEvent
         $rejectedIdList = [];
         $confirmedIdList = [];
 
-        foreach ($tagMatches[0] as $tag) {
-            $classImageId = preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $tag, $classMatch)
-                ? absint($classMatch[1])
-                : 0;
-            $imageUrl = $this->extractTagSrc($tag);
+        foreach ($tagList as $tag) {
+            $classImageId = $tag['class_id'];
+            $imageUrl = $tag['src'];
 
             /*
              * The URL is what the reader sees, so an attachment holding that file
@@ -698,14 +706,6 @@ class ArticleEvent
              * `x-300x2111.jpg` are two different pictures with one stem.
              */
             $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
-            if ($urlImageId > 0 && $classImageId > 0 && $classImageId !== $urlImageId
-                && $this->attachmentOwnsUrlAsSize($classImageId, $imageUrl)) {
-                //The URL is a rendition of the attachment the class names
-                $imageIdList[] = $classImageId;
-                $confirmedIdList[] = $classImageId;
-                continue;
-            }
-
             if ($urlImageId > 0) {
                 $imageIdList[] = $urlImageId;
                 $confirmedIdList[] = $urlImageId;
@@ -730,9 +730,14 @@ class ArticleEvent
                 continue;
             }
 
+            /*
+             * A file-name match is the weakest evidence here — it ignores the folder
+             * and the host — so it is good enough to accept the ID but deliberately
+             * not good enough to clear a rejection some other tag made by resolving
+             * an exact upload path.
+             */
             if ($this->attachmentMatchesUrl($classImageId, $imageUrl)) {
                 $imageIdList[] = $classImageId;
-                $confirmedIdList[] = $classImageId;
                 continue;
             }
 
@@ -743,25 +748,89 @@ class ArticleEvent
     }
 
     /**
-     * The `src` of an `<img>` tag, quoted or not.
+     * Every `<img>` in the content, as `['src' => string, 'class_id' => int]`.
      *
-     * @param string $tag
+     * Uses `WP_HTML_Tag_Processor` where it exists (WordPress 6.2+). A regex cannot
+     * parse HTML: `<img[^>]*>` stops at the first `>`, so an ordinary
+     * `alt="preț > 100.000 EUR"` truncates the tag and the `src` is lost — after
+     * which the class would be accepted with nothing to check it against. The same
+     * blindness lets a `src=` written inside an `alt` value win over the real one.
      *
-     * @return string
+     * Reading the class through the parser also scopes `wp-image-<id>` to the class
+     * attribute, rather than to anything anywhere in the tag.
+     *
+     * @param string $content
+     *
+     * @return array<int, array{src: string, class_id: int}>
      */
-    private function extractTagSrc(string $tag): string
+    private function extractImgTags(string $content): array
     {
-        if (!preg_match('/[\s"\']src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $match)) {
-            return '';
+        if ($content === '') {
+            return [];
         }
 
-        foreach ([1, 2, 3] as $group) {
-            if (isset($match[$group]) && $match[$group] !== '') {
-                return $match[$group];
+        if (class_exists('\WP_HTML_Tag_Processor')) {
+            $tagList = [];
+            $processor = new \WP_HTML_Tag_Processor($content);
+
+            while ($processor->next_tag('img')) {
+                $classAttribute = $processor->get_attribute('class');
+                $classImageId = is_string($classAttribute)
+                    && preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $classAttribute, $classMatch)
+                        ? absint($classMatch[1])
+                        : 0;
+
+                $imageUrl = $processor->get_attribute('src');
+                if (!is_string($imageUrl)) {
+                    $imageUrl = '';
+                }
+
+                /*
+                 * Lazy-loading parks a placeholder in `src` and keeps the real
+                 * address beside it. Reading that is what lets the class be checked
+                 * rather than taken on trust.
+                 */
+                if ($imageUrl === '' || $this->isPlaceholderUrl($imageUrl)) {
+                    foreach (['data-src', 'data-lazy-src', 'data-original'] as $lazyAttribute) {
+                        $lazyUrl = $processor->get_attribute($lazyAttribute);
+                        if (is_string($lazyUrl) && $lazyUrl !== '' && !$this->isPlaceholderUrl($lazyUrl)) {
+                            $imageUrl = $lazyUrl;
+                            break;
+                        }
+                    }
+                }
+
+                $tagList[] = ['src' => $imageUrl, 'class_id' => $classImageId];
             }
+
+            return $tagList;
         }
 
-        return '';
+        //WordPress 6.0-6.1: best effort, with the limitations described above
+        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
+            return [];
+        }
+
+        $tagList = [];
+        foreach ($tagMatches[0] as $tag) {
+            $classImageId = preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $tag, $classMatch)
+                ? absint($classMatch[1])
+                : 0;
+
+            $imageUrl = '';
+            if (preg_match('/[\s"\']src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $srcMatch)) {
+                foreach ([1, 2, 3] as $group) {
+                    if (isset($srcMatch[$group]) && $srcMatch[$group] !== '') {
+                        $imageUrl = $srcMatch[$group];
+                        break;
+                    }
+                }
+            }
+
+            $tagList[] = ['src' => $imageUrl, 'class_id' => $classImageId];
+        }
+
+        return $tagList;
     }
 
     /**
@@ -782,41 +851,6 @@ class ArticleEvent
         }
 
         return !in_array(strtolower($schemeMatch[1]), ['http', 'https'], true);
-    }
-
-    /**
-     * Is this URL one of the renditions WordPress generated for that attachment?
-     *
-     * A library can hold both `photo.jpg` and a separate upload literally named
-     * `photo-224x300.jpg`. The URL of the first one's thumbnail is then the exact
-     * path of the second, and resolving by URL alone would swap a full-size image
-     * for an unrelated smaller one. Where the class already names the attachment
-     * this URL is a size of, the class is the better answer.
-     *
-     * @param int $attachmentId
-     * @param string $imageUrl
-     *
-     * @return bool
-     */
-    private function attachmentOwnsUrlAsSize(int $attachmentId, string $imageUrl): bool
-    {
-        $metadata = wp_get_attachment_metadata($attachmentId);
-        if (!is_array($metadata) || empty($metadata['sizes']) || !is_array($metadata['sizes'])) {
-            return false;
-        }
-
-        $urlFileName = basename($this->urlPathOnly($imageUrl));
-        if ($urlFileName === '') {
-            return false;
-        }
-
-        foreach ($metadata['sizes'] as $size) {
-            if (!empty($size['file']) && is_string($size['file']) && $size['file'] === $urlFileName) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -902,9 +936,19 @@ class ArticleEvent
         }
 
         $attachmentName = $this->normaliseImageFileName(basename($attachedFile));
-        $urlName = $this->normaliseImageFileName(basename($this->urlPathOnly($imageUrl)));
+        if ($attachmentName === '') {
+            return false;
+        }
 
-        return $attachmentName !== '' && $attachmentName === $urlName;
+        $urlBaseName = basename($this->urlPathOnly($imageUrl));
+
+        foreach ([$urlBaseName, rawurldecode($urlBaseName)] as $candidateName) {
+            if ($this->normaliseImageFileName($candidateName) === $attachmentName) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -937,9 +981,23 @@ class ArticleEvent
          * sub-size URL has to be reduced to the name of the original first.
          */
         $candidateList = [$relativePath];
-        $originalPath = preg_replace('/-\d+x\d+(\.[A-Za-z0-9]+)$/', '$1', $relativePath);
-        if ($originalPath !== null && $originalPath !== $relativePath) {
-            $candidateList[] = $originalPath;
+
+        /*
+         * A URL copied out of a browser address bar arrives percent-encoded, while
+         * `_wp_attached_file` holds the raw bytes. Without this the path matches
+         * nothing and the class beside it is rejected — the same shape of failure
+         * `parse_url()` used to cause for the very same filenames.
+         */
+        $decodedPath = rawurldecode($relativePath);
+        if ($decodedPath !== $relativePath) {
+            $candidateList[] = $decodedPath;
+        }
+
+        foreach ($candidateList as $candidatePath) {
+            $originalPath = preg_replace('/-\d+x\d+(\.[A-Za-z0-9]+)$/', '$1', $candidatePath);
+            if ($originalPath !== null && $originalPath !== $candidatePath) {
+                $candidateList[] = $originalPath;
+            }
         }
 
         /*
@@ -954,6 +1012,7 @@ class ArticleEvent
             }
         }
 
+
         /*
          * The URL as written comes first: for our own host WordPress resolves it
          * itself, without this method's assumptions about how the path is spelled.
@@ -967,6 +1026,59 @@ class ArticleEvent
             $attachmentId = (int) attachment_url_to_postid(rtrim($uploadBaseUrl, '/') . '/' . $candidatePath);
             if ($attachmentId > 0) {
                 return $attachmentId;
+            }
+        }
+
+        /*
+         * Last resort, and only when every spelling above has missed: an image edited
+         * in WordPress is stored as `name-e<timestamp>.ext` while the body still
+         * points at the original name, so the timestamp has to be looked up rather
+         * than guessed. Deliberately last — it costs a LIKE over `postmeta`.
+         */
+        return $this->resolveEditedAttachmentFromPath($candidateList);
+    }
+
+    /**
+     * Find an attachment stored as `name-e<timestamp>.ext` for one of these paths.
+     *
+     * WordPress renames an edited image that way while the article keeps pointing at
+     * the original name, so the path in the body exists nowhere in
+     * `_wp_attached_file` and no amount of rewriting will find it.
+     *
+     * @param string[] $candidateList
+     *
+     * @return int attachment ID, or 0
+     */
+    private function resolveEditedAttachmentFromPath(array $candidateList): int
+    {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return 0;
+        }
+
+        foreach ($candidateList as $candidatePath) {
+            $extension = (string) pathinfo($candidatePath, PATHINFO_EXTENSION);
+            if ($extension === '') {
+                continue;
+            }
+
+            $stem = substr($candidatePath, 0, -(strlen($extension) + 1));
+            $like = $wpdb->esc_like($stem . '-e') . '%' . $wpdb->esc_like('.' . $extension);
+
+            $rowList = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT post_id, meta_value FROM {$wpdb->postmeta}"
+                    . " WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s LIMIT 5",
+                    $like
+                )
+            );
+
+            foreach ((array) $rowList as $row) {
+                //Only a digit run may sit between `-e` and the extension
+                if (preg_match('/-e\d+\.' . preg_quote($extension, '/') . '$/', (string) $row->meta_value)) {
+                    return (int) $row->post_id;
+                }
             }
         }
 
