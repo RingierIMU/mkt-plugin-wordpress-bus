@@ -142,12 +142,13 @@ class Utils
          * @hook ringier_bus_image_hash_remote_budget
          *
          * @param int $budget Maximum remote fetches per request. Default 8.
+         *                    0 disables the downloads; a negative value lifts the cap.
          *
          * @return int
          */
         $budget = (int) apply_filters('ringier_bus_image_hash_remote_budget', 8);
 
-        if ($budget > 0 && $remoteFetches >= $budget) {
+        if ($budget >= 0 && $remoteFetches >= $budget) {
             return '';
         }
 

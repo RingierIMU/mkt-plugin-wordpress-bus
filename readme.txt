@@ -170,7 +170,7 @@ add_filter('ringier_bus_image_hash_remote_budget', function (int $budget): int {
 });
 ```
 
-Return `0` to disable the downloads entirely: images without a local file then carry an empty `content_hash`.
+Return `0` to disable the downloads entirely — images without a local file then carry an empty `content_hash`. Return a negative number to lift the cap, which is worth doing for a first bulk sync on an offloaded property so every image is hashed in one pass.
 
 ## Contributing ##
 

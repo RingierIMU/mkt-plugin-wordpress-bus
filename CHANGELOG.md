@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added ###
-* (filter) `ringier_bus_image_hash_remote_budget` — `(int $budget): int`. Caps how many offloaded images one event may download in order to hash them. Default 8; return `0` to disable the downloads entirely.
+* (filter) `ringier_bus_image_hash_remote_budget` — `(int $budget): int`. Caps how many offloaded images one event may download in order to hash them. Default 8; `0` disables the downloads entirely, a negative value lifts the cap.
 
 * (filter) `ringier_bus_article_image_ids` — `(int[] $image_id_list, int $post_ID, string $content): int[]`. Adjust the non-hero attachment IDs an article dispatches, just before they are turned into payload entries. Whatever it returns is re-sanitised and re-checked against the media library; the featured image is deliberately not re-excluded, so the hook can add an image the body does not reference. See the readme.
 
