@@ -67,7 +67,7 @@ You also have the flexibility to clear the log file via the UI itself.
 
 ## CUSTOM FILTERS ##
 
-The plugin exposes five custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
+The plugin exposes six custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
 
 ### 1. Modifying the Publication Reason ###
 
@@ -172,6 +172,26 @@ add_filter('ringier_bus_article_image_ids', function (array $image_id_list, int 
 ```
 
 Anything returned is re-sanitised — non-numeric values, zeros and duplicates are dropped, and each remaining ID must still be an image attachment. The featured image is deliberately *not* re-excluded, so this hook can add an image the body does not reference.
+
+### 6. Bounding image-hash downloads on offloaded media ###
+
+Each image in the payload carries a `content_hash` of its bytes. Where the file is on the server that is a local read; where media is offloaded to S3 or a CDN it means an HTTP download, which runs inline in the event dispatch.
+
+The hash is stored against the attachment after the first time it is computed, so an offloaded property pays that cost once rather than on every event. While that store is still cold, the **ringier_bus_image_hash_remote_budget** filter caps how many images a single event may download, so one article cannot stall a request indefinitely. The default is 8. Images beyond the budget carry an empty `content_hash` and are filled in by the next event for that article.
+
+Example:
+```php
+/**
+ * Example
+ */
+add_filter('ringier_bus_image_hash_remote_budget', function (int $budget): int {
+
+    // All media is local on this site, so nothing is ever downloaded
+    return 0;
+});
+```
+
+Return `0` to disable the downloads entirely: images without a local file then carry an empty `content_hash`.
 
 ## Contributing ##
 
