@@ -476,9 +476,17 @@ class ArticleEvent
          */
         $visibleContent = $this->stripNonBlockHtmlComments($content);
 
+        $blockList = parse_blocks($visibleContent);
+
+        /*
+         * One query for the whole article, before anything asks a question. Without
+         * it each image costs its own full scan of `_wp_attached_file`.
+         */
+        $this->primeUploadPathCache($visibleContent, $blockList);
+
         //Reconciles each `wp-image-<id>` class against the `src` of its own tag
         $tagResolution = $this->collectImgTagImageIds($visibleContent);
-        $blockResolution = $this->collectBlockImageIds(parse_blocks($visibleContent));
+        $blockResolution = $this->collectBlockImageIds($blockList);
 
         $candidateIdList = array_merge($tagResolution['ids'], $blockResolution['ids']);
 
@@ -806,8 +814,12 @@ class ArticleEvent
             return $tagList;
         }
 
-        //WordPress 6.0-6.1: best effort, with the limitations described above
-        if (!preg_match_all('/<img[^>]*>/i', $content, $tagMatches)) {
+        /*
+         * WordPress 6.0-6.1. Quote-aware, so a `>` inside an attribute value does not
+         * end the tag — the defect this method exists to avoid. Still not an HTML
+         * parser, but it does not truncate ordinary editorial text.
+         */
+        if (!preg_match_all('/<img(?:[^>"\']|"[^"]*"|\'[^\']*\')*>/i', $content, $tagMatches)) {
             return [];
         }
 
@@ -818,7 +830,7 @@ class ArticleEvent
                 : 0;
 
             $imageUrl = '';
-            if (preg_match('/[\s"\']src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $srcMatch)) {
+            if (preg_match('/(?:^|[\s"\'])src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $srcMatch)) {
                 foreach ([1, 2, 3] as $group) {
                     if (isset($srcMatch[$group]) && $srcMatch[$group] !== '') {
                         $imageUrl = $srcMatch[$group];
@@ -966,27 +978,39 @@ class ArticleEvent
      */
     private function resolveAttachmentFromUrl(string $imageUrl): int
     {
+        foreach ($this->uploadPathCandidates($imageUrl) as $candidatePath) {
+            $attachmentId = $this->attachmentIdForUploadPath($candidatePath);
+            if ($attachmentId > 0) {
+                return $attachmentId;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Every spelling of an upload path this URL might be stored under.
+     *
+     * A body references sub-sizes (`name-1024x683.jpg`), percent-encoded names, and
+     * the unscaled stem of a large upload that is stored as `name-scaled.jpg`, none
+     * of which appear verbatim in `_wp_attached_file`.
+     *
+     * @param string $imageUrl
+     *
+     * @return string[]
+     */
+    private function uploadPathCandidates(string $imageUrl): array
+    {
         $relativePath = $this->uploadRelativePath($imageUrl);
         if ($relativePath === '') {
-            return 0;
+            return [];
         }
 
-        $uploadBaseUrl = (string) (wp_get_upload_dir()['baseurl'] ?? '');
-        if ($uploadBaseUrl === '') {
-            return 0;
-        }
-
-        /*
-         * `attachment_url_to_postid()` matches `_wp_attached_file` exactly, so a
-         * sub-size URL has to be reduced to the name of the original first.
-         */
         $candidateList = [$relativePath];
 
         /*
          * A URL copied out of a browser address bar arrives percent-encoded, while
-         * `_wp_attached_file` holds the raw bytes. Without this the path matches
-         * nothing and the class beside it is rejected — the same shape of failure
-         * `parse_url()` used to cause for the very same filenames.
+         * `_wp_attached_file` holds the raw bytes.
          */
         $decodedPath = rawurldecode($relativePath);
         if ($decodedPath !== $relativePath) {
@@ -1002,8 +1026,7 @@ class ArticleEvent
 
         /*
          * A large upload is stored as `name-scaled.ext`, but WordPress names its
-         * sub-sizes — and keeps the untouched original — off the unscaled stem, so
-         * neither spelling above finds it.
+         * sub-sizes — and keeps the untouched original — off the unscaled stem.
          */
         foreach ($candidateList as $candidatePath) {
             $scaledPath = preg_replace('/(\.[A-Za-z0-9]+)$/', '-scaled$1', $candidatePath);
@@ -1012,77 +1035,167 @@ class ArticleEvent
             }
         }
 
-
-        /*
-         * The URL as written comes first: for our own host WordPress resolves it
-         * itself, without this method's assumptions about how the path is spelled.
-         */
-        $attachmentId = (int) attachment_url_to_postid($imageUrl);
-        if ($attachmentId > 0) {
-            return $attachmentId;
-        }
-
-        foreach ($candidateList as $candidatePath) {
-            $attachmentId = (int) attachment_url_to_postid(rtrim($uploadBaseUrl, '/') . '/' . $candidatePath);
-            if ($attachmentId > 0) {
-                return $attachmentId;
-            }
-        }
-
-        /*
-         * Last resort, and only when every spelling above has missed: an image edited
-         * in WordPress is stored as `name-e<timestamp>.ext` while the body still
-         * points at the original name, so the timestamp has to be looked up rather
-         * than guessed. Deliberately last — it costs a LIKE over `postmeta`.
-         */
-        return $this->resolveEditedAttachmentFromPath($candidateList);
+        return array_values(array_unique($candidateList));
     }
 
     /**
-     * Find an attachment stored as `name-e<timestamp>.ext` for one of these paths.
+     * Resolve every upload path this article could ask about, in a single query.
      *
-     * WordPress renames an edited image that way while the article keeps pointing at
-     * the original name, so the path in the body exists nowhere in
-     * `_wp_attached_file` and no amount of rewriting will find it.
+     * `attachment_url_to_postid()` scans every `_wp_attached_file` row per call,
+     * because a `longtext` cannot be indexed. Asked once per image that is one full
+     * scan per image — on an article with 33 images, 33 scans, and the cost grows
+     * with the media library rather than with the article. Collecting the paths
+     * first and resolving them together makes it one scan per article.
      *
-     * @param string[] $candidateList
+     * @param string $content
+     * @param array $blockList
      *
-     * @return int attachment ID, or 0
+     * @return void
      */
-    private function resolveEditedAttachmentFromPath(array $candidateList): int
+    private function primeUploadPathCache(string $content, array $blockList): void
     {
         global $wpdb;
 
         if (!$wpdb instanceof \wpdb) {
+            return;
+        }
+
+        $urlList = [];
+        foreach ($this->extractImgTags($content) as $tag) {
+            if ($tag['src'] !== '') {
+                $urlList[] = $tag['src'];
+            }
+        }
+        foreach ($this->collectBlockImageUrls($blockList) as $blockUrl) {
+            $urlList[] = $blockUrl;
+        }
+
+        $pathList = [];
+        foreach (array_unique($urlList) as $imageUrl) {
+            foreach ($this->uploadPathCandidates($imageUrl) as $candidatePath) {
+                $pathList[$candidatePath] = $candidatePath;
+            }
+        }
+
+        $pathList = array_values(array_filter($pathList, fn (string $path) => !$this->isUploadPathCached($path)));
+        if (!$pathList) {
+            return;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($pathList), '%s'));
+        $rowList = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT post_id, meta_value FROM {$wpdb->postmeta}"
+                . " WHERE meta_key = '_wp_attached_file' AND meta_value IN ($placeholders)",
+                $pathList
+            )
+        );
+
+        $found = [];
+        foreach ((array) $rowList as $row) {
+            $found[(string) $row->meta_value] = (int) $row->post_id;
+        }
+
+        //A path absent from that result exists nowhere, so remember the miss too
+        foreach ($pathList as $candidatePath) {
+            $this->cacheUploadPath($candidatePath, $found[$candidatePath] ?? 0);
+        }
+    }
+
+    /**
+     * The `url` / `mediaUrl` of every image block in the tree.
+     *
+     * @param array $blockList
+     *
+     * @return string[]
+     */
+    private function collectBlockImageUrls(array $blockList): array
+    {
+        $urlList = [];
+
+        foreach ($blockList as $block) {
+            $attributes = $block['attrs'] ?? [];
+            foreach (['url', 'mediaUrl'] as $urlAttribute) {
+                if (!empty($attributes[$urlAttribute]) && is_string($attributes[$urlAttribute])) {
+                    $urlList[] = $attributes[$urlAttribute];
+                }
+            }
+            if (!empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
+                $urlList = array_merge($urlList, $this->collectBlockImageUrls($block['innerBlocks']));
+            }
+        }
+
+        return $urlList;
+    }
+
+    /**
+     * The attachment holding this upload-relative path, remembered for the request.
+     *
+     * `attachment_url_to_postid()` compares `_wp_attached_file` as a `longtext`,
+     * which no index can serve, so every call scans every attachment row — about
+     * 17ms against this library and rising linearly with it, hit or miss, with no
+     * caching of its own. One article asks the same question repeatedly: four
+     * spellings per image, and every rendition of one attachment reduces to the same
+     * path. Memoizing collapses all of that to one scan per distinct path.
+     *
+     * @param string $relativePath
+     *
+     * @return int attachment ID, or 0
+     */
+    private function attachmentIdForUploadPath(string $relativePath): int
+    {
+        if ($relativePath === '') {
             return 0;
         }
 
-        foreach ($candidateList as $candidatePath) {
-            $extension = (string) pathinfo($candidatePath, PATHINFO_EXTENSION);
-            if ($extension === '') {
-                continue;
-            }
-
-            $stem = substr($candidatePath, 0, -(strlen($extension) + 1));
-            $like = $wpdb->esc_like($stem . '-e') . '%' . $wpdb->esc_like('.' . $extension);
-
-            $rowList = $wpdb->get_results(
-                $wpdb->prepare(
-                    "SELECT post_id, meta_value FROM {$wpdb->postmeta}"
-                    . " WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s LIMIT 5",
-                    $like
-                )
-            );
-
-            foreach ((array) $rowList as $row) {
-                //Only a digit run may sit between `-e` and the extension
-                if (preg_match('/-e\d+\.' . preg_quote($extension, '/') . '$/', (string) $row->meta_value)) {
-                    return (int) $row->post_id;
-                }
-            }
+        if ($this->isUploadPathCached($relativePath)) {
+            return $this->uploadPathCache()[$relativePath];
         }
 
-        return 0;
+        $uploadBaseUrl = rtrim((string) (wp_get_upload_dir()['baseurl'] ?? ''), '/');
+        $attachmentId = $uploadBaseUrl === ''
+            ? 0
+            : (int) attachment_url_to_postid($uploadBaseUrl . '/' . $relativePath);
+
+        $this->cacheUploadPath($relativePath, $attachmentId);
+
+        return $attachmentId;
+    }
+
+    /**
+     * The per-request path -> attachment map.
+     *
+     * @return array<string, int>
+     */
+    private function &uploadPathCache(): array
+    {
+        static $resolved = [];
+
+        return $resolved;
+    }
+
+    /**
+     * @param string $relativePath
+     *
+     * @return bool
+     */
+    private function isUploadPathCached(string $relativePath): bool
+    {
+        $cache = &$this->uploadPathCache();
+
+        return array_key_exists($relativePath, $cache);
+    }
+
+    /**
+     * @param string $relativePath
+     * @param int $attachmentId
+     *
+     * @return void
+     */
+    private function cacheUploadPath(string $relativePath, int $attachmentId): void
+    {
+        $cache = &$this->uploadPathCache();
+        $cache[$relativePath] = $attachmentId;
     }
 
     /**
