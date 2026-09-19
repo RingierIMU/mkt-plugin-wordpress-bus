@@ -60,6 +60,9 @@ class BusPluginClass
              OR option_name LIKE '_transient_timeout_bus_user_update_%'"
         );
 
+        // Clean up the cached image content hashes
+        delete_metadata('post', 0, Enum::META_CONTENT_HASH_KEY, '', true);
+
         // Clean up scheduled cron events (safety net in case deactivation didn't run)
         wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
     }

@@ -10,6 +10,9 @@ class Enum
     const SETTINGS_PAGE_OPTION_NAME = 'ringier_bus_settingspage_options';
     const RINGIER_LOG_FILE_MESSAGE = 'ringier_bus_plugin.log';
     const RINGIER_LOG_FILE_ERROR = 'ringier_bus_plugin_error.log';
+
+    //Attachment meta holding the md5 of an image's bytes, so an offloaded image is downloaded once rather than on every event
+    const META_CONTENT_HASH_KEY = '_ringier_bus_content_hash';
     const AUTHOR_ROLE_LIST = [
         'administrator',
         'editor',

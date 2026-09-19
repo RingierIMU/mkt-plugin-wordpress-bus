@@ -47,6 +47,7 @@ class Utils
     public static function hashImage(int $attachment_id): string
     {
         static $cache = [];
+        static $remoteFetches = 0;
 
         if ($attachment_id <= 0) {
             return '';
@@ -56,39 +57,118 @@ class Utils
             return $cache[$attachment_id];
         }
 
-        // Try local filesystem first (fastest)
-        $file_path = get_attached_file($attachment_id);
-        if (!empty($file_path) && file_exists($file_path)) {
-            $cache[$attachment_id] = md5_file($file_path);
+        $fingerprint = self::imageHashFingerprint($attachment_id);
+
+        /*
+         * Persisted, because the per-request cache is no help to the thing that
+         * actually hurts: on a property with offloaded media (S3/CDN) there is no
+         * local file, so every image of every article would be downloaded over HTTP
+         * again on every event. Stored against a fingerprint so a re-uploaded or
+         * edited image is re-hashed rather than served stale.
+         */
+        $stored = get_post_meta($attachment_id, Enum::META_CONTENT_HASH_KEY, true);
+        if (is_array($stored)
+            && isset($stored['hash'], $stored['fingerprint'])
+            && $stored['fingerprint'] === $fingerprint
+            && is_string($stored['hash'])) {
+            $cache[$attachment_id] = $stored['hash'];
 
             return $cache[$attachment_id];
         }
 
-        // Fallback: download via HTTP (for S3/CDN-hosted images)
-        $url = wp_get_attachment_url($attachment_id);
-        if (empty($url)) {
-            $cache[$attachment_id] = '';
+        $hash = '';
 
+        // Try local filesystem first (fastest)
+        $file_path = get_attached_file($attachment_id);
+        if (!empty($file_path) && file_exists($file_path)) {
+            $hash = (string) md5_file($file_path);
+        } else {
+            $hash = self::hashImageOverHttp($attachment_id, $remoteFetches);
+        }
+
+        $cache[$attachment_id] = $hash;
+
+        if ($hash !== '') {
+            update_post_meta($attachment_id, Enum::META_CONTENT_HASH_KEY, [
+                'hash' => $hash,
+                'fingerprint' => $fingerprint,
+            ]);
+        }
+
+        return $hash;
+    }
+
+    /**
+     * Identity of the bytes we last hashed, so a replaced file invalidates the hash.
+     *
+     * Local files carry size and mtime; an offloaded one has neither locally, so the
+     * stored path and the attachment's own modified time stand in — both change when
+     * the image is replaced or edited in WordPress.
+     *
+     * @param int $attachment_id
+     *
+     * @return string
+     */
+    private static function imageHashFingerprint(int $attachment_id): string
+    {
+        $file_path = get_attached_file($attachment_id);
+
+        if (!empty($file_path) && file_exists($file_path)) {
+            return 'local:' . (string) filesize($file_path) . ':' . (string) filemtime($file_path);
+        }
+
+        return 'remote:'
+            . (string) get_post_meta($attachment_id, '_wp_attached_file', true)
+            . ':' . (string) get_post_field('post_modified_gmt', $attachment_id);
+    }
+
+    /**
+     * Download an offloaded image and hash it, within a per-request budget.
+     *
+     * These downloads run inline in the dispatch, so an article of twenty images on
+     * an offloaded property could otherwise stall the request for minutes. The budget
+     * bounds one event; the persisted hash means later events pay nothing.
+     *
+     * @param int $attachment_id
+     * @param int $remoteFetches running count for this request, by reference
+     *
+     * @return string
+     */
+    private static function hashImageOverHttp(int $attachment_id, int &$remoteFetches): string
+    {
+        /**
+         * How many offloaded images a single event may download to hash.
+         *
+         * @hook ringier_bus_image_hash_remote_budget
+         *
+         * @param int $budget Maximum remote fetches per request. Default 8.
+         *
+         * @return int
+         */
+        $budget = (int) apply_filters('ringier_bus_image_hash_remote_budget', 8);
+
+        if ($budget > 0 && $remoteFetches >= $budget) {
             return '';
         }
 
-        $response = wp_remote_get($url, ['timeout' => 10]);
-        if (is_wp_error($response)) {
-            $cache[$attachment_id] = '';
+        $url = wp_get_attachment_url($attachment_id);
+        if (empty($url)) {
+            return '';
+        }
 
+        ++$remoteFetches;
+
+        $response = wp_remote_get($url, ['timeout' => 5]);
+        if (is_wp_error($response)) {
             return '';
         }
 
         $body = wp_remote_retrieve_body($response);
-        if (empty($body)) {
-            $cache[$attachment_id] = '';
-
+        if ($body === '') {
             return '';
         }
 
-        $cache[$attachment_id] = md5($body);
-
-        return $cache[$attachment_id];
+        return md5($body);
     }
 
     /**
