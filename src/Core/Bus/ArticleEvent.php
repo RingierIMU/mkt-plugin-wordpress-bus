@@ -549,7 +549,7 @@ class ArticleEvent
      *
      * @param array $blockList
      *
-     * @return array{ids: int[], rejected: int[]}
+     * @return array{ids: int[], rejected: int[], confirmed: int[]}
      */
     private function collectBlockImageIds(array $blockList): array
     {
@@ -570,7 +570,14 @@ class ArticleEvent
 
             if ($blockImageId > 0) {
                 $blockImageUrl = '';
-                foreach (['url', 'mediaLink', 'mediaUrl'] as $urlAttribute) {
+                /*
+                 * `core/image`'s `url` and `core/media-text`'s `mediaUrl` are
+                 * `source: attribute` in block.json, so `parse_blocks()` rarely
+                 * yields either and the tag pass does the real work. `mediaLink` is
+                 * deliberately absent: it holds the attachment *permalink*, which
+                 * would never resolve and would reject every media-text image.
+                 */
+                foreach (['url', 'mediaUrl'] as $urlAttribute) {
                     if (!empty($attributes[$urlAttribute]) && is_string($attributes[$urlAttribute])) {
                         $blockImageUrl = $attributes[$urlAttribute];
                         break;
@@ -665,7 +672,7 @@ class ArticleEvent
      *
      * @param string $content
      *
-     * @return array{ids: int[], rejected: int[]}
+     * @return array{ids: int[], rejected: int[], confirmed: int[]}
      */
     private function collectImgTagImageIds(string $content): array
     {
@@ -691,6 +698,14 @@ class ArticleEvent
              * `x-300x2111.jpg` are two different pictures with one stem.
              */
             $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
+            if ($urlImageId > 0 && $classImageId > 0 && $classImageId !== $urlImageId
+                && $this->attachmentOwnsUrlAsSize($classImageId, $imageUrl)) {
+                //The URL is a rendition of the attachment the class names
+                $imageIdList[] = $classImageId;
+                $confirmedIdList[] = $classImageId;
+                continue;
+            }
+
             if ($urlImageId > 0) {
                 $imageIdList[] = $urlImageId;
                 $confirmedIdList[] = $urlImageId;
@@ -709,7 +724,7 @@ class ArticleEvent
              * tag carries no usable `src`. Fall back to the class, checked by file
              * name where there is a URL to check it against.
              */
-            if ($imageUrl === '') {
+            if ($imageUrl === '' || $this->isPlaceholderUrl($imageUrl)) {
                 //Nothing to check it against — accepted, but it confirms nothing
                 $imageIdList[] = $classImageId;
                 continue;
@@ -750,6 +765,91 @@ class ArticleEvent
     }
 
     /**
+     * Is this `src` a placeholder rather than a real location?
+     *
+     * Lazy-loading and imported markup park a data URI in `src` and keep the real
+     * address in `data-src`. Such a value contradicts nothing, so the class it sits
+     * beside must be left alone rather than rejected.
+     *
+     * @param string $imageUrl
+     *
+     * @return bool
+     */
+    private function isPlaceholderUrl(string $imageUrl): bool
+    {
+        if (!preg_match('#^([A-Za-z][A-Za-z0-9+.\-]*):#', $imageUrl, $schemeMatch)) {
+            return false;
+        }
+
+        return !in_array(strtolower($schemeMatch[1]), ['http', 'https'], true);
+    }
+
+    /**
+     * Is this URL one of the renditions WordPress generated for that attachment?
+     *
+     * A library can hold both `photo.jpg` and a separate upload literally named
+     * `photo-224x300.jpg`. The URL of the first one's thumbnail is then the exact
+     * path of the second, and resolving by URL alone would swap a full-size image
+     * for an unrelated smaller one. Where the class already names the attachment
+     * this URL is a size of, the class is the better answer.
+     *
+     * @param int $attachmentId
+     * @param string $imageUrl
+     *
+     * @return bool
+     */
+    private function attachmentOwnsUrlAsSize(int $attachmentId, string $imageUrl): bool
+    {
+        $metadata = wp_get_attachment_metadata($attachmentId);
+        if (!is_array($metadata) || empty($metadata['sizes']) || !is_array($metadata['sizes'])) {
+            return false;
+        }
+
+        $urlFileName = basename($this->urlPathOnly($imageUrl));
+        if ($urlFileName === '') {
+            return false;
+        }
+
+        foreach ($metadata['sizes'] as $size) {
+            if (!empty($size['file']) && is_string($size['file']) && $size['file'] === $urlFileName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The path of a URL, with any query string and fragment removed.
+     *
+     * Deliberately not `parse_url()`: it replaces bytes in the C1 range (0x80-0x9F)
+     * with an underscore, and those are the UTF-8 continuation bytes of `ă`, `ș`,
+     * `ț` and `×` — ordinary characters in Romanian filenames. A mangled path
+     * matches no attachment, so the image is not merely unresolved but actively
+     * discarded. Everything here is byte-safe.
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    private function urlPathOnly(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        $path = explode('#', $url, 2)[0];
+        $path = explode('?', $path, 2)[0];
+
+        //Drop `scheme://host` or a protocol-relative `//host`, leaving a root-relative path alone
+        if (preg_match('#^(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/]*#', $path, $hostMatch)) {
+            $path = substr($path, strlen($hostMatch[0]));
+        }
+
+        return $path;
+    }
+
+    /**
      * The part of a URL below the uploads directory, whatever host it carries.
      *
      * @param string $imageUrl
@@ -768,8 +868,8 @@ class ArticleEvent
             return '';
         }
 
-        $uploadPath = (string) parse_url($uploadBaseUrl, PHP_URL_PATH);
-        $imagePath = (string) parse_url($imageUrl, PHP_URL_PATH);
+        $uploadPath = $this->urlPathOnly($uploadBaseUrl);
+        $imagePath = $this->urlPathOnly($imageUrl);
         if ($uploadPath === '' || $imagePath === '') {
             return '';
         }
@@ -802,7 +902,7 @@ class ArticleEvent
         }
 
         $attachmentName = $this->normaliseImageFileName(basename($attachedFile));
-        $urlName = $this->normaliseImageFileName(basename((string) parse_url($imageUrl, PHP_URL_PATH)));
+        $urlName = $this->normaliseImageFileName(basename($this->urlPathOnly($imageUrl)));
 
         return $attachmentName !== '' && $attachmentName === $urlName;
     }
@@ -852,6 +952,15 @@ class ArticleEvent
             if ($scaledPath !== null && $scaledPath !== $candidatePath) {
                 $candidateList[] = $scaledPath;
             }
+        }
+
+        /*
+         * The URL as written comes first: for our own host WordPress resolves it
+         * itself, without this method's assumptions about how the path is spelled.
+         */
+        $attachmentId = (int) attachment_url_to_postid($imageUrl);
+        if ($attachmentId > 0) {
+            return $attachmentId;
         }
 
         foreach ($candidateList as $candidatePath) {
