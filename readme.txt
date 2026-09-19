@@ -132,7 +132,7 @@ This filter gives you full flexibility to:
 
 You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
 
-The plugin resolves the non-hero images of an article from the article body itself. For each `<img>` it resolves the `src` against the media library first — an attachment holding that upload path wins outright — and falls back to the tag's `wp-image-<id>` class only when nothing holds the path, checking it by file name. Block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`) are reconciled the same way against the block's own `url`, which covers blocks that render no `<img>` at all. This filter receives the resolved attachment IDs just before they are turned into payload entries.
+The plugin resolves the non-hero images of an article from the article body itself. For each `<img>` it resolves the `src` against the media library first — an attachment holding that upload path wins outright — and falls back to the tag's `wp-image-<id>` class only when nothing holds the path, checking it by file name. Block attributes (`core/image`, `core/cover`, `core/media-text`, legacy `core/gallery`) are read too, for blocks that render no `<img>` at all, and are reconciled the same way when the block carries a usable image URL. Most do not — Gutenberg stores `url` as `source: attribute`, so it lives in the inner `<img>` rather than in the block attributes, and the tag pass is what confirms those IDs. This filter receives the resolved attachment IDs just before they are turned into payload entries.
 
 The featured image is **not** in this list — it is dispatched separately as the hero entry.
 
@@ -192,6 +192,7 @@ This plugin requires *PHP version >= 8.1*.
 * (bug) A `wp-image-<id>` class left behind by a content migration was believed over the `<img src>` it sits on, so an article could dispatch photographs belonging to a different article. Resolution is now URL-first: the attachment holding the URL's upload path wins, and the class is consulted only when nothing holds that path. Block attributes are reconciled the same way, which covers blocks that render no `<img>`.
 * (bug) Images were resolved from `get_the_content()`, which returns only the teaser for a body carrying `<!--more-->` and only page one for `<!--nextpage-->`, silently dropping every image below the cut. Resolution now reads the stored post content.
 * (bug) Commented-out markup, protocol-relative `<img src>` URLs and over-broad `wp-image-` class matching each produced a wrong or missing image; all three are fixed.
+* (bug) Non-ASCII filenames (Romanian diacritics) were corrupted during resolution and their images discarded. Path handling is now byte-safe.
 
 #### Changed ####
 * (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship, reconciling each attachment ID against the `src` of its own `<img>` tag so that a stale ID left by a content migration cannot substitute an unrelated picture. The featured image stays a separate hero entry.
@@ -199,7 +200,7 @@ This plugin requires *PHP version >= 8.1*.
 #### Added ####
 * (filter) `ringier_bus_article_image_ids` — adjust the non-hero attachment IDs an article dispatches.
 
-Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2545 images restored across 798 articles. Plan a bulk re-sync accordingly.
+Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2556 images restored across 803 articles. Plan a bulk re-sync accordingly.
 
 ### [4.0.1] - 2026-04-16 ###
 
