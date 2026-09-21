@@ -175,7 +175,13 @@ class ArticleEvent
      *
      *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
      *
-     * One file per second, appended to, so two events in the same second both land.
+     * One file per article, `wp-content/buslog/payload-<post_id>.json`, overwritten
+     * each dispatch so it always holds the latest. A full batch sync therefore leaves
+     * one file per article rather than one per second, and an article can be looked up
+     * directly. The content is the exact body being POSTed, pretty-printed with
+     * unescaped unicode so Romanian text stays readable, and valid JSON so it can be
+     * piped straight to `jq`.
+     *
      * Remove this method and its call site once the BUS UI is fixed.
      *
      * @param string $jsonBody the exact body being POSTed
@@ -189,23 +195,26 @@ class ArticleEvent
             return;
         }
 
-        $file = WP_CONTENT_DIR . '/bus_test_' . date('Y-m-d_H-i-s') . '.log';
+        $directory = WP_CONTENT_DIR . '/buslog';
+
+        if (!is_dir($directory) && !wp_mkdir_p($directory)) {
+            ringier_errorlogthis("dumpPayloadForTesting: could not create $directory");
+
+            return;
+        }
+
+        //wp-content is web-readable; keep the directory from being listed
+        $index = $directory . '/index.php';
+        if (!file_exists($index)) {
+            file_put_contents($index, "<?php\n// Silence is golden.\n");
+        }
 
         $decoded = json_decode($jsonBody, true);
         $readable = is_array($decoded)
             ? wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             : $jsonBody;
 
-        $header = sprintf(
-            "// %s | %s | article %d (%s) | %d image entries\n",
-            date('Y-m-d H:i:s'),
-            $this->eventType,
-            $post_ID,
-            (string) get_post_field('post_name', $post_ID),
-            is_array($decoded) ? count($decoded[0]['payload']['article']['images'] ?? []) : 0
-        );
-
-        file_put_contents($file, $header . $readable . "\n\n", FILE_APPEND | LOCK_EX);
+        file_put_contents($directory . '/payload-' . $post_ID . '.json', $readable . "\n", LOCK_EX);
     }
 
     private function buildMainRequestBody(int $post_ID, \WP_Post $post): array
