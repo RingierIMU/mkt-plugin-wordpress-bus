@@ -174,12 +174,13 @@ class ArticleEvent
      *
      *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
      *
-     * One file per article, `wp-content/buslog/payload-<post_id>.json`, overwritten
-     * each dispatch so it always holds the latest. A full batch sync therefore leaves
-     * one file per article rather than one per second, and an article can be looked up
-     * directly. The content is the exact body being POSTed, pretty-printed with
-     * unescaped unicode so Romanian text stays readable, and valid JSON so it can be
-     * piped straight to `jq`.
+     * One file per article per event type,
+     * `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, overwritten
+     * each dispatch so each holds the latest of its kind. Keeping the type in the name
+     * matters because publishing dispatches twice — instantly as created, then a minute
+     * later as updated — and a single file would let the second quietly replace the
+     * first. The content is the exact body being POSTed, pretty-printed with unescaped
+     * unicode so Romanian text stays readable, and valid JSON so it pipes to `jq`.
      *
      * Only published articles ever reach here — `BusHelper` bails on drafts and
      * auto-drafts — so an unpublished body cannot land in the directory.
@@ -239,7 +240,22 @@ class ArticleEvent
             ? wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
             : $jsonBody;
 
-        file_put_contents($directory . '/payload-' . $post_ID . '.json', $readable . "\n", LOCK_EX);
+        /*
+         * The event type is in the name because a publish dispatches twice — once
+         * instantly as created, then again a minute later as updated — and a single
+         * file per article would have the second silently replace the first.
+         */
+        $eventLabel = strtolower((string) preg_replace('/^Article/', '', $this->eventType));
+        $eventLabel = (string) preg_replace('/[^a-z0-9_-]/', '', $eventLabel);
+        if ($eventLabel === '') {
+            $eventLabel = 'event';
+        }
+
+        file_put_contents(
+            $directory . '/payload-' . $eventLabel . '-' . $post_ID . '.json',
+            $readable . "\n",
+            LOCK_EX
+        );
     }
 
     private function buildMainRequestBody(int $post_ID, \WP_Post $post): array
