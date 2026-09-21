@@ -30,11 +30,17 @@ use RingierBusPlugin\Utils;
 
 class BusTokenManager
 {
-    private string $endpoint;
-    private string $ventureConfig;
-    private string $username;
-    private string $password;
-    private ?string $authToken;
+    /*
+     * Defaulted rather than left uninitialised: a typed property with no default is a
+     * fatal the moment anything reads it before setParameters(), which is what a
+     * diagnostic or a test harness constructing this class directly will do.
+     * Production always calls setParameters() first, so this changes no behaviour.
+     */
+    private string $endpoint = '';
+    private string $ventureConfig = '';
+    private string $username = '';
+    private string $password = '';
+    private ?string $authToken = null;
 
     public function __construct()
     {
