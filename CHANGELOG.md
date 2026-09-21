@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added ###
+* (debug) Opt-in payload capture. With `define('RINGIER_BUS_DEBUG_PAYLOAD', true);` in `wp-config.php`, every article dispatch writes the exact JSON being POSTed to `wp-content/buslog/payload-<post_id>.json`, overwritten each time so the file always holds the latest payload for that article. Written *before* the request goes out, so the payload is captured even when the BUS does not respond. Pretty-printed with unescaped unicode and valid JSON, so it pipes straight to `jq`. Off entirely without the constant. The directory is protected by `index.php` and `.htaccess`; on nginx add `location ~* /wp-content/buslog/ { deny all; }` to the server config.
+
 * (admin) Two buttons beside *Flush API Auth Token* on the Tooling page. **Flush Other Caches** clears every plugin transient except the auth token, which has its own button. **Flush Image Content Hashes** clears the stored image hashes so every image is hashed again on its next event — needed only if an image was replaced outside WordPress, since a hash is otherwise recalculated automatically whenever the image it describes changes. Both confirm first and report how many rows they cleared.
 
 

@@ -86,7 +86,7 @@ class ArticleEvent
             ];
             $jsonBody = wp_json_encode($payloadData);
 
-            //TEMPORARY (SOL-3505): see dumpPayloadForTesting() — remove once the BUS UI lag is fixed
+            //Opt-in payload capture; see dumpPayloadForTesting()
             $this->dumpPayloadForTesting($jsonBody, $post_ID);
 
             $requestBody = [
@@ -167,11 +167,10 @@ class ArticleEvent
     }
 
     /**
-     * TEMPORARY — write the outgoing payload to a file for local verification.
+     * Write the outgoing payload to a file, for inspecting a dispatch without waiting
+     * for it to appear downstream.
      *
-     * Added while the BUS UI is lagging, so a dispatch can be inspected without
-     * waiting for it to appear downstream. Writes nothing unless the site defines
-     * the constant, so it cannot start filling a production disk by accident:
+     * Off unless the site opts in, so it costs a `defined()` check and nothing else:
      *
      *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
      *
@@ -182,7 +181,8 @@ class ArticleEvent
      * unescaped unicode so Romanian text stays readable, and valid JSON so it can be
      * piped straight to `jq`.
      *
-     * Remove this method and its call site once the BUS UI is fixed.
+     * Only published articles ever reach here — `BusHelper` bails on drafts and
+     * auto-drafts — so an unpublished body cannot land in the directory.
      *
      * @param string $jsonBody the exact body being POSTed
      * @param int $post_ID
@@ -195,18 +195,43 @@ class ArticleEvent
             return;
         }
 
+        static $directoryReady = null;
+
         $directory = WP_CONTENT_DIR . '/buslog';
 
-        if (!is_dir($directory) && !wp_mkdir_p($directory)) {
-            ringier_errorlogthis("dumpPayloadForTesting: could not create $directory");
+        if ($directoryReady === null) {
+            $directoryReady = is_dir($directory) || wp_mkdir_p($directory);
 
-            return;
+            if (!$directoryReady) {
+                //Once per request, not once per dispatch, so a read-only wp-content cannot flood the log
+                ringier_errorlogthis("dumpPayloadForTesting: could not create $directory");
+            } else {
+                /*
+                 * These payloads carry the article body and the venture id, and
+                 * `wp-content` is web-readable, so a guessed post id would otherwise
+                 * fetch one. `index.php` stops a listing; `.htaccess` stops the files
+                 * on Apache. On nginx this is not enough — deny the location in the
+                 * server config:
+                 *
+                 *     location ~* /wp-content/buslog/ { deny all; }
+                 */
+                if (!file_exists($directory . '/index.php')) {
+                    file_put_contents($directory . '/index.php', "<?php\n// Silence is golden.\n");
+                }
+
+                if (!file_exists($directory . '/.htaccess')) {
+                    file_put_contents(
+                        $directory . '/.htaccess',
+                        "# Ringier Bus debug payloads - not for public access\n"
+                        . "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
+                        . "<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n"
+                    );
+                }
+            }
         }
 
-        //wp-content is web-readable; keep the directory from being listed
-        $index = $directory . '/index.php';
-        if (!file_exists($index)) {
-            file_put_contents($index, "<?php\n// Silence is golden.\n");
+        if (!$directoryReady) {
+            return;
         }
 
         $decoded = json_decode($jsonBody, true);
