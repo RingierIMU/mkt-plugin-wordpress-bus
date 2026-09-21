@@ -86,6 +86,9 @@ class ArticleEvent
             ];
             $jsonBody = wp_json_encode($payloadData);
 
+            //TEMPORARY (SOL-3505): see dumpPayloadForTesting() — remove once the BUS UI lag is fixed
+            $this->dumpPayloadForTesting($jsonBody, $post_ID);
+
             $requestBody = [
                 'headers' => [
                     'Accept' => 'application/json',
@@ -161,6 +164,48 @@ class ArticleEvent
 
             return false;
         }
+    }
+
+    /**
+     * TEMPORARY — write the outgoing payload to a file for local verification.
+     *
+     * Added while the BUS UI is lagging, so a dispatch can be inspected without
+     * waiting for it to appear downstream. Writes nothing unless the site defines
+     * the constant, so it cannot start filling a production disk by accident:
+     *
+     *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
+     *
+     * One file per second, appended to, so two events in the same second both land.
+     * Remove this method and its call site once the BUS UI is fixed.
+     *
+     * @param string $jsonBody the exact body being POSTed
+     * @param int $post_ID
+     *
+     * @return void
+     */
+    private function dumpPayloadForTesting(string $jsonBody, int $post_ID): void
+    {
+        if (!defined('RINGIER_BUS_DEBUG_PAYLOAD') || !RINGIER_BUS_DEBUG_PAYLOAD) {
+            return;
+        }
+
+        $file = WP_CONTENT_DIR . '/bus_test_' . date('Y-m-d_H-i-s') . '.log';
+
+        $decoded = json_decode($jsonBody, true);
+        $readable = is_array($decoded)
+            ? wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            : $jsonBody;
+
+        $header = sprintf(
+            "// %s | %s | article %d (%s) | %d image entries\n",
+            date('Y-m-d H:i:s'),
+            $this->eventType,
+            $post_ID,
+            (string) get_post_field('post_name', $post_ID),
+            is_array($decoded) ? count($decoded[0]['payload']['article']['images'] ?? []) : 0
+        );
+
+        file_put_contents($file, $header . $readable . "\n\n", FILE_APPEND | LOCK_EX);
     }
 
     private function buildMainRequestBody(int $post_ID, \WP_Post $post): array
