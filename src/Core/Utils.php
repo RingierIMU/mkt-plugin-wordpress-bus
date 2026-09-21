@@ -41,13 +41,13 @@ class Utils
      * is hashed only once regardless of how many size variants are requested.
      *
      * @param int $attachment_id WordPress attachment ID
+     * @param int $post_ID the article being dispatched, named in the log on failure
      *
      * @return string MD5 hash, or empty string on failure
      */
-    public static function hashImage(int $attachment_id): string
+    public static function hashImage(int $attachment_id, int $post_ID = 0): string
     {
         static $cache = [];
-        static $remoteFetches = 0;
 
         if ($attachment_id <= 0) {
             return '';
@@ -83,7 +83,7 @@ class Utils
         if (!empty($file_path) && file_exists($file_path)) {
             $hash = (string) md5_file($file_path);
         } else {
-            $hash = self::hashImageOverHttp($attachment_id, $remoteFetches);
+            $hash = self::hashImageOverHttp($attachment_id, $post_ID);
         }
 
         $cache[$attachment_id] = $hash;
@@ -123,102 +123,76 @@ class Utils
     }
 
     /**
-     * Download an offloaded image and hash it, within a per-request budget.
+     * Download an offloaded image and hash it.
      *
-     * Uncapped by count, bounded by time. `content_hash` is optional in the BUS
-     * contract (`resources/publishing-events.ods` marks only `url` and `size`
-     * required), but it is what lets a consumer tell one image from another, so the
-     * default is to hash everything. A count cap does not withhold the image — it
-     * dispatches it with an empty hash — so it bounds the wrong thing; the time
-     * budget below bounds the actual risk, an unreachable store.
+     * One attempt, no retry, no cap on how many images an event may fetch. A failure
+     * leaves the hash empty and is logged against the article, naming it so the entry
+     * is actionable; `content_hash` is optional in the BUS contract
+     * (`resources/publishing-events.ods` marks only `url` and `size` required), so the
+     * image and the event are dispatched either way.
      *
-     * The persisted hash means a given image is downloaded once and never again, so
-     * the cost is paid once per property rather than per event.
+     * The hash is persisted once obtained, so a given image is downloaded once per
+     * property rather than on every event, and a failure is retried by the next event
+     * for that article rather than within this one.
      *
      * @param int $attachment_id
-     * @param int $remoteFetches running count for this request, by reference
+     * @param int $post_ID
      *
      * @return string
      */
-    private static function hashImageOverHttp(int $attachment_id, int &$remoteFetches): string
+    private static function hashImageOverHttp(int $attachment_id, int $post_ID = 0): string
     {
-        static $spentSeconds = 0.0;
-
-        /**
-         * Seconds one event may spend downloading images before it stops trying.
-         *
-         * A count is the wrong bound: an article is not slow because it has many
-         * images, it is slow because the store answering for them is. This caps the
-         * damage an unreachable bucket can do to a single dispatch without cutting
-         * a healthy article short — a reachable store never comes close.
-         *
-         * @hook ringier_bus_image_hash_time_budget
-         *
-         * @param float $seconds Default 30. Zero or less removes the bound.
-         *
-         * @return float
-         */
-        $timeBudget = (float) apply_filters('ringier_bus_image_hash_time_budget', 30.0);
-
-        if ($timeBudget > 0 && $spentSeconds >= $timeBudget) {
-            return '';
-        }
-
-        /**
-         * How many offloaded images a single event may download to hash.
-         *
-         * @hook ringier_bus_image_hash_remote_budget
-         *
-         * @param int $budget Maximum remote fetches per request. Negative means no
-         *                    cap, which is the default. A positive value bounds the
-         *                    request at the cost of dispatching empty hashes past it;
-         *                    0 disables the downloads entirely. Prefer the time budget
-         *                    above — it bounds a slow store rather than a rich article.
-         *
-         * @return int
-         */
-        $budget = (int) apply_filters('ringier_bus_image_hash_remote_budget', -1);
-
-        if ($budget >= 0 && $remoteFetches >= $budget) {
-            return '';
-        }
-
         $url = wp_get_attachment_url($attachment_id);
+
         if (empty($url)) {
+            self::logImageHashFailure($attachment_id, $post_ID, '', 'the attachment has no URL');
+
             return '';
         }
 
-        ++$remoteFetches;
+        $response = wp_remote_get($url, ['timeout' => 10]);
 
-        /*
-         * Retried once, so a single dropped connection does not cost an image its
-         * hash. A second failure leaves it empty — which the contract permits — and
-         * the next event for that article tries again.
-         */
-        foreach ([5, 10] as $attempt => $timeout) {
-            //A throttled bucket answers an instant retry the same way, so pause once
-            if ($attempt > 0) {
-                sleep(1);
-                $spentSeconds += 1.0;
-            }
+        if (is_wp_error($response)) {
+            self::logImageHashFailure($attachment_id, $post_ID, $url, $response->get_error_message());
 
-            $startedAt = microtime(true);
-            $response = wp_remote_get($url, ['timeout' => $timeout]);
-            $spentSeconds += microtime(true) - $startedAt;
-
-            if (is_wp_error($response)) {
-                continue;
-            }
-
-            $body = wp_remote_retrieve_body($response);
-            if ($body !== '') {
-                return md5($body);
-            }
+            return '';
         }
 
-        ringier_errorlogthis("hashImage: could not read image $attachment_id at $url");
+        $body = wp_remote_retrieve_body($response);
 
-        return '';
+        if ($body === '') {
+            $status = (int) wp_remote_retrieve_response_code($response);
+            self::logImageHashFailure($attachment_id, $post_ID, $url, "empty response body (HTTP $status)");
+
+            return '';
+        }
+
+        return md5($body);
+    }
+
+    /**
+     * Log an image that could not be hashed, naming the article it belongs to.
+     *
+     * @param int $attachment_id
+     * @param int $post_ID
+     * @param string $url
+     * @param string $reason
+     *
+     * @return void
+     */
+    private static function logImageHashFailure(int $attachment_id, int $post_ID, string $url, string $reason): void
+    {
+        $article = $post_ID > 0
+            ? sprintf('article %d (%s)', $post_ID, (string) get_post_field('post_name', $post_ID))
+            : 'article unknown';
+
+        ringier_errorlogthis(sprintf(
+            '[content_hash] %s: could not read image %d%s - %s. The image is still dispatched, with an empty content_hash.',
+            $article,
+            $attachment_id,
+            $url === '' ? '' : ' at ' . $url,
+            $reason
+        ));
     }
 
     /**
