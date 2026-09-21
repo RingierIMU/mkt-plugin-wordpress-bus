@@ -47,8 +47,10 @@ Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-image-hashes.php'
     </div>
     <p class="description" style="margin-top: 8px;">
         Image content hashes are stored against each attachment and do not expire &mdash;
-        they are recalculated only when the image they describe changes. Clearing them is
-        only needed if an image was replaced outside WordPress.
+        they are recalculated on their own whenever the image they describe changes.
+        Clearing them is only needed if an image was replaced outside WordPress, or if a
+        truncated download once stored a hash that does not match the file. On a site with
+        offloaded media, clearing means every image is downloaded once more.
     </p>
 <?php
 ?>
