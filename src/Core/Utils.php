@@ -125,13 +125,13 @@ class Utils
     /**
      * Download an offloaded image and hash it, within a per-request budget.
      *
-     * These downloads run inline in the dispatch, so an article of thirty images on
-     * an offloaded property could otherwise stall the request for minutes. The budget
-     * bounds one event; the persisted hash means later events pay nothing.
+     * Uncapped by default. The BUS contract requires a `content_hash` on every image,
+     * and a cap does not withhold the image — it dispatches it with an empty hash,
+     * which is worse than a slow request. The persisted hash means a given image is
+     * downloaded once and never again, so the cost is paid once per property.
      *
-     * It never removes an image from the payload — an image past the budget is still
-     * dispatched, with an empty `content_hash` that the next event for that article
-     * fills in.
+     * A property that would rather bound the request can set a positive budget, and
+     * accept that images past it carry an empty hash until a later event fills it in.
      *
      * @param int $attachment_id
      * @param int $remoteFetches running count for this request, by reference
@@ -145,14 +145,16 @@ class Utils
          *
          * @hook ringier_bus_image_hash_remote_budget
          *
-         * @param int $budget Maximum remote fetches per request. Default 15, which
-         *                    covers 99% of articles in one pass on the corpus this was
-         *                    measured against. 0 disables the downloads; a negative
-         *                    value lifts the cap.
+         * @param int $budget Maximum remote fetches per request. Negative means no
+         *                    cap, which is the default: the BUS contract requires a
+         *                    hash on every image, and a cap produces empty ones.
+         *                    A positive value bounds the request at the cost of
+         *                    dispatching empty hashes past it; 0 disables the
+         *                    downloads entirely.
          *
          * @return int
          */
-        $budget = (int) apply_filters('ringier_bus_image_hash_remote_budget', 15);
+        $budget = (int) apply_filters('ringier_bus_image_hash_remote_budget', -1);
 
         if ($budget >= 0 && $remoteFetches >= $budget) {
             return '';
@@ -165,17 +167,27 @@ class Utils
 
         ++$remoteFetches;
 
-        $response = wp_remote_get($url, ['timeout' => 5]);
-        if (is_wp_error($response)) {
-            return '';
+        /*
+         * Retried once, because an empty `content_hash` is not acceptable to the BUS
+         * contract and a single dropped connection should not produce one. A second
+         * failure leaves the hash empty and the next event for the article tries
+         * again.
+         */
+        foreach ([5, 10] as $timeout) {
+            $response = wp_remote_get($url, ['timeout' => $timeout]);
+            if (is_wp_error($response)) {
+                continue;
+            }
+
+            $body = wp_remote_retrieve_body($response);
+            if ($body !== '') {
+                return md5($body);
+            }
         }
 
-        $body = wp_remote_retrieve_body($response);
-        if ($body === '') {
-            return '';
-        }
+        ringier_errorlogthis("hashImage: could not read image $attachment_id at $url");
 
-        return md5($body);
+        return '';
     }
 
     /**

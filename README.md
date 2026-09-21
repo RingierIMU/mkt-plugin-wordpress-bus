@@ -177,9 +177,9 @@ Anything returned is re-sanitised — non-numeric values, zeros and duplicates a
 
 Each image in the payload carries a `content_hash` of its bytes. Where the file is on the server that is a local read; where media is offloaded to S3 or a CDN it means an HTTP download, which runs inline in the event dispatch.
 
-The hash is stored against the attachment after the first time it is computed, so an offloaded property pays that cost once rather than on every event. While that store is still cold, the **ringier_bus_image_hash_remote_budget** filter caps how many images a single event may download, so one article cannot stall a request indefinitely. The default is 15.
+The hash is stored against the attachment after the first time it is computed, so an offloaded property downloads a given image once and never again.
 
-The cap never removes an image from the payload. Every image is dispatched either way — an image past the budget simply carries an empty `content_hash`, which the next event for that article fills in.
+There is no cap by default, because the BUS contract requires a `content_hash` on every image. The **ringier_bus_image_hash_remote_budget** filter exists for a property that would rather bound how long one event can take: a positive value caps the downloads per event, and images past that cap are still dispatched but carry an empty `content_hash` until a later event fills it in.
 
 Example:
 ```php
@@ -193,7 +193,7 @@ add_filter('ringier_bus_image_hash_remote_budget', function (int $budget): int {
 });
 ```
 
-Return `0` to disable the downloads entirely — images without a local file then carry an empty `content_hash`. Return a negative number to lift the cap, which is worth doing for a first bulk sync on an offloaded property so every image is hashed in one pass.
+Return `0` to disable the downloads entirely — images without a local file then carry an empty `content_hash`.
 
 ## Contributing ##
 
