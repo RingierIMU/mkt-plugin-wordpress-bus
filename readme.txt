@@ -156,7 +156,9 @@ Anything returned is re-sanitised — non-numeric values, zeros and duplicates a
 
 Each image in the payload carries a `content_hash` of its bytes. Where the file is on the server that is a local read; where media is offloaded to S3 or a CDN it means an HTTP download, which runs inline in the event dispatch.
 
-The hash is stored against the attachment after the first time it is computed, so an offloaded property pays that cost once rather than on every event. While that store is still cold, the **ringier_bus_image_hash_remote_budget** filter caps how many images a single event may download, so one article cannot stall a request indefinitely. The default is 8. Images beyond the budget carry an empty `content_hash` and are filled in by the next event for that article.
+The hash is stored against the attachment after the first time it is computed, so an offloaded property pays that cost once rather than on every event. While that store is still cold, the **ringier_bus_image_hash_remote_budget** filter caps how many images a single event may download, so one article cannot stall a request indefinitely. The default is 15.
+
+The cap never removes an image from the payload. Every image is dispatched either way — an image past the budget simply carries an empty `content_hash`, which the next event for that article fills in.
 
 Example:
 ```php
