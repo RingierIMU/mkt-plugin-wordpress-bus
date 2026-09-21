@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added ###
+* (admin) Two buttons beside *Flush API Auth Token* on the Tooling page. **Flush Other Caches** clears every plugin transient except the auth token, which has its own button. **Flush Image Content Hashes** clears the stored image hashes so every image is hashed again on its next event — needed only if an image was replaced outside WordPress, since a hash is otherwise recalculated automatically whenever the image it describes changes. Both confirm first and report how many rows they cleared.
+* (filter) `ringier_bus_image_hash_time_budget` — `(float $seconds): float`. Seconds one event may spend downloading images to hash them. Default 30; zero or less removes the bound. Bounds an unreachable media store rather than a rich article.
+
 * (filter) `ringier_bus_image_hash_remote_budget` — `(int $budget): int`. Caps how many offloaded images one event may download in order to hash them. Uncapped by default, because the BUS contract requires a hash on every image and a cap dispatches empty ones. Set a positive value to bound how long one event may take, accepting empty hashes past it; `0` disables the downloads entirely.
 
 * (filter) `ringier_bus_article_image_ids` — `(int[] $image_id_list, int $post_ID, string $content): int[]`. Adjust the non-hero attachment IDs an article dispatches, just before they are turned into payload entries. Whatever it returns is re-sanitised and re-checked against the media library; the featured image is deliberately not re-excluded, so the hook can add an image the body does not reference. See the readme.

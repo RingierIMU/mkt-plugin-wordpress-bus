@@ -100,6 +100,8 @@ class BusPluginClass
 
         // Handle custom POST
         add_action('admin_post_flush_all_transients', [AdminSyncPage::class, 'handleFlushAllTransients']);
+        add_action('admin_post_flush_other_transients', [AdminSyncPage::class, 'handleFlushOtherTransients']);
+        add_action('admin_post_flush_image_hashes', [AdminSyncPage::class, 'handleFlushImageHashes']);
 
         // Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);
