@@ -125,13 +125,15 @@ class Utils
     /**
      * Download an offloaded image and hash it, within a per-request budget.
      *
-     * Uncapped by default. The BUS contract requires a `content_hash` on every image,
-     * and a cap does not withhold the image — it dispatches it with an empty hash,
-     * which is worse than a slow request. The persisted hash means a given image is
-     * downloaded once and never again, so the cost is paid once per property.
+     * Uncapped by count, bounded by time. `content_hash` is optional in the BUS
+     * contract (`resources/publishing-events.ods` marks only `url` and `size`
+     * required), but it is what lets a consumer tell one image from another, so the
+     * default is to hash everything. A count cap does not withhold the image — it
+     * dispatches it with an empty hash — so it bounds the wrong thing; the time
+     * budget below bounds the actual risk, an unreachable store.
      *
-     * A property that would rather bound the request can set a positive budget, and
-     * accept that images past it carry an empty hash until a later event fills it in.
+     * The persisted hash means a given image is downloaded once and never again, so
+     * the cost is paid once per property rather than per event.
      *
      * @param int $attachment_id
      * @param int $remoteFetches running count for this request, by reference
@@ -140,17 +142,38 @@ class Utils
      */
     private static function hashImageOverHttp(int $attachment_id, int &$remoteFetches): string
     {
+        static $spentSeconds = 0.0;
+
+        /**
+         * Seconds one event may spend downloading images before it stops trying.
+         *
+         * A count is the wrong bound: an article is not slow because it has many
+         * images, it is slow because the store answering for them is. This caps the
+         * damage an unreachable bucket can do to a single dispatch without cutting
+         * a healthy article short — a reachable store never comes close.
+         *
+         * @hook ringier_bus_image_hash_time_budget
+         *
+         * @param float $seconds Default 30. Zero or less removes the bound.
+         *
+         * @return float
+         */
+        $timeBudget = (float) apply_filters('ringier_bus_image_hash_time_budget', 30.0);
+
+        if ($timeBudget > 0 && $spentSeconds >= $timeBudget) {
+            return '';
+        }
+
         /**
          * How many offloaded images a single event may download to hash.
          *
          * @hook ringier_bus_image_hash_remote_budget
          *
          * @param int $budget Maximum remote fetches per request. Negative means no
-         *                    cap, which is the default: the BUS contract requires a
-         *                    hash on every image, and a cap produces empty ones.
-         *                    A positive value bounds the request at the cost of
-         *                    dispatching empty hashes past it; 0 disables the
-         *                    downloads entirely.
+         *                    cap, which is the default. A positive value bounds the
+         *                    request at the cost of dispatching empty hashes past it;
+         *                    0 disables the downloads entirely. Prefer the time budget
+         *                    above — it bounds a slow store rather than a rich article.
          *
          * @return int
          */
@@ -168,13 +191,21 @@ class Utils
         ++$remoteFetches;
 
         /*
-         * Retried once, because an empty `content_hash` is not acceptable to the BUS
-         * contract and a single dropped connection should not produce one. A second
-         * failure leaves the hash empty and the next event for the article tries
-         * again.
+         * Retried once, so a single dropped connection does not cost an image its
+         * hash. A second failure leaves it empty — which the contract permits — and
+         * the next event for that article tries again.
          */
-        foreach ([5, 10] as $timeout) {
+        foreach ([5, 10] as $attempt => $timeout) {
+            //A throttled bucket answers an instant retry the same way, so pause once
+            if ($attempt > 0) {
+                sleep(1);
+                $spentSeconds += 1.0;
+            }
+
+            $startedAt = microtime(true);
             $response = wp_remote_get($url, ['timeout' => $timeout]);
+            $spentSeconds += microtime(true) - $startedAt;
+
             if (is_wp_error($response)) {
                 continue;
             }
