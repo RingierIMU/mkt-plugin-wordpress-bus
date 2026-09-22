@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * (perf) An article's upload paths are resolved in one query instead of one per image. `attachment_url_to_postid()` compares `_wp_attached_file`, a `longtext` no index can serve, so each call scans every attachment row — about 17ms against a 13k-attachment library and growing with it. A mean article drops from 87.7ms to 34.8ms and the worst measured from 447.7ms to 73.8ms, and the cost no longer grows with the number of images in an article.
 * (perf) An image's `content_hash` is computed once and stored against the attachment, instead of on every event. Where media is offloaded to S3 or a CDN there is no local file, so the hash requires an HTTP download — previously for every image of every article, every time. The stored hash is fingerprinted on file size and mtime locally, and on the stored path plus the attachment's modified time when offloaded, so a replaced image is re-hashed. An image that cannot be read is logged against its article — ID and slug — and dispatched with an empty `content_hash`, which the contract permits.
 
+Note: this restores images that were previously dropped, so articles might legitimately start dispatching images they have never sent before.
+
 
 ## [4.0.1] - 2026-04-16 ##
 

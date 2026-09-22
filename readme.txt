@@ -204,7 +204,7 @@ This plugin requires *PHP version >= 8.1*.
 #### Performance ####
 * (perf) An article's upload paths resolve in one query instead of one per image, and an image's `content_hash` is computed once and stored rather than on every event.
 
-Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2556 images restored across 803 articles. Plan a bulk re-sync accordingly.
+Note: this restores images that were previously dropped, so articles might legitimately start dispatching images they have never sent before.
 
 
 ### [4.0.1] - 2026-04-16 ###
