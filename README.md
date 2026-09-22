@@ -6,7 +6,7 @@
 **Tags:** ringier, bus, api, cde   
 **Requires at least:** 6.0  
 **Tested up to:** 6.9.4  
-**Stable tag:** 4.0.1  
+**Stable tag:** 4.0.2  
 **Requires PHP:** 8.1  
 **License:** GPLv2 or later  
 **License URI:** http://www.gnu.org/licenses/gpl-2.0.html  
@@ -65,9 +65,11 @@ This plugin creates a log file (**ringier_bus_plugin_error_log**), saved inside 
 The error messages are viewable via the admin UI by clicking on the submenu "LOG".
 You also have the flexibility to clear the log file via the UI itself.
 
+To inspect what is actually being sent, add `define('RINGIER_BUS_DEBUG_PAYLOAD', true);` to `wp-config.php`. Each dispatch then writes its exact JSON body to `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, before the request goes out. Off entirely without the constant.
+
 ## CUSTOM FILTERS ##
 
-The plugin exposes three custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
+The plugin exposes five custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
 
 ### 1. Modifying the Publication Reason ###
 
@@ -145,6 +147,33 @@ This filter gives you full flexibility to:
 - Force syncing regardless of profile visibility
 - Apply environment-specific rules (e.g., staging vs production)
 - Implement client-specific dispatch policies
+
+### 5. Modifying the Article Images ###
+
+You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
+
+The plugin resolves the non-hero images of an article from the article body, identifying each by the `<img>` that shows it. This filter receives those attachment IDs just before they become payload entries.
+
+The featured image is **not** in this list — it is dispatched separately as the hero entry.
+
+Example:
+```php
+/**
+ * Example
+ */
+add_filter('ringier_bus_article_image_ids', function (array $image_id_list, int $post_ID, string $content): array {
+
+    // Example: never dispatch a specific attachment
+    $image_id_list = array_diff($image_id_list, [1234]);
+
+    // Example: append an image the body does not reference
+    $image_id_list[] = (int) get_post_meta($post_ID, 'my_extra_image_id', true);
+
+    return $image_id_list;
+}, 10, 3);
+```
+
+Anything returned is re-sanitised — non-numeric values, zeros and duplicates are dropped, and each remaining ID must still be an image attachment. The featured image is deliberately *not* re-excluded, so this hook can add an image the body does not reference.
 
 ## Contributing ##
 

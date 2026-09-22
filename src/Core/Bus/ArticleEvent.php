@@ -86,6 +86,9 @@ class ArticleEvent
             ];
             $jsonBody = wp_json_encode($payloadData);
 
+            //Opt-in payload capture; see dumpPayloadForTesting()
+            $this->dumpPayloadForTesting($jsonBody, $post_ID);
+
             $requestBody = [
                 'headers' => [
                     'Accept' => 'application/json',
@@ -161,6 +164,91 @@ class ArticleEvent
 
             return false;
         }
+    }
+
+    /**
+     * Write the outgoing payload to a file, to inspect a dispatch without waiting for it
+     * downstream. Off unless the site opts in:
+     *
+     *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
+     *
+     * `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, overwritten
+     * each dispatch. The event type is in the name because publishing dispatches twice,
+     * as created and then as updated a minute later.
+     *
+     * Only published articles reach here, so an unpublished body cannot land there.
+     *
+     * @param string $jsonBody the exact body being POSTed
+     * @param int $post_ID
+     *
+     * @return void
+     */
+    private function dumpPayloadForTesting(string $jsonBody, int $post_ID): void
+    {
+        if (!defined('RINGIER_BUS_DEBUG_PAYLOAD') || !RINGIER_BUS_DEBUG_PAYLOAD) {
+            return;
+        }
+
+        static $directoryReady = null;
+
+        $directory = WP_CONTENT_DIR . '/buslog';
+
+        if ($directoryReady === null) {
+            $directoryReady = is_dir($directory) || wp_mkdir_p($directory);
+
+            if (!$directoryReady) {
+                //Once per request, not once per dispatch, so a read-only wp-content cannot flood the log
+                ringier_errorlogthis("dumpPayloadForTesting: could not create $directory");
+            } else {
+                /*
+                 * These payloads carry the article body and the venture id, and
+                 * `wp-content` is web-readable, so a guessed post id would otherwise
+                 * fetch one. `index.php` stops a listing; `.htaccess` stops the files
+                 * on Apache. On nginx this is not enough — deny the location in the
+                 * server config:
+                 *
+                 *     location ~* /wp-content/buslog/ { deny all; }
+                 */
+                if (!file_exists($directory . '/index.php')) {
+                    file_put_contents($directory . '/index.php', "<?php\n// Silence is golden.\n");
+                }
+
+                if (!file_exists($directory . '/.htaccess')) {
+                    file_put_contents(
+                        $directory . '/.htaccess',
+                        "# Ringier Bus debug payloads - not for public access\n"
+                        . "<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n"
+                        . "<IfModule !mod_authz_core.c>\n    Order deny,allow\n    Deny from all\n</IfModule>\n"
+                    );
+                }
+            }
+        }
+
+        if (!$directoryReady) {
+            return;
+        }
+
+        $decoded = json_decode($jsonBody, true);
+        $readable = is_array($decoded)
+            ? wp_json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+            : $jsonBody;
+
+        /*
+         * The event type is in the name because a publish dispatches twice — once
+         * instantly as created, then again a minute later as updated — and a single
+         * file per article would have the second silently replace the first.
+         */
+        $eventLabel = strtolower((string) preg_replace('/^Article/', '', $this->eventType));
+        $eventLabel = (string) preg_replace('/[^a-z0-9_-]/', '', $eventLabel);
+        if ($eventLabel === '') {
+            $eventLabel = 'event';
+        }
+
+        file_put_contents(
+            $directory . '/payload-' . $eventLabel . '-' . $post_ID . '.json',
+            $readable . "\n",
+            LOCK_EX
+        );
     }
 
     private function buildMainRequestBody(int $post_ID, \WP_Post $post): array
@@ -304,6 +392,26 @@ class ArticleEvent
     }
 
     /**
+     * The stored article body, used to work out which images the article contains.
+     *
+     * Deliberately not `get_the_content()`: that returns the teaser only when the
+     * body carries a `<!--more-->` tag, the first page only when it carries
+     * `<!--nextpage-->`, and the password form for a protected post. Those are
+     * reasonable for rendering, but images are resolved from this string alone, so
+     * a truncated view silently drops every image below the cut.
+     *
+     * @param int $post_ID
+     *
+     * @return string
+     */
+    private function fetchImageResolutionContent(int $post_ID): string
+    {
+        $post = get_post($post_ID);
+
+        return $post instanceof \WP_Post ? (string) $post->post_content : '';
+    }
+
+    /**
      * Reconcile featured image list with the rest of the images in the article (post)
      *
      * @param int $post_ID
@@ -341,17 +449,18 @@ class ArticleEvent
      * @param mixed $image_alt
      * @param bool $isHero
      * @param int $attachmentId
+     * @param int $post_ID the article, named in the log if the image cannot be read
      *
      * @return array
      */
-    private function transformImageFieldsIntoExpectedFormat(bool|string $imageUrl, string $size, mixed $image_alt, bool $isHero = false, int $attachmentId = 0): array
+    private function transformImageFieldsIntoExpectedFormat(bool|string $imageUrl, string $size, mixed $image_alt, bool $isHero = false, int $attachmentId = 0, int $post_ID = 0): array
     {
         return [
             'url' => Utils::returnEmptyOnNullorFalse($imageUrl),
             'size' => $size,
             'alt_text' => Utils::returnEmptyOnNullorFalse($image_alt),
             'hero' => $isHero,
-            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($attachmentId)),
+            'content_hash' => Utils::returnEmptyOnNullorFalse(Utils::hashImage($attachmentId, $post_ID)),
         ];
     }
 
@@ -374,7 +483,7 @@ class ArticleEvent
             $imageUrl = get_the_post_thumbnail_url($post_ID, $size);
 
             if ($imageUrl) {
-                $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true, (int) $imageId);
+                $imageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, true, (int) $imageId, $post_ID);
             }
         }
 
@@ -382,6 +491,12 @@ class ArticleEvent
     }
 
     /**
+     * The non-hero images of an article.
+     *
+     * The list is derived from the article content itself (block attributes,
+     * `wp-image-<id>` classes, and — as a last resort — upload URLs), never from
+     * the attachment/post relationship.
+     *
      * @param int $post_ID
      *
      * @return array
@@ -389,44 +504,796 @@ class ArticleEvent
     private function fetchPostImages(int $post_ID): array
     {
         $finalImageList = [];
-        $featuredImageId = get_post_thumbnail_id($post_ID);
-        $imageList = get_attached_media('image', $post_ID);
         $imageSizes = $this->imageSizeList();
+        $imageIdList = $this->resolveContentImageIds($post_ID);
 
-        //Remove the featured image in the list since we are already catering for it prior to this
-        if (!empty($imageList) && isset($imageList[$featuredImageId])) {
-            unset($imageList[$featuredImageId]);
-        }
-
-        $articleContent = $this->fetchArticleContent($post_ID);
-
-        foreach ($imageList as $image) {
-            $primaryImageSlug = sanitize_title($image->post_name);
-            /**
-             * There is an anomaly in WordPress, when an image is "removed" from a post,
-             * it is not updated in an unattached state automatically.
-             * ref: https://core.trac.wordpress.org/ticket/30691#comment:12
-             *
-             * So I am having to check if the post content actually has that image
-             * (Wasseem)
-             */
-            if (!$this->isImageAttachedAndStillUsed($primaryImageSlug, $articleContent)) {
-                continue;
-            }
-
-            $imageId = $image->ID;
+        foreach ($imageIdList as $imageId) {
             $imageAlt = get_post_meta($imageId, '_wp_attachment_image_alt', true);
 
             foreach ($imageSizes as $size) {
                 $imageUrl = wp_get_attachment_image_url($imageId, $size);
 
                 if ($imageUrl) {
-                    $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, (int) $imageId);
+                    $finalImageList[] = $this->transformImageFieldsIntoExpectedFormat($imageUrl, $size, $imageAlt, false, $imageId, $post_ID);
                 }
             }
         }
 
         return $finalImageList;
+    }
+
+    /**
+     * The attachment IDs of the images the article body uses, excluding the featured
+     * image, which is dispatched separately as the hero.
+     *
+     * Resolved from the body, never from the attachment relationship: WordPress does
+     * not release an image's `post_parent` when an editor removes it from an article
+     * (core #30691), so ownership does not imply usage.
+     *
+     * An ID is believed only where it agrees with the `<img src>` it sits on. Content
+     * migrated from another property keeps that property's IDs, which resolve here to
+     * unrelated pictures; where they disagree the URL wins, because the URL is what
+     * the reader sees.
+     *
+     * @param int $post_ID
+     *
+     * @return int[] unique attachment IDs
+     */
+    private function resolveContentImageIds(int $post_ID): array
+    {
+        $content = $this->fetchImageResolutionContent($post_ID);
+        $featuredImageId = (int) get_post_thumbnail_id($post_ID);
+
+        /*
+         * Markup the editor commented out is not in the article, so it must not
+         * contribute images. Block delimiters are HTML comments too, and
+         * `parse_blocks()` needs them, so it reads the untouched content.
+         */
+        $visibleContent = $this->stripNonBlockHtmlComments($content);
+
+        $blockList = parse_blocks($visibleContent);
+
+        /*
+         * One query for the whole article, before anything asks a question. Without
+         * it each image costs its own full scan of `_wp_attached_file`.
+         */
+        $this->primeUploadPathCache($visibleContent, $blockList);
+
+        //Reconciles each `wp-image-<id>` class against the `src` of its own tag
+        $tagResolution = $this->collectImgTagImageIds($visibleContent);
+        $blockResolution = $this->collectBlockImageIds($blockList);
+
+        $candidateIdList = array_merge($tagResolution['ids'], $blockResolution['ids']);
+
+        /*
+         * A rejection only clears when some tag or block positively confirmed that ID
+         * against a URL — the same stale class is routinely copied across several tags
+         * in one article, one of which may be the tag it is actually right for. An ID
+         * merely accepted for want of anything to check it against does not count:
+         * that is the unvalidated case, not a confirmation.
+         */
+        $rejectedIdList = array_diff(
+            array_merge($tagResolution['rejected'], $blockResolution['rejected']),
+            array_merge($tagResolution['confirmed'], $blockResolution['confirmed'])
+        );
+
+        $imageIdList = [];
+        foreach ($candidateIdList as $candidateId) {
+            if ($candidateId <= 0 || $candidateId === $featuredImageId) {
+                continue;
+            }
+            //Contradicted by the URL of every tag or block that named it
+            if (in_array($candidateId, $rejectedIdList, true)) {
+                continue;
+            }
+            if (isset($imageIdList[$candidateId]) || !$this->isImageAttachment($candidateId)) {
+                continue;
+            }
+            $imageIdList[$candidateId] = $candidateId;
+        }
+
+        $imageIdList = array_values($imageIdList);
+
+        /**
+         * The attachment IDs of the non-hero images dispatched for an article.
+         *
+         * @hook ringier_bus_article_image_ids
+         *
+         * @param int[] $imageIdList The resolved attachment IDs.
+         * @param int $post_ID The ID of the post.
+         * @param string $content The raw article content the IDs were resolved from.
+         *
+         * @return int[] The attachment IDs to dispatch.
+         */
+        $imageIdList = apply_filters('ringier_bus_article_image_ids', $imageIdList, $post_ID, $content);
+
+        /*
+         * The filter is free to add or reorder IDs, so re-sanitise whatever comes back.
+         * The featured image is deliberately not re-excluded: adding an image the body
+         * does not reference is a documented use of this hook.
+         */
+        $imageIdList = array_unique(array_filter(array_map('absint', (array) $imageIdList)));
+
+        return array_values(array_filter($imageIdList, [$this, 'isImageAttachment']));
+    }
+
+    /**
+     * Attachment IDs carried in block attributes, reconciled against the URL the same
+     * block carries.
+     *
+     * Covers `core/image` and `core/cover` (`id` + `url`), `core/media-text` (`mediaId`)
+     * and legacy `core/gallery` (`ids`); modern galleries nest `core/image` and are
+     * picked up through `innerBlocks`. Most render an `<img>` and are already covered by
+     * the tag pass — this exists for those that do not, such as a `core/cover` drawing
+     * its image as a CSS background.
+     *
+     * @param array $blockList
+     *
+     * @return array{ids: int[], rejected: int[], confirmed: int[]}
+     */
+    private function collectBlockImageIds(array $blockList): array
+    {
+        $imageIdList = [];
+        $rejectedIdList = [];
+        $confirmedIdList = [];
+
+        /*
+         * Only blocks known to carry an *image* attachment ID. Without this, `id`
+         * means whatever a third-party block wants it to mean, and its value is
+         * dispatched with no reconciliation at all — `core/video` and `core/file`
+         * both carry an `id` and were reaching the payload on the mime check alone.
+         */
+        $imageBlockNames = ['core/image', 'core/cover', 'core/media-text', 'core/gallery'];
+
+        foreach ($blockList as $block) {
+            $blockName = (string) ($block['blockName'] ?? '');
+            $attributes = in_array($blockName, $imageBlockNames, true) ? ($block['attrs'] ?? []) : [];
+
+            $blockImageId = 0;
+            foreach (['id', 'mediaId'] as $attributeName) {
+                if (isset($attributes[$attributeName]) && is_numeric($attributes[$attributeName])) {
+                    $blockImageId = (int) $attributes[$attributeName];
+                    break;
+                }
+            }
+
+            if ($blockImageId > 0) {
+                $blockImageUrl = '';
+                /*
+                 * `core/image`'s `url` and `core/media-text`'s `mediaUrl` are
+                 * `source: attribute` in block.json, so `parse_blocks()` rarely
+                 * yields either and the tag pass does the real work. `mediaLink` is
+                 * deliberately absent: it holds the attachment *permalink*, which
+                 * would never resolve and would reject every media-text image.
+                 */
+                foreach (['url', 'mediaUrl'] as $urlAttribute) {
+                    if (!empty($attributes[$urlAttribute]) && is_string($attributes[$urlAttribute])) {
+                        $blockImageUrl = $attributes[$urlAttribute];
+                        break;
+                    }
+                }
+
+                $urlImageId = $this->resolveAttachmentFromUrl($blockImageUrl);
+                if ($urlImageId > 0) {
+                    $imageIdList[] = $urlImageId;
+                    $confirmedIdList[] = $urlImageId;
+                    if ($urlImageId !== $blockImageId) {
+                        $rejectedIdList[] = $blockImageId;
+                    }
+                } elseif ($blockImageUrl === '') {
+                    //No URL on the block — accepted, but it confirms nothing
+                    $imageIdList[] = $blockImageId;
+                } elseif ($this->attachmentMatchesUrl($blockImageId, $blockImageUrl)) {
+                    //Name-only evidence: accepted, but too weak to clear a rejection
+                    $imageIdList[] = $blockImageId;
+                } else {
+                    $rejectedIdList[] = $blockImageId;
+                }
+            }
+
+            //A legacy gallery carries bare IDs with no URL to check them against
+            if ($blockName === 'core/gallery' && !empty($attributes['ids']) && is_array($attributes['ids'])) {
+                foreach ($attributes['ids'] as $galleryImageId) {
+                    if (is_numeric($galleryImageId)) {
+                        $imageIdList[] = (int) $galleryImageId;
+                    }
+                }
+            }
+
+            if (!empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
+                $inner = $this->collectBlockImageIds($block['innerBlocks']);
+                $imageIdList = array_merge($imageIdList, $inner['ids']);
+                $rejectedIdList = array_merge($rejectedIdList, $inner['rejected']);
+                $confirmedIdList = array_merge($confirmedIdList, $inner['confirmed']);
+            }
+        }
+
+        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList, 'confirmed' => $confirmedIdList];
+    }
+
+    /**
+     * Remove HTML comments, except the `<!-- wp:… -->` delimiters that carry the
+     * block structure and the `<!--more-->` / `<!--nextpage-->` markers.
+     *
+     * Anything an editor commented out is not part of the article and must not
+     * contribute an image.
+     *
+     * @param string $content
+     *
+     * @return string
+     */
+    private function stripNonBlockHtmlComments(string $content): string
+    {
+        return (string) preg_replace_callback(
+            '/<!--(.*?)-->/s',
+            static function (array $match): string {
+                $commentBody = ltrim($match[1]);
+
+                //`<!--more Custom teaser-->` is valid; `<!-- moreover ... -->` is not a marker
+                if (preg_match('#^(?:/?wp:|more(?:\s|$)|nextpage\s*$|noteaser\s*$)#i', $commentBody)) {
+                    return $match[0];
+                }
+
+                return '';
+            },
+            $content
+        );
+    }
+
+    /**
+     * One attachment per `<img>`, reconciling the `wp-image-<id>` class against the
+     * `src` of the same tag.
+     *
+     * The class alone is not enough. Core reads it too, but only to decorate the tag it
+     * found it on; this payload substitutes the URL, so the ID must be shown to describe
+     * that `src` first. A contradicted ID is returned under `rejected` so the
+     * block-attribute pass cannot reinstate it.
+     *
+     * @param string $content
+     *
+     * @return array{ids: int[], rejected: int[], confirmed: int[]}
+     */
+    private function collectImgTagImageIds(string $content): array
+    {
+        $tagList = $this->extractImgTags($content);
+        if (!$tagList) {
+            return ['ids' => [], 'rejected' => [], 'confirmed' => []];
+        }
+
+        $imageIdList = [];
+        $rejectedIdList = [];
+        $confirmedIdList = [];
+
+        foreach ($tagList as $tag) {
+            $classImageId = $tag['class_id'];
+            $imageUrl = $tag['src'];
+
+            /*
+             * The URL is what the reader sees, so an attachment holding that file
+             * outranks the class outright. Comparing names instead would accept a
+             * stale ID whose file merely reduces to the same name — WordPress'
+             * `-1` dedup suffix lands after the size, so `x-300x211.jpg` and
+             * `x-300x2111.jpg` are two different pictures with one stem.
+             */
+            $urlImageId = $this->resolveAttachmentFromUrl($imageUrl);
+            if ($urlImageId > 0) {
+                $imageIdList[] = $urlImageId;
+                $confirmedIdList[] = $urlImageId;
+                if ($classImageId > 0 && $classImageId !== $urlImageId) {
+                    $rejectedIdList[] = $classImageId;
+                }
+                continue;
+            }
+
+            if ($classImageId <= 0) {
+                continue;
+            }
+
+            /*
+             * No attachment holds that path — the image is hosted elsewhere, or the
+             * tag carries no usable `src`. Fall back to the class, checked by file
+             * name where there is a URL to check it against.
+             */
+            if ($imageUrl === '' || $this->isPlaceholderUrl($imageUrl)) {
+                //Nothing to check it against — accepted, but it confirms nothing
+                $imageIdList[] = $classImageId;
+                continue;
+            }
+
+            /*
+             * A file-name match is the weakest evidence here — it ignores the folder
+             * and the host — so it is good enough to accept the ID but deliberately
+             * not good enough to clear a rejection some other tag made by resolving
+             * an exact upload path.
+             */
+            if ($this->attachmentMatchesUrl($classImageId, $imageUrl)) {
+                $imageIdList[] = $classImageId;
+                continue;
+            }
+
+            $rejectedIdList[] = $classImageId;
+        }
+
+        return ['ids' => $imageIdList, 'rejected' => $rejectedIdList, 'confirmed' => $confirmedIdList];
+    }
+
+    /**
+     * Every `<img>` in the content, as `['src' => string, 'class_id' => int]`.
+     *
+     * Parsed with `WP_HTML_Tag_Processor` (WordPress 6.2+), which a regex cannot
+     * substitute for: `<img[^>]*>` ends at the first `>` even inside a quoted value, so
+     * an `alt` containing one truncates the tag. The parser also scopes `wp-image-<id>`
+     * to the class attribute rather than to the whole tag.
+     *
+     * @param string $content
+     *
+     * @return array<int, array{src: string, class_id: int}>
+     */
+    private function extractImgTags(string $content): array
+    {
+        if ($content === '') {
+            return [];
+        }
+
+        if (class_exists('\WP_HTML_Tag_Processor')) {
+            $tagList = [];
+            $processor = new \WP_HTML_Tag_Processor($content);
+
+            while ($processor->next_tag('img')) {
+                $classAttribute = $processor->get_attribute('class');
+                $classImageId = is_string($classAttribute)
+                    && preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $classAttribute, $classMatch)
+                        ? absint($classMatch[1])
+                        : 0;
+
+                $imageUrl = $processor->get_attribute('src');
+                if (!is_string($imageUrl)) {
+                    $imageUrl = '';
+                }
+
+                /*
+                 * Lazy-loading parks a placeholder in `src` and keeps the real
+                 * address beside it. Reading that is what lets the class be checked
+                 * rather than taken on trust.
+                 */
+                if ($imageUrl === '' || $this->isPlaceholderUrl($imageUrl)) {
+                    foreach (['data-src', 'data-lazy-src', 'data-original'] as $lazyAttribute) {
+                        $lazyUrl = $processor->get_attribute($lazyAttribute);
+                        if (is_string($lazyUrl) && $lazyUrl !== '' && !$this->isPlaceholderUrl($lazyUrl)) {
+                            $imageUrl = $lazyUrl;
+                            break;
+                        }
+                    }
+                }
+
+                $tagList[] = ['src' => $imageUrl, 'class_id' => $classImageId];
+            }
+
+            return $tagList;
+        }
+
+        /*
+         * WordPress 6.0-6.1. Quote-aware, so a `>` inside an attribute value does not
+         * end the tag — the defect this method exists to avoid. Still not an HTML
+         * parser, but it does not truncate ordinary editorial text.
+         */
+        if (!preg_match_all('/<img(?:[^>"\']|"[^"]*"|\'[^\']*\')*>/i', $content, $tagMatches)) {
+            return [];
+        }
+
+        $tagList = [];
+        foreach ($tagMatches[0] as $tag) {
+            $classImageId = preg_match('/(?<![\w-])wp-image-([0-9]+)/i', $tag, $classMatch)
+                ? absint($classMatch[1])
+                : 0;
+
+            $imageUrl = '';
+            if (preg_match('/(?:^|[\s"\'])src\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s>"\']+))/i', $tag, $srcMatch)) {
+                foreach ([1, 2, 3] as $group) {
+                    if (isset($srcMatch[$group]) && $srcMatch[$group] !== '') {
+                        $imageUrl = $srcMatch[$group];
+                        break;
+                    }
+                }
+            }
+
+            $tagList[] = ['src' => $imageUrl, 'class_id' => $classImageId];
+        }
+
+        return $tagList;
+    }
+
+    /**
+     * Is this `src` a placeholder rather than a real location?
+     *
+     * Lazy-loading and imported markup park a data URI in `src` and keep the real
+     * address in `data-src`. Such a value contradicts nothing, so the class it sits
+     * beside must be left alone rather than rejected.
+     *
+     * @param string $imageUrl
+     *
+     * @return bool
+     */
+    private function isPlaceholderUrl(string $imageUrl): bool
+    {
+        if (!preg_match('#^([A-Za-z][A-Za-z0-9+.\-]*):#', $imageUrl, $schemeMatch)) {
+            return false;
+        }
+
+        return !in_array(strtolower($schemeMatch[1]), ['http', 'https'], true);
+    }
+
+    /**
+     * The path of a URL, with any query string and fragment removed.
+     *
+     * Deliberately not `parse_url()`: it replaces bytes in the C1 range (0x80-0x9F)
+     * with an underscore, and those are the UTF-8 continuation bytes of `ă`, `ș`,
+     * `ț` and `×` — ordinary characters in Romanian filenames. A mangled path
+     * matches no attachment, so the image is not merely unresolved but actively
+     * discarded. Everything here is byte-safe.
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    private function urlPathOnly(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        $path = explode('#', $url, 2)[0];
+        $path = explode('?', $path, 2)[0];
+
+        //Drop `scheme://host` or a protocol-relative `//host`, leaving a root-relative path alone
+        if (preg_match('#^(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/]*#', $path, $hostMatch)) {
+            $path = substr($path, strlen($hostMatch[0]));
+        }
+
+        return $path;
+    }
+
+    /**
+     * The part of a URL below the uploads directory, whatever host it carries.
+     *
+     * @param string $imageUrl
+     *
+     * @return string relative path, or '' when the URL is not an upload path
+     */
+    private function uploadRelativePath(string $imageUrl): string
+    {
+        if ($imageUrl === '') {
+            return '';
+        }
+
+        $uploadDir = wp_get_upload_dir();
+        $uploadBaseUrl = (string) ($uploadDir['baseurl'] ?? '');
+        if ($uploadBaseUrl === '') {
+            return '';
+        }
+
+        $uploadPath = $this->urlPathOnly($uploadBaseUrl);
+        $imagePath = $this->urlPathOnly($imageUrl);
+        if ($uploadPath === '' || $imagePath === '') {
+            return '';
+        }
+
+        $marker = rtrim($uploadPath, '/') . '/';
+        $markerPosition = strpos($imagePath, $marker);
+        if ($markerPosition === false) {
+            return '';
+        }
+
+        return substr($imagePath, $markerPosition + strlen($marker));
+    }
+
+    /**
+     * Does this attachment hold a file of the same name as the given URL?
+     *
+     * Compares names only, ignoring the upload folder, so it is the weaker of the
+     * two tests — used when no attachment holds the URL's exact path.
+     *
+     * @param int $attachmentId
+     * @param string $imageUrl
+     *
+     * @return bool
+     */
+    private function attachmentMatchesUrl(int $attachmentId, string $imageUrl): bool
+    {
+        $attachedFile = (string) get_post_meta($attachmentId, '_wp_attached_file', true);
+        if ($attachedFile === '') {
+            return false;
+        }
+
+        $attachmentName = $this->normaliseImageFileName(basename($attachedFile));
+        if ($attachmentName === '') {
+            return false;
+        }
+
+        $urlBaseName = basename($this->urlPathOnly($imageUrl));
+
+        foreach ([$urlBaseName, rawurldecode($urlBaseName)] as $candidateName) {
+            if ($this->normaliseImageFileName($candidateName) === $attachmentName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Find the attachment holding the file an `<img src>` points at.
+     *
+     * The host is ignored: migrated content routinely references this site's own
+     * uploads through the domain it came from, and only the path below
+     * `wp-content/uploads/` identifies the file. A URL that is not an upload of
+     * ours at all resolves to nothing, which is the intended outcome — an image
+     * hosted elsewhere is not in our media library and has no attachment to send.
+     *
+     * @param string $imageUrl
+     *
+     * @return int attachment ID, or 0
+     */
+    private function resolveAttachmentFromUrl(string $imageUrl): int
+    {
+        foreach ($this->uploadPathCandidates($imageUrl) as $candidatePath) {
+            $attachmentId = $this->attachmentIdForUploadPath($candidatePath);
+            if ($attachmentId > 0) {
+                return $attachmentId;
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Every spelling of an upload path this URL might be stored under.
+     *
+     * A body references sub-sizes (`name-1024x683.jpg`), percent-encoded names, and
+     * the unscaled stem of a large upload that is stored as `name-scaled.jpg`, none
+     * of which appear verbatim in `_wp_attached_file`.
+     *
+     * @param string $imageUrl
+     *
+     * @return string[]
+     */
+    private function uploadPathCandidates(string $imageUrl): array
+    {
+        $relativePath = $this->uploadRelativePath($imageUrl);
+        if ($relativePath === '') {
+            return [];
+        }
+
+        $candidateList = [$relativePath];
+
+        /*
+         * A URL copied out of a browser address bar arrives percent-encoded, while
+         * `_wp_attached_file` holds the raw bytes.
+         */
+        $decodedPath = rawurldecode($relativePath);
+        if ($decodedPath !== $relativePath) {
+            $candidateList[] = $decodedPath;
+        }
+
+        foreach ($candidateList as $candidatePath) {
+            $originalPath = preg_replace('/-\d+x\d+(\.[A-Za-z0-9]+)$/', '$1', $candidatePath);
+            if ($originalPath !== null && $originalPath !== $candidatePath) {
+                $candidateList[] = $originalPath;
+            }
+        }
+
+        /*
+         * A large upload is stored as `name-scaled.ext`, but WordPress names its
+         * sub-sizes — and keeps the untouched original — off the unscaled stem.
+         */
+        foreach ($candidateList as $candidatePath) {
+            $scaledPath = preg_replace('/(\.[A-Za-z0-9]+)$/', '-scaled$1', $candidatePath);
+            if ($scaledPath !== null && $scaledPath !== $candidatePath) {
+                $candidateList[] = $scaledPath;
+            }
+        }
+
+        return array_values(array_unique($candidateList));
+    }
+
+    /**
+     * Resolve every upload path this article could ask about, in a single query.
+     *
+     * `attachment_url_to_postid()` scans every `_wp_attached_file` row per call,
+     * because a `longtext` cannot be indexed. Asked once per image that is one full
+     * scan per image — on an article with 33 images, 33 scans, and the cost grows
+     * with the media library rather than with the article. Collecting the paths
+     * first and resolving them together makes it one scan per article.
+     *
+     * @param string $content
+     * @param array $blockList
+     *
+     * @return void
+     */
+    private function primeUploadPathCache(string $content, array $blockList): void
+    {
+        global $wpdb;
+
+        if (!$wpdb instanceof \wpdb) {
+            return;
+        }
+
+        $urlList = [];
+        foreach ($this->extractImgTags($content) as $tag) {
+            if ($tag['src'] !== '') {
+                $urlList[] = $tag['src'];
+            }
+        }
+        foreach ($this->collectBlockImageUrls($blockList) as $blockUrl) {
+            $urlList[] = $blockUrl;
+        }
+
+        $pathList = [];
+        foreach (array_unique($urlList) as $imageUrl) {
+            foreach ($this->uploadPathCandidates($imageUrl) as $candidatePath) {
+                $pathList[$candidatePath] = $candidatePath;
+            }
+        }
+
+        $pathList = array_values(array_filter($pathList, fn (string $path) => !$this->isUploadPathCached($path)));
+        if (!$pathList) {
+            return;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($pathList), '%s'));
+        $rowList = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT post_id, meta_value FROM {$wpdb->postmeta}"
+                . " WHERE meta_key = '_wp_attached_file' AND meta_value IN ($placeholders)",
+                $pathList
+            )
+        );
+
+        $found = [];
+        foreach ((array) $rowList as $row) {
+            $found[(string) $row->meta_value] = (int) $row->post_id;
+        }
+
+        //A path absent from that result exists nowhere, so remember the miss too
+        foreach ($pathList as $candidatePath) {
+            $this->cacheUploadPath($candidatePath, $found[$candidatePath] ?? 0);
+        }
+    }
+
+    /**
+     * The `url` / `mediaUrl` of every image block in the tree.
+     *
+     * @param array $blockList
+     *
+     * @return string[]
+     */
+    private function collectBlockImageUrls(array $blockList): array
+    {
+        $urlList = [];
+
+        foreach ($blockList as $block) {
+            $attributes = $block['attrs'] ?? [];
+            foreach (['url', 'mediaUrl'] as $urlAttribute) {
+                if (!empty($attributes[$urlAttribute]) && is_string($attributes[$urlAttribute])) {
+                    $urlList[] = $attributes[$urlAttribute];
+                }
+            }
+            if (!empty($block['innerBlocks']) && is_array($block['innerBlocks'])) {
+                $urlList = array_merge($urlList, $this->collectBlockImageUrls($block['innerBlocks']));
+            }
+        }
+
+        return $urlList;
+    }
+
+    /**
+     * The attachment holding this upload-relative path, remembered for the request.
+     *
+     * `attachment_url_to_postid()` compares `_wp_attached_file` as a `longtext`,
+     * which no index can serve, so every call scans every attachment row — about
+     * 17ms against this library and rising linearly with it, hit or miss, with no
+     * caching of its own. One article asks the same question repeatedly: four
+     * spellings per image, and every rendition of one attachment reduces to the same
+     * path. Memoizing collapses all of that to one scan per distinct path.
+     *
+     * @param string $relativePath
+     *
+     * @return int attachment ID, or 0
+     */
+    private function attachmentIdForUploadPath(string $relativePath): int
+    {
+        if ($relativePath === '') {
+            return 0;
+        }
+
+        if ($this->isUploadPathCached($relativePath)) {
+            return $this->uploadPathCache()[$relativePath];
+        }
+
+        $uploadBaseUrl = rtrim((string) (wp_get_upload_dir()['baseurl'] ?? ''), '/');
+        $attachmentId = $uploadBaseUrl === ''
+            ? 0
+            : (int) attachment_url_to_postid($uploadBaseUrl . '/' . $relativePath);
+
+        $this->cacheUploadPath($relativePath, $attachmentId);
+
+        return $attachmentId;
+    }
+
+    /**
+     * The per-request path -> attachment map.
+     *
+     * @return array<string, int>
+     */
+    private function &uploadPathCache(): array
+    {
+        static $resolved = [];
+
+        return $resolved;
+    }
+
+    /**
+     * @param string $relativePath
+     *
+     * @return bool
+     */
+    private function isUploadPathCached(string $relativePath): bool
+    {
+        $cache = &$this->uploadPathCache();
+
+        return array_key_exists($relativePath, $cache);
+    }
+
+    /**
+     * @param string $relativePath
+     * @param int $attachmentId
+     *
+     * @return void
+     */
+    private function cacheUploadPath(string $relativePath, int $attachmentId): void
+    {
+        $cache = &$this->uploadPathCache();
+        $cache[$relativePath] = $attachmentId;
+    }
+
+    /**
+     * Reduce an image file name to the original upload it belongs to, dropping the
+     * sub-size (`-1024x768`), large-image (`-scaled`) and edited (`-e1699999999`)
+     * suffixes WordPress appends.
+     *
+     * @param string $fileName
+     *
+     * @return string
+     */
+    private function normaliseImageFileName(string $fileName): string
+    {
+        $fileName = strtolower($fileName);
+        $extension = (string) pathinfo($fileName, PATHINFO_EXTENSION);
+        $name = (string) pathinfo($fileName, PATHINFO_FILENAME);
+
+        do {
+            $previousName = $name;
+            $name = (string) preg_replace('/-(?:\d+x\d+|scaled|e\d+)$/', '', $name);
+        } while ($name !== $previousName);
+
+        return $extension === '' ? $name : $name . '.' . $extension;
+    }
+
+    /**
+     * Guard against IDs that no longer resolve to an image — deleted attachments,
+     * or non-image media referenced by a block.
+     *
+     * @param int $attachmentId
+     *
+     * @return bool
+     */
+    private function isImageAttachment(int $attachmentId): bool
+    {
+        if (get_post_type($attachmentId) !== 'attachment') {
+            return false;
+        }
+
+        return str_starts_with((string) get_post_mime_type($attachmentId), 'image/');
     }
 
     /**
@@ -461,19 +1328,6 @@ class ArticleEvent
         }
 
         return 'text';
-    }
-
-    /**
-     * Check if article content has the specified image url
-     *
-     * @param string $post_name the main slug part of the image
-     * @param string $content
-     *
-     * @return bool
-     */
-    private function isImageAttachedAndStillUsed(string $post_name, string $content): bool
-    {
-        return str_contains($content, $post_name);
     }
 
     /**

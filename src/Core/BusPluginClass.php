@@ -60,6 +60,9 @@ class BusPluginClass
              OR option_name LIKE '_transient_timeout_bus_user_update_%'"
         );
 
+        // Clean up the cached image content hashes
+        delete_metadata('post', 0, Enum::META_CONTENT_HASH_KEY, '', true);
+
         // Clean up scheduled cron events (safety net in case deactivation didn't run)
         wp_unschedule_hook(Enum::HOOK_NAME_SCHEDULED_EVENTS);
     }
@@ -97,6 +100,8 @@ class BusPluginClass
 
         // Handle custom POST
         add_action('admin_post_flush_all_transients', [AdminSyncPage::class, 'handleFlushAllTransients']);
+        add_action('admin_post_flush_other_transients', [AdminSyncPage::class, 'handleFlushOtherTransients']);
+        add_action('admin_post_flush_image_hashes', [AdminSyncPage::class, 'handleFlushImageHashes']);
 
         // Now do normal stuff
         add_action('admin_menu', [self::class, 'handleAdminUI']);

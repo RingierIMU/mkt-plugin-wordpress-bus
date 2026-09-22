@@ -48,6 +48,90 @@ class AdminSyncPage
         exit;
     }
 
+    /**
+     * Button to clear the stored image content hashes.
+     *
+     * These are not transients and never expire — each is stored against its
+     * attachment and only recomputed when the file it describes changes. Clearing
+     * them forces every image to be hashed again on the next event, which on a
+     * property with offloaded media means downloading each one again.
+     *
+     * @return void
+     */
+    public static function handleFlushImageHashes(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized', 'Error', ['response' => 403]);
+        }
+
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'flush_image_hashes_nonce')) {
+            wp_die('Invalid nonce specified', 'Error', ['response' => 403]);
+        }
+
+        global $wpdb;
+
+        $cleared = (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = %s",
+                Enum::META_CONTENT_HASH_KEY
+            )
+        );
+
+        delete_metadata('post', 0, Enum::META_CONTENT_HASH_KEY, '', true);
+
+        $redirect_url = add_query_arg(
+            [
+                'page' => Enum::ADMIN_SYNC_EVENTS_MENU_SLUG,
+                'hashes_flushed' => $cleared,
+            ],
+            admin_url('admin.php')
+        );
+        wp_safe_redirect($redirect_url);
+        exit;
+    }
+
+    /**
+     * Button to clear every plugin transient except the API auth token.
+     *
+     * Covers the YouTube lookup cache and the guards that stop one edit dispatching
+     * the same event twice. Clearing the latter means an article edited in the last
+     * few minutes may dispatch a second time.
+     *
+     * @return void
+     */
+    public static function handleFlushOtherTransients(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized', 'Error', ['response' => 403]);
+        }
+
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'flush_other_transients_nonce')) {
+            wp_die('Invalid nonce specified', 'Error', ['response' => 403]);
+        }
+
+        global $wpdb;
+
+        $cleared = (int) $wpdb->query(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE '_transient_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_timeout_ringier_bus_youtube_video_%'
+             OR option_name LIKE '_transient_triggered_bus_event_%'
+             OR option_name LIKE '_transient_timeout_triggered_bus_event_%'
+             OR option_name LIKE '_transient_bus_user_update_%'
+             OR option_name LIKE '_transient_timeout_bus_user_update_%'"
+        );
+
+        $redirect_url = add_query_arg(
+            [
+                'page' => Enum::ADMIN_SYNC_EVENTS_MENU_SLUG,
+                'transients_flushed' => $cleared,
+            ],
+            admin_url('admin.php')
+        );
+        wp_safe_redirect($redirect_url);
+        exit;
+    }
+
     public static function enqueueAssets(string $hook): void
     {
         /**

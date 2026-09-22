@@ -25,7 +25,34 @@ use RingierBusPlugin\Utils;
 if (isset($_GET['flush_success']) && $_GET['flush_success'] === '1') {
     echo '<div class="updated notice is-dismissible"><p>The Auth token transient has been flushed.</p></div>';
 }
+if (isset($_GET['hashes_flushed'])) {
+    printf(
+        '<div class="updated notice is-dismissible"><p>Cleared %s stored image content hash(es). They are rebuilt as each article next dispatches.</p></div>',
+        esc_html(number_format_i18n((int) $_GET['hashes_flushed']))
+    );
+}
+if (isset($_GET['transients_flushed'])) {
+    printf(
+        '<div class="updated notice is-dismissible"><p>Cleared %s cached row(s). The API auth token was left alone.</p></div>',
+        esc_html(number_format_i18n((int) $_GET['transients_flushed']))
+    );
+}
+?>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+<?php
 Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-transient.php');
+Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-other-transients.php');
+Utils::load_tpl(RINGIER_BUS_PLUGIN_VIEWS . 'admin/button-flush-image-hashes.php');
+?>
+    </div>
+    <p class="description" style="margin-top: 8px;">
+        Image content hashes are stored against each attachment and do not expire &mdash;
+        they are recalculated on their own whenever the image they describe changes.
+        Clearing them is only needed if an image was replaced outside WordPress, or if a
+        truncated download once stored a hash that does not match the file. On a site with
+        offloaded media, clearing means every image is downloaded once more.
+    </p>
+<?php
 ?>
 
     <div style="margin-bottom: 10px;">&nbsp;</div>

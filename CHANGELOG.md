@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.0.2] - 2026-09-17 ##
+
+### Fixed ###
+* (bug) Stale and missing images in the `images[]` array of `ArticleCreated` / `ArticleUpdated` payloads. Images were selected by which article *owns* them (`get_attached_media()`, i.e. `post_parent`) rather than which article shows them, and WordPress never releases ownership when an editor removes an image ([core #30691](https://core.trac.wordpress.org/ticket/30691#comment:12)). The safeguard against that compared the attachment slug to the raw content as plain text, which failed both ways because WordPress appends a collision suffix to the slug and to the filename independently: a removed image slugged `uzucapiune` matched inside its replacement `uzucapiunea` and was dispatched forever, while a live image slugged `bloc-2` is stored as `bloc.jpg` and was never dispatched at all. One article could hit both, sending the image the editor had removed and omitting the one that replaced it. Images are now resolved from the article body, and a file name is never the deciding evidence.
+
+### Changed ###
+* (refactor) `ArticleEvent::fetchPostImages()` resolves images through the new `resolveContentImageIds()`. Tags are read with `WP_HTML_Tag_Processor` (WordPress 6.2+, with a regex fallback below that); for each `<img>` the `src` is resolved against the media library first and the `wp-image-<id>` class is used only when nothing holds that path. Block attributes are read for blocks that render no `<img>`, and reconciled the same way against the block's own `url`. The featured image remains a separate `hero: true` entry, IDs are deduplicated, and anything that no longer resolves to an image attachment is dropped. `isImageAttachedAndStillUsed()` and the `get_attached_media()` call are gone.
+* (behaviour) Content is read from the stored post body rather than `get_the_content()`, so images below a `<!--more-->` or `<!--nextpage-->` marker are no longer lost. The `body` payload field is unchanged.
+
+### Added ###
+* (filter) `ringier_bus_article_image_ids` — `(int[] $image_id_list, int $post_ID, string $content): int[]`. Adjust the non-hero attachment IDs an article dispatches. Whatever it returns is re-sanitised and re-checked against the media library; the featured image is deliberately not re-excluded, so the hook can add an image the body does not reference. See the readme.
+* (admin) Two buttons beside *Flush API Auth Token* on the Tooling page. **Flush Other Caches** clears every plugin transient except the auth token. **Flush Image Content Hashes** clears the stored image hashes so every image is hashed again on its next event. Both confirm first and report how many rows they cleared.
+* (debug) Opt-in payload capture. With `define('RINGIER_BUS_DEBUG_PAYLOAD', true);` in `wp-config.php`, every article dispatch writes the exact JSON being POSTed to `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, before the request goes out, so a payload can be inspected even when the BUS does not respond. Off entirely without the constant. The directory is protected by `index.php` and `.htaccess`; on nginx add `location ~* /wp-content/buslog/ { deny all; }`.
+
+### Performance ###
+* (perf) An article's upload paths are resolved in one query instead of one per image. `attachment_url_to_postid()` compares `_wp_attached_file`, a `longtext` no index can serve, so each call scans every attachment row — about 17ms against a 13k-attachment library and growing with it. A mean article drops from 87.7ms to 34.8ms and the worst measured from 447.7ms to 73.8ms, and the cost no longer grows with the number of images in an article.
+* (perf) An image's `content_hash` is computed once and stored against the attachment, instead of on every event. Where media is offloaded to S3 or a CDN there is no local file, so the hash requires an HTTP download — previously for every image of every article, every time. The stored hash is fingerprinted on file size and mtime locally, and on the stored path plus the attachment's modified time when offloaded, so a replaced image is re-hashed. An image that cannot be read is logged against its article — ID and slug — and dispatched with an empty `content_hash`, which the contract permits.
+
+Note: this restores images that were previously dropped, so articles might legitimately start dispatching images they have never sent before.
+
+
 ## [4.0.1] - 2026-04-16 ##
 
 ### Fixed ###

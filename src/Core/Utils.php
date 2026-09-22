@@ -41,10 +41,11 @@ class Utils
      * is hashed only once regardless of how many size variants are requested.
      *
      * @param int $attachment_id WordPress attachment ID
+     * @param int $post_ID the article being dispatched, named in the log on failure
      *
      * @return string MD5 hash, or empty string on failure
      */
-    public static function hashImage(int $attachment_id): string
+    public static function hashImage(int $attachment_id, int $post_ID = 0): string
     {
         static $cache = [];
 
@@ -56,39 +57,142 @@ class Utils
             return $cache[$attachment_id];
         }
 
-        // Try local filesystem first (fastest)
-        $file_path = get_attached_file($attachment_id);
-        if (!empty($file_path) && file_exists($file_path)) {
-            $cache[$attachment_id] = md5_file($file_path);
+        $fingerprint = self::imageHashFingerprint($attachment_id);
+
+        /*
+         * Persisted, because the per-request cache is no help to the thing that
+         * actually hurts: on a property with offloaded media (S3/CDN) there is no
+         * local file, so every image of every article would be downloaded over HTTP
+         * again on every event. Stored against a fingerprint so a re-uploaded or
+         * edited image is re-hashed rather than served stale.
+         */
+        $stored = get_post_meta($attachment_id, Enum::META_CONTENT_HASH_KEY, true);
+        if (is_array($stored)
+            && isset($stored['hash'], $stored['fingerprint'])
+            && $stored['fingerprint'] === $fingerprint
+            && is_string($stored['hash'])) {
+            $cache[$attachment_id] = $stored['hash'];
 
             return $cache[$attachment_id];
         }
 
-        // Fallback: download via HTTP (for S3/CDN-hosted images)
+        $hash = '';
+
+        // Try local filesystem first (fastest)
+        $file_path = get_attached_file($attachment_id);
+        if (!empty($file_path) && file_exists($file_path)) {
+            $hash = (string) md5_file($file_path);
+        } else {
+            $hash = self::hashImageOverHttp($attachment_id, $post_ID);
+        }
+
+        $cache[$attachment_id] = $hash;
+
+        if ($hash !== '') {
+            update_post_meta($attachment_id, Enum::META_CONTENT_HASH_KEY, [
+                'hash' => $hash,
+                'fingerprint' => $fingerprint,
+            ]);
+        }
+
+        return $hash;
+    }
+
+    /**
+     * Identity of the bytes we last hashed, so a replaced file invalidates the hash.
+     *
+     * Local files carry size and mtime; an offloaded one has neither locally, so the
+     * stored path and the attachment's own modified time stand in — both change when
+     * the image is replaced or edited in WordPress.
+     *
+     * @param int $attachment_id
+     *
+     * @return string
+     */
+    private static function imageHashFingerprint(int $attachment_id): string
+    {
+        $file_path = get_attached_file($attachment_id);
+
+        if (!empty($file_path) && file_exists($file_path)) {
+            return 'local:' . (string) filesize($file_path) . ':' . (string) filemtime($file_path);
+        }
+
+        return 'remote:'
+            . (string) get_post_meta($attachment_id, '_wp_attached_file', true)
+            . ':' . (string) get_post_field('post_modified_gmt', $attachment_id);
+    }
+
+    /**
+     * Download an offloaded image and hash it.
+     *
+     * One attempt, no retry, no cap on how many images an event may fetch. A failure
+     * leaves the hash empty and is logged against the article, naming it so the entry
+     * is actionable; `content_hash` is optional in the BUS contract
+     * (`resources/publishing-events.ods` marks only `url` and `size` required), so the
+     * image and the event are dispatched either way.
+     *
+     * The hash is persisted once obtained, so a given image is downloaded once per
+     * property rather than on every event, and a failure is retried by the next event
+     * for that article rather than within this one.
+     *
+     * @param int $attachment_id
+     * @param int $post_ID
+     *
+     * @return string
+     */
+    private static function hashImageOverHttp(int $attachment_id, int $post_ID = 0): string
+    {
         $url = wp_get_attachment_url($attachment_id);
+
         if (empty($url)) {
-            $cache[$attachment_id] = '';
+            self::logImageHashFailure($attachment_id, $post_ID, '', 'the attachment has no URL');
 
             return '';
         }
 
         $response = wp_remote_get($url, ['timeout' => 10]);
+
         if (is_wp_error($response)) {
-            $cache[$attachment_id] = '';
+            self::logImageHashFailure($attachment_id, $post_ID, $url, $response->get_error_message());
 
             return '';
         }
 
         $body = wp_remote_retrieve_body($response);
-        if (empty($body)) {
-            $cache[$attachment_id] = '';
+
+        if ($body === '') {
+            $status = (int) wp_remote_retrieve_response_code($response);
+            self::logImageHashFailure($attachment_id, $post_ID, $url, "empty response body (HTTP $status)");
 
             return '';
         }
 
-        $cache[$attachment_id] = md5($body);
+        return md5($body);
+    }
 
-        return $cache[$attachment_id];
+    /**
+     * Log an image that could not be hashed, naming the article it belongs to.
+     *
+     * @param int $attachment_id
+     * @param int $post_ID
+     * @param string $url
+     * @param string $reason
+     *
+     * @return void
+     */
+    private static function logImageHashFailure(int $attachment_id, int $post_ID, string $url, string $reason): void
+    {
+        $article = $post_ID > 0
+            ? sprintf('article %d (%s)', $post_ID, (string) get_post_field('post_name', $post_ID))
+            : 'article unknown';
+
+        ringier_errorlogthis(sprintf(
+            '[content_hash] %s: could not read image %d%s - %s. The image is still dispatched, with an empty content_hash.',
+            $article,
+            $attachment_id,
+            $url === '' ? '' : ' at ' . $url,
+            $reason
+        ));
     }
 
     /**
