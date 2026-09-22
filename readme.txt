@@ -188,19 +188,22 @@ This plugin requires *PHP version >= 8.1*.
 ### [4.0.2] - 2026-09-17 ###
 
 #### Fixed ####
-* (bug) Stale and missing images in the `images[]` array of `ArticleCreated` / `ArticleUpdated` payloads. Images were enumerated by attachment ownership (`get_attached_media()`), and WordPress never detaches an image when an editor removes it from an article (core #30691). The slug-substring safeguard failed in both directions because WordPress appends a collision suffix to the slug and the filename independently — dispatching images the editor had removed, while omitting the ones that replaced them. Images are now resolved by attachment ID from the article body itself.
-* (bug) A `wp-image-<id>` class left behind by a content migration was believed over the `<img src>` it sits on, so an article could dispatch photographs belonging to a different article. Resolution is now URL-first: the attachment holding the URL's upload path wins, and the class is consulted only when nothing holds that path. Block attributes are reconciled the same way, which covers blocks that render no `<img>`.
-* (bug) Images were resolved from `get_the_content()`, which returns only the teaser for a body carrying `<!--more-->` and only page one for `<!--nextpage-->`, silently dropping every image below the cut. Resolution now reads the stored post content.
-* (bug) Commented-out markup, protocol-relative `<img src>` URLs and over-broad `wp-image-` class matching each produced a wrong or missing image; all three are fixed.
-* (bug) Non-ASCII filenames (Romanian diacritics) were corrupted during resolution and their images discarded. Path handling is now byte-safe.
+* (bug) Stale and missing images in the `images[]` array of article payloads. Images were selected by which article owns them rather than which article shows them, and WordPress never releases ownership when an editor removes an image (core #30691). The safeguard compared file names as plain text, which failed in both directions because WordPress appends a collision suffix to the slug and the filename independently — dispatching images the editor had removed while omitting the ones that replaced them. Images are now resolved from the article body, and a file name is never the deciding evidence.
 
 #### Changed ####
-* (refactor) `ArticleEvent` resolves images from block attributes, `wp-image-<id>` classes and upload URLs instead of the attachment relationship, reconciling each attachment ID against the `src` of its own `<img>` tag so that a stale ID left by a content migration cannot substitute an unrelated picture. The featured image stays a separate hero entry.
+* (refactor) `ArticleEvent` resolves each `<img>` by its `src` first, falling back to the `wp-image-<id>` class only when nothing holds that path. The featured image stays a separate hero entry.
+* (behaviour) Content is read from the stored post body, so images below a `<!--more-->` or `<!--nextpage-->` marker are no longer lost.
 
 #### Added ####
 * (filter) `ringier_bus_article_image_ids` — adjust the non-hero attachment IDs an article dispatches.
+* (admin) *Flush Other Caches* and *Flush Image Content Hashes* buttons on the Tooling page.
+* (debug) Opt-in payload capture via `RINGIER_BUS_DEBUG_PAYLOAD`; see the readme.
+
+#### Performance ####
+* (perf) An article's upload paths resolve in one query instead of one per image, and an image's `content_hash` is computed once and stored rather than on every event.
 
 Note: this restores images that were previously dropped, so articles will legitimately start dispatching images they have never sent before. Measured over 2452 published articles on one property: 2556 images restored across 803 articles. Plan a bulk re-sync accordingly.
+
 
 ### [4.0.1] - 2026-04-16 ###
 
