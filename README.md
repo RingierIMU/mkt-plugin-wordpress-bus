@@ -65,6 +65,8 @@ This plugin creates a log file (**ringier_bus_plugin_error_log**), saved inside 
 The error messages are viewable via the admin UI by clicking on the submenu "LOG".
 You also have the flexibility to clear the log file via the UI itself.
 
+To inspect what is actually being sent, add `define('RINGIER_BUS_DEBUG_PAYLOAD', true);` to `wp-config.php`. Each dispatch then writes its exact JSON body to `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, before the request goes out. Off entirely without the constant.
+
 ## CUSTOM FILTERS ##
 
 The plugin exposes five custom filters to help you adjust the plugin's JSON Payload that is sent to the BUS endpoint.
@@ -150,7 +152,7 @@ This filter gives you full flexibility to:
 
 You can adjust which images an article dispatches by using the **ringier_bus_article_image_ids** filter.
 
-The plugin resolves the non-hero images of an article from the article body itself. Tags are read with `WP_HTML_Tag_Processor`, and for each `<img>` the `src` is resolved against the media library first: an attachment holding that upload path wins over the tag's `wp-image-<id>` class. The class is used only when nothing holds the path, and is then checked by file name — which is enough to accept it, but not to overturn a decision another tag reached from an exact path. Where `src` holds a lazy-loading placeholder, `data-src` is read instead. Block attributes are read too, for blocks that render no `<img>` at all, and are reconciled the same way when the block carries a usable image URL. Only `core/image`, `core/cover`, `core/media-text` and `core/gallery` are consulted — other blocks use `id` to mean other things. Most do not — Gutenberg stores `url` as `source: attribute`, so it lives in the inner `<img>` rather than in the block attributes, and the tag pass is what confirms those IDs. This filter receives the resolved attachment IDs just before they are turned into payload entries.
+The plugin resolves the non-hero images of an article from the article body, identifying each by the `<img>` that shows it. This filter receives those attachment IDs just before they become payload entries.
 
 The featured image is **not** in this list — it is dispatched separately as the hero entry.
 

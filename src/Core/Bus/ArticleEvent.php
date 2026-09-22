@@ -167,23 +167,16 @@ class ArticleEvent
     }
 
     /**
-     * Write the outgoing payload to a file, for inspecting a dispatch without waiting
-     * for it to appear downstream.
-     *
-     * Off unless the site opts in, so it costs a `defined()` check and nothing else:
+     * Write the outgoing payload to a file, to inspect a dispatch without waiting for it
+     * downstream. Off unless the site opts in:
      *
      *     define('RINGIER_BUS_DEBUG_PAYLOAD', true);   // wp-config.php
      *
-     * One file per article per event type,
      * `wp-content/buslog/payload-<created|updated|deleted>-<post_id>.json`, overwritten
-     * each dispatch so each holds the latest of its kind. Keeping the type in the name
-     * matters because publishing dispatches twice — instantly as created, then a minute
-     * later as updated — and a single file would let the second quietly replace the
-     * first. The content is the exact body being POSTed, pretty-printed with unescaped
-     * unicode so Romanian text stays readable, and valid JSON so it pipes to `jq`.
+     * each dispatch. The event type is in the name because publishing dispatches twice,
+     * as created and then as updated a minute later.
      *
-     * Only published articles ever reach here — `BusHelper` bails on drafts and
-     * auto-drafts — so an unpublished body cannot land in the directory.
+     * Only published articles reach here, so an unpublished body cannot land there.
      *
      * @param string $jsonBody the exact body being POSTed
      * @param int $post_ID
@@ -530,31 +523,17 @@ class ArticleEvent
     }
 
     /**
-     * Resolve the attachment IDs of every image genuinely used in the article body.
+     * The attachment IDs of the images the article body uses, excluding the featured
+     * image, which is dispatched separately as the hero.
      *
-     * Historically this list came from `get_attached_media()`, i.e. from *ownership*
-     * (the attachment's `post_parent`) rather than *usage*. WordPress never resets
-     * `post_parent` when an editor removes an image from an article
-     * (ref: https://core.trac.wordpress.org/ticket/30691#comment:12), so the list had
-     * to be filtered by a substring check of the attachment slug against the content.
-     * That check failed in both directions, because WordPress appends a collision
-     * suffix to the slug and to the filename independently:
+     * Resolved from the body, never from the attachment relationship: WordPress does
+     * not release an image's `post_parent` when an editor removes it from an article
+     * (core #30691), so ownership does not imply usage.
      *
-     *  - false positive: a removed image slugged `uzucapiune` is a substring of its
-     *    replacement `uzucapiunea`, so the dead image was dispatched forever;
-     *  - false negative: a live image slugged `bloc-2` is stored as `bloc.jpg`, the
-     *    slug appears nowhere in the content, so the image was never dispatched.
-     *
-     * Resolving by attachment ID removes both failure modes: an ID in the body means
-     * the image is in the article, and nothing else does.
-     *
-     * An ID is only believed when it agrees with the `<img src>` it sits on. Content
-     * migrated from another property keeps the *source* site's `wp-image-<id>` class,
-     * which locally points at an unrelated picture; trusting it would dispatch an
-     * image the article has never shown. Where they disagree the URL wins, because
-     * the URL is what the reader sees.
-     *
-     * The featured image is excluded — it is dispatched separately as the hero.
+     * An ID is believed only where it agrees with the `<img src>` it sits on. Content
+     * migrated from another property keeps that property's IDs, which resolve here to
+     * unrelated pictures; where they disagree the URL wins, because the URL is what
+     * the reader sees.
      *
      * @param int $post_ID
      *
@@ -639,17 +618,14 @@ class ArticleEvent
     }
 
     /**
-     * Walk the block tree and collect the attachment IDs carried in block attributes,
-     * reconciled against the URL the same block carries.
+     * Attachment IDs carried in block attributes, reconciled against the URL the same
+     * block carries.
      *
-     * Covers `core/image` and `core/cover` (`id` + `url`), `core/media-text`
-     * (`mediaId`), and legacy `core/gallery` (`ids`). Modern galleries
-     * nest `core/image` blocks, which are picked up through `innerBlocks`.
-     *
-     * Most of these render an `<img>`, so the tag pass already covers them — this
-     * exists for the ones that do not, such as a `core/cover` drawing its image as a
-     * CSS background. Those would otherwise reach the payload with no check at all,
-     * which is the migrated-stale-ID failure this class is written to prevent.
+     * Covers `core/image` and `core/cover` (`id` + `url`), `core/media-text` (`mediaId`)
+     * and legacy `core/gallery` (`ids`); modern galleries nest `core/image` and are
+     * picked up through `innerBlocks`. Most render an `<img>` and are already covered by
+     * the tag pass — this exists for those that do not, such as a `core/cover` drawing
+     * its image as a CSS background.
      *
      * @param array $blockList
      *
@@ -765,23 +741,13 @@ class ArticleEvent
     }
 
     /**
-     * Resolve one attachment ID per `<img>` tag, reconciling the `wp-image-<id>`
-     * class against the `src` of the same tag.
+     * One attachment per `<img>`, reconciling the `wp-image-<id>` class against the
+     * `src` of the same tag.
      *
-     * Reading the class is how WordPress itself identifies an image in content
-     * (`wp_filter_content_tags()` in wp-includes/media.php), and it covers the
-     * classic editor, freeform blocks and `[caption]` shortcodes. Core only uses
-     * the ID to decorate the tag it found it on, though — it never swaps the URL.
-     * This payload does swap it (`wp_get_attachment_image_url()`), so the ID has to
-     * be shown to describe that `src` before it can be believed.
-     *
-     * Content migrated between properties keeps the source site's IDs, where the
-     * same number means a different picture. Such an ID is returned under
-     * `rejected` so that the block-attribute pass cannot reinstate it, and the
-     * `src` is resolved against this site's own media instead.
-     *
-     * The class name is anchored because this does not parse HTML — without it a
-     * longer class such as `not-a-wp-image-12` reads as attachment 12.
+     * The class alone is not enough. Core reads it too, but only to decorate the tag it
+     * found it on; this payload substitutes the URL, so the ID must be shown to describe
+     * that `src` first. A contradicted ID is returned under `rejected` so the
+     * block-attribute pass cannot reinstate it.
      *
      * @param string $content
      *
@@ -854,14 +820,10 @@ class ArticleEvent
     /**
      * Every `<img>` in the content, as `['src' => string, 'class_id' => int]`.
      *
-     * Uses `WP_HTML_Tag_Processor` where it exists (WordPress 6.2+). A regex cannot
-     * parse HTML: `<img[^>]*>` stops at the first `>`, so an ordinary
-     * `alt="preț > 100.000 EUR"` truncates the tag and the `src` is lost — after
-     * which the class would be accepted with nothing to check it against. The same
-     * blindness lets a `src=` written inside an `alt` value win over the real one.
-     *
-     * Reading the class through the parser also scopes `wp-image-<id>` to the class
-     * attribute, rather than to anything anywhere in the tag.
+     * Parsed with `WP_HTML_Tag_Processor` (WordPress 6.2+), which a regex cannot
+     * substitute for: `<img[^>]*>` ends at the first `>` even inside a quoted value, so
+     * an `alt` containing one truncates the tag. The parser also scopes `wp-image-<id>`
+     * to the class attribute rather than to the whole tag.
      *
      * @param string $content
      *
