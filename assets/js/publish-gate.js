@@ -4,7 +4,8 @@
  * The validators report their failing checks here instead of locking post saving, so authors can
  * always "Save draft". The checks are only enforced when a save would leave the post published,
  * scheduled or private (Publish, Schedule, Update). A refused save shows the editor's own "Publishing
- * failed." notice with one notice per failing check under it; each goes away once its check passes.
+ * failed." notice with one notice per failing check under it; each goes away once its check passes,
+ * and the editor's notice once they all have.
  *
  * Relies on the async "editor.preSavePost" filter (WordPress 6.7+). On older versions it falls back
  * to the previous behaviour: lock every save and show the notice straight away.
@@ -26,6 +27,7 @@
 
     var gatedStatuses = ['publish', 'future', 'private'];
     var failingChecks = {};
+    var refusedSaveNotice = null; //content of the editor's notice for the save this gate last refused
     var canGateOnSave = typeof wp.hooks.applyFiltersAsync === 'function';
 
     window.ringierPublishGate = {
@@ -47,6 +49,17 @@
             }
             delete failingChecks[key];
             dispatch('core/notices').removeNotice(key);
+
+            //Everything is fixed: drop the editor's "Publishing failed." too, unless a later save replaced it
+            if (refusedSaveNotice !== null && Object.keys(failingChecks).length === 0) {
+                var saveNotice = select('core/notices').getNotices().find(function(notice) {
+                    return notice.id === 'editor-save';
+                });
+                if (saveNotice && saveNotice.content === refusedSaveNotice) {
+                    dispatch('core/notices').removeNotice('editor-save');
+                }
+                refusedSaveNotice = null;
+            }
 
             if (!canGateOnSave) {
                 dispatch('core/editor').unlockPostSaving(key);
@@ -81,6 +94,14 @@
         //and the checks under it in order
         keys.slice().reverse().forEach(function(key) {
             dispatch('core/notices').createNotice('error', failingChecks[key], { id: key });
+        });
+
+        //Remember the editor's notice for this refusal (created right after the throw) so pass() can clear it
+        setTimeout(function() {
+            var saveNotice = select('core/notices').getNotices().find(function(notice) {
+                return notice.id === 'editor-save';
+            });
+            refusedSaveNotice = saveNotice && saveNotice.status === 'error' ? saveNotice.content : null;
         });
 
         //No message: the editor would append it to its own notice, all on one line
