@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9.4
-Stable tag: 4.0.2
+Stable tag: 4.0.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -186,6 +186,14 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [4.0.3] - 2026-10-12 ###
+
+#### Changed ####
+* (behaviour) The editor validations (*Publication reason*, *Article lifetime*) no longer block **Save draft**. They called `lockPostSaving()`, which disables every save button, so authors could not keep an unfinished article. They are now enforced only when a save would leave the post published, scheduled or private: Publish, Schedule, and Update of a live post. A refused save shows the editor's *Publishing failed.* notice with one notice per failing check under it, and the post stays a draft. That notice clears itself once every check passes. *Submit for Review* (pending) and autosaves are not gated. Needs the `editor.preSavePost` filter (WordPress 6.7+); on older versions every save is still locked until the fields are set, as before.
+
+#### Added ####
+* (js) `assets/js/publish-gate.js`, shared with the `ringier-checklist` plugin. Whichever plugin loads it first defines `window.ringierPublishGate`, so a refused Publish lists the failing checks of both plugins.
 
 ### [4.0.2] - 2026-09-17 ###
 
