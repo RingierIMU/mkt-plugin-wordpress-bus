@@ -2,7 +2,7 @@
 Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
-Tested up to: 6.9.4
+Tested up to: 7.1.3
 Stable tag: 4.1.0
 Requires PHP: 8.1
 License: GPLv2 or later
