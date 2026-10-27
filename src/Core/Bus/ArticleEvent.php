@@ -381,7 +381,9 @@ class ArticleEvent
          *
          * @return array The payload data array.
          */
-        return apply_filters('ringier_bus_build_article_payload', $payload_array, $post_ID, $post);
+        $payload_array = apply_filters('ringier_bus_build_article_payload', $payload_array, $post_ID, $post);
+
+        return $this->restoreCoreDataProperties($payload_array, $corePropertyList);
     }
 
     /**
@@ -420,6 +422,48 @@ class ArticleEvent
                 'value' => Utils::getAuthorAvatarUrl($author_id, (string) $user->user_email),
             ],
         ];
+    }
+
+    /**
+     * Re-adds any plugin-owned data_properties[] entry that a ringier_bus_build_article_payload
+     * callback dropped, e.g. by assigning data_properties instead of appending to it.
+     * An entry the callback kept or replaced under the same property name is left as the callback set it.
+     *
+     * @param mixed $payload_array
+     * @param array $corePropertyList
+     *
+     * @return mixed
+     */
+    private function restoreCoreDataProperties(mixed $payload_array, array $corePropertyList): mixed
+    {
+        if (!is_array($payload_array) || empty($corePropertyList)) {
+            return $payload_array;
+        }
+
+        $propertyList = $payload_array['data_properties'] ?? [];
+        if (!is_array($propertyList)) {
+            $propertyList = [];
+        }
+
+        $presentNameList = [];
+        foreach ($propertyList as $entry) {
+            if (is_array($entry) && isset($entry['property'])) {
+                $presentNameList[(string) $entry['property']] = true;
+            }
+        }
+
+        $missingList = [];
+        foreach ($corePropertyList as $entry) {
+            if (!isset($presentNameList[$entry['property']])) {
+                $missingList[] = $entry;
+            }
+        }
+
+        if (!empty($missingList)) {
+            $payload_array['data_properties'] = array_merge($missingList, array_values($propertyList));
+        }
+
+        return $payload_array;
     }
 
     /**
