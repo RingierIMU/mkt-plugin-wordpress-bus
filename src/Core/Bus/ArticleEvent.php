@@ -343,6 +343,11 @@ class ArticleEvent
             ],
         ];
 
+        $corePropertyList = $this->getAuthorDataProperties($post_ID);
+        if (!empty($corePropertyList)) {
+            $payload_array['data_properties'] = $corePropertyList;
+        }
+
         // Custom Top Level Category Logic
         if ($isCustomTopLevel) {
             $primary_parent_category = Utils::getPrimaryCategoryProperty($post_ID, 'term_id');
@@ -376,7 +381,89 @@ class ArticleEvent
          *
          * @return array The payload data array.
          */
-        return apply_filters('ringier_bus_build_article_payload', $payload_array, $post_ID, $post);
+        $payload_array = apply_filters('ringier_bus_build_article_payload', $payload_array, $post_ID, $post);
+
+        return $this->restoreCoreDataProperties($payload_array, $corePropertyList);
+    }
+
+    /**
+     * Author of the article as data_properties[] entries
+     * Empty when the post has no author or the user no longer exists
+     *
+     * @param int $post_ID
+     *
+     * @return array
+     */
+    private function getAuthorDataProperties(int $post_ID): array
+    {
+        $author_id = (int) get_post_field('post_author', $post_ID);
+        $user = $author_id > 0 ? get_userdata($author_id) : false;
+        if (!$user) {
+            return [];
+        }
+
+        // Same as source_detail, falling back to the first + last name
+        $full_name = trim((string) $user->display_name);
+        if ($full_name === '') {
+            $full_name = trim($user->first_name . ' ' . $user->last_name);
+        }
+
+        return [
+            [
+                'property' => Enum::DATA_PROPERTY_AUTHOR_ID,
+                'value' => $author_id,
+            ],
+            [
+                'property' => Enum::DATA_PROPERTY_AUTHOR_FULL_NAME,
+                'value' => $full_name,
+            ],
+            [
+                'property' => Enum::DATA_PROPERTY_AUTHOR_AVATAR_URL,
+                'value' => Utils::getAuthorAvatarUrl($author_id, (string) $user->user_email),
+            ],
+        ];
+    }
+
+    /**
+     * Re-adds any plugin-owned data_properties[] entry that a ringier_bus_build_article_payload
+     * callback dropped, e.g. by assigning data_properties instead of appending to it.
+     * An entry the callback kept or replaced under the same property name is left as the callback set it.
+     *
+     * @param mixed $payload_array
+     * @param array $corePropertyList
+     *
+     * @return mixed
+     */
+    private function restoreCoreDataProperties(mixed $payload_array, array $corePropertyList): mixed
+    {
+        if (!is_array($payload_array) || empty($corePropertyList)) {
+            return $payload_array;
+        }
+
+        $propertyList = $payload_array['data_properties'] ?? [];
+        if (!is_array($propertyList)) {
+            $propertyList = [];
+        }
+
+        $presentNameList = [];
+        foreach ($propertyList as $entry) {
+            if (is_array($entry) && isset($entry['property'])) {
+                $presentNameList[(string) $entry['property']] = true;
+            }
+        }
+
+        $missingList = [];
+        foreach ($corePropertyList as $entry) {
+            if (!isset($presentNameList[$entry['property']])) {
+                $missingList[] = $entry;
+            }
+        }
+
+        if (!empty($missingList)) {
+            $payload_array['data_properties'] = array_merge($missingList, array_values($propertyList));
+        }
+
+        return $payload_array;
     }
 
     /**

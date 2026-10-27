@@ -3,7 +3,7 @@ Contributors: ringier, wkhayrattee
 Tags: ringier, bus, api, cde
 Requires at least: 6.0
 Tested up to: 6.9.4
-Stable tag: 4.0.3
+Stable tag: 4.1.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -97,6 +97,14 @@ function custom_build_article_payload(array $payload_array, int $post_ID, WP_Pos
 add_filter('ringier_bus_build_article_payload', 'custom_build_article_payload', 10, 3);
 ```
 
+**`data_properties[]`:** the plugin itself puts `author_id`, `author_full_name` and `author_avatar_url` in this array. Append your own entries rather than assigning the array:
+
+```php
+$payload_array['data_properties'][] = ['property' => 'my_property', 'value' => 'My Value'];
+```
+
+If a callback does replace the array, the plugin re-adds any of its own entries that went missing. To change one of them, add an entry with the same `property` name; your value is kept.
+
 ### 4. Controlling Author Event Dispatch ###
 
 You can control whether the Ringier Bus plugin should dispatch Author events for a specific user by using the **ringier_bus_should_dispatch_author_event** filter.
@@ -186,6 +194,15 @@ This plugin requires *PHP version >= 8.1*.
 2. On article dashboard, you can select a value for "Article Lifetime"
 
 == Changelog ==
+
+### [4.1.0] - 2026-10-27 ###
+
+#### Added ####
+* (payload) Article events (`ArticleCreated` / `ArticleUpdated` / `ArticleDeleted`) now carry the article author in `data_properties[]`: `author_id` (the WordPress user ID, the same `id` the Author event sends), `author_full_name` (the author's `display_name`, the same as `source_detail`, falling back to first name + last name) and `author_avatar_url` (the AuthorAddon high-res image, else `get_avatar_url()`, the same as the Author event's `image`). Omitted when the post has no author or the user no longer exists.
+
+#### Changed ####
+* (filter) After `ringier_bus_build_article_payload` runs, any of the three author entries a callback dropped from `data_properties[]` are added back, for example when it assigned the array instead of appending to it. A callback that sets an entry with the same `property` name keeps its own value. Existing implementers that append (such as the Fotocasa payload enhancer) are unaffected.
+* (refactor) The author avatar lookup is now `Utils::getAuthorAvatarUrl()`, shared by the Author event and the Article event.
 
 ### [4.0.3] - 2026-10-12 ###
 

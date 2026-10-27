@@ -98,6 +98,11 @@ class Enum
     public const JSON_FIELD_STATUS_OFFLINE = 'offline';
     public const JSON_FIELD_STATUS_DELETED = 'deleted';
 
+    // Article payload: data_properties[] names owned by this plugin
+    public const DATA_PROPERTY_AUTHOR_ID = 'author_id';
+    public const DATA_PROPERTY_AUTHOR_FULL_NAME = 'author_full_name';
+    public const DATA_PROPERTY_AUTHOR_AVATAR_URL = 'author_avatar_url';
+
     /*
      * Note:
      *  these were previously being used with ACF Fields
