@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased] ##
+## [4.1.0] - 2026-10-27 ##
 
 ### Added ###
 * (payload) Article events (`ArticleCreated` / `ArticleUpdated` / `ArticleDeleted`) now carry the article author in `data_properties[]`: `author_id` (the WordPress user ID, the same `id` the Author event sends), `author_full_name` (the author's `display_name`, the same as `source_detail`, falling back to first name + last name) and `author_avatar_url` (the AuthorAddon high-res image, else `get_avatar_url()`, the same as the Author event's `image`). Omitted when the post has no author or the user no longer exists.
