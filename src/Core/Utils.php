@@ -782,12 +782,7 @@ class Utils
         /**
          * Author Avatar URL
          */
-        // fetch High res image from AuthorAddon plugin first - applies for Ringier's inhouse tatc only
-        $author_avatar = get_user_meta($user_id, Enum::META_HIGH_RES_IMAGE_URL, true);
-        if (empty($author_avatar)) {
-            $author_email = $userdata['user_email'];
-            $author_avatar = get_avatar_url($author_email);
-        }
+        $author_avatar = self::getAuthorAvatarUrl($user_id, (string) ($userdata['user_email'] ?? ''));
 
         return [
             'id' => $user_id,
@@ -800,6 +795,25 @@ class Utils
             'updated_at' => $last_updated,
             'image' => $author_avatar,
         ];
+    }
+
+    /**
+     * Author avatar URL, shared by the Author event and the Article event's data_properties[]
+     *
+     * @param int $user_id
+     * @param string $user_email
+     *
+     * @return string
+     */
+    public static function getAuthorAvatarUrl(int $user_id, string $user_email): string
+    {
+        // fetch High res image from AuthorAddon plugin first - applies for Ringier's inhouse tatc only
+        $author_avatar = get_user_meta($user_id, Enum::META_HIGH_RES_IMAGE_URL, true);
+        if (empty($author_avatar)) {
+            $author_avatar = get_avatar_url($user_email);
+        }
+
+        return (string) $author_avatar;
     }
 
     /**
