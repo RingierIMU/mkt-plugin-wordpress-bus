@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased] ##
+
+### Added ###
+* (payload) Article events (`ArticleCreated` / `ArticleUpdated` / `ArticleDeleted`) now carry the article author in `data_properties[]`: `author_id` (the WordPress user ID, the same `id` the Author event sends), `author_full_name` (the author's `display_name`, the same as `source_detail`, falling back to first name + last name) and `author_avatar_url` (the AuthorAddon high-res image, else `get_avatar_url()`, the same as the Author event's `image`). Omitted when the post has no author or the user no longer exists.
+
+### Changed ###
+* (filter) After `ringier_bus_build_article_payload` runs, any of the three author entries a callback dropped from `data_properties[]` are added back, for example when it assigned the array instead of appending to it. A callback that sets an entry with the same `property` name keeps its own value. Existing implementers that append (such as the Fotocasa payload enhancer) are unaffected.
+* (refactor) The author avatar lookup is now `Utils::getAuthorAvatarUrl()`, shared by the Author event and the Article event.
+
 ## [4.0.3] - 2026-10-12 ##
 
 ### Changed ###

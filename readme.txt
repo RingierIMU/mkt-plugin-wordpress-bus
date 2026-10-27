@@ -97,6 +97,14 @@ function custom_build_article_payload(array $payload_array, int $post_ID, WP_Pos
 add_filter('ringier_bus_build_article_payload', 'custom_build_article_payload', 10, 3);
 ```
 
+**`data_properties[]`:** the plugin itself puts `author_id`, `author_full_name` and `author_avatar_url` in this array. Append your own entries rather than assigning the array:
+
+```php
+$payload_array['data_properties'][] = ['property' => 'my_property', 'value' => 'My Value'];
+```
+
+If a callback does replace the array, the plugin re-adds any of its own entries that went missing. To change one of them, add an entry with the same `property` name; your value is kept.
+
 ### 4. Controlling Author Event Dispatch ###
 
 You can control whether the Ringier Bus plugin should dispatch Author events for a specific user by using the **ringier_bus_should_dispatch_author_event** filter.
